@@ -567,3 +567,139 @@
   color: var(--error);
   background: rgba(244, 67, 54, 0.08);
 }
+
+/* Custom styling for large toggle groups (Choose Reds step) */
+.toggle-group-large {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+
+.toggle-option-large {
+  padding: var(--space-xl) var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(10px);
+}
+
+.toggle-option-large:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.toggle-option-large:active {
+  transform: translateY(0);
+}
+
+.toggle-option-large.active {
+  border-color: var(--accent-sage);
+  background: rgba(123, 166, 138, 0.06);
+  box-shadow: var(--shadow-glow);
+}
+
+.toggle-value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.toggle-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+/* Custom styling for options row (Best Of step) */
+.setup-options-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0;
+}
+
+.setup-option-card {
+  padding: var(--space-md) var(--space-xs);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.setup-option-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.setup-option-card:active {
+  transform: translateY(0);
+}
+
+.setup-option-card.selected {
+  border-color: var(--accent-sage);
+  background: rgba(123, 166, 138, 0.06);
+  box-shadow: var(--shadow-glow);
+}
+
+.option-card-number {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.option-card-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.setup-first-to-label {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-md);
+  font-weight: 500;
+}
+
+/* Custom styles for team grouping and inputs */
+.team-group {
+  background: rgba(0, 0, 0, 0.02);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.team-group-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  color: var(--accent-sage-dark);
+}
+
+.setup-player-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.setup-player-input-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.text-lavender {
+  color: #7B6B8E !important;
+}
+
