@@ -38,12 +38,12 @@
 .btn-primary {
   background: var(--accent-sage);
   color: var(--text-inverse);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
 }
 
 .btn-primary:hover {
-  background: var(--accent-sage-dark);
-  box-shadow: var(--shadow-lg);
+  background: var(--accent-sage-light);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   transform: translateY(-1px);
 }
 
@@ -55,25 +55,26 @@
 .btn-secondary {
   background: var(--bg-card);
   color: var(--text-primary);
-  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border: 1.5px solid var(--border-color);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-card-solid);
-  border-color: var(--accent-sage-light);
+  background: var(--bg-btn-secondary);
+  border-color: rgba(255, 255, 255, 0.15);
   box-shadow: var(--shadow-md);
 }
 
 .btn-danger {
   background: var(--error);
   color: var(--text-inverse);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);
 }
 
 .btn-danger:hover {
-  background: #D32F2F;
-  box-shadow: var(--shadow-lg);
+  background: #f87171;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
   transform: translateY(-1px);
 }
 
@@ -83,7 +84,7 @@
 }
 
 .btn-ghost:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
 }
 
@@ -110,7 +111,7 @@
 .btn-google {
   background: var(--bg-card-solid);
   color: var(--text-primary);
-  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border: 1.5px solid var(--border-color);
   font-weight: 500;
   padding: var(--space-md) var(--space-xl);
   border-radius: var(--radius-lg);
@@ -119,7 +120,8 @@
 
 .btn-google:hover {
   box-shadow: var(--shadow-md);
-  border-color: rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-btn-secondary);
   transform: translateY(-1px);
 }
 
@@ -139,11 +141,11 @@
 /* --- Cards --- */
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal);
 }
