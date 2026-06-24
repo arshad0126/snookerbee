@@ -292,19 +292,42 @@ export default function GameSetup() {
       case 5:
         return (
           <div className="setup-step-container">
-            <h3 className="setup-step-title">Breaking Order</h3>
-            <p className="setup-step-subtitle">Who will take the opening shot?</p>
+            <h3 className="setup-step-title">Set Rotation Order</h3>
+            <p className="setup-step-subtitle">Order of turns from first shot to last.</p>
             <div className="breaking-order-grid">
               {playerNames.map((name, idx) => (
                 <div
                   key={idx}
-                  onClick={() => setBreakingPlayerIndex(idx)}
-                  className={`breaking-option ${breakingPlayerIndex === idx ? 'selected' : ''}`}
+                  className={`breaking-option-row ${breakingPlayerIndex === idx ? 'selected' : ''}`}
                 >
-                  <span className="breaking-option-name">{name}</span>
+                  <div className="rotation-controls">
+                    <button
+                      onClick={() => movePlayer(idx, 'up')}
+                      disabled={idx === 0}
+                      className="rotation-arrow-btn"
+                      title="Move Up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => movePlayer(idx, 'down')}
+                      disabled={idx === playerNames.length - 1}
+                      className="rotation-arrow-btn"
+                      title="Move Down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <span className="breaking-option-name">{idx + 1}. {name}</span>
                   {breakingPlayerIndex === idx && (
-                    <span className="breaking-option-badge">Breaks First</span>
+                    <span className="breaking-option-badge">Breaks Off</span>
                   )}
+                  <button
+                    onClick={() => setBreakingPlayerIndex(idx)}
+                    className={`btn-breaker ${breakingPlayerIndex === idx ? 'active' : ''}`}
+                  >
+                    {breakingPlayerIndex === idx ? 'Breaker' : 'Breaker'}
+                  </button>
                 </div>
               ))}
             </div>
@@ -316,6 +339,25 @@ export default function GameSetup() {
     }
   };
 
+  const movePlayer = (index: number, direction: 'up' | 'down') => {
+    const newNames = [...playerNames];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newNames.length) return;
+    
+    // Swap names
+    const temp = newNames[index];
+    newNames[index] = newNames[targetIndex];
+    newNames[targetIndex] = temp;
+    setPlayerNames(newNames);
+
+    // Sync breaking player index
+    if (breakingPlayerIndex === index) {
+      setBreakingPlayerIndex(targetIndex);
+    } else if (breakingPlayerIndex === targetIndex) {
+      setBreakingPlayerIndex(index);
+    }
+  };
+
   const isNextDisabled = () => {
     if (currentStep === 4) {
       return playerNames.some(name => !name.trim());
@@ -324,37 +366,31 @@ export default function GameSetup() {
   };
 
   return (
-    <div className="setup-page page">
-      <header className="setup-header">
-        <button onClick={prevStep} className="setup-back-btn">
-          ←
-        </button>
-        <div className="stepper">
-          {[1, 2, 3, 4, 5].map(step => (
-            <div
-              key={step}
-              className={`stepper-dot ${step === currentStep ? 'active' : ''} ${
-                step < currentStep ? 'completed' : ''
-              }`}
-            />
-          ))}
-        </div>
-      </header>
+    <div className="setup-page page page-centered">
+      <div className="setup-card">
+        <header className="setup-card-header">
+          <h2 className="setup-card-title">Match Configuration</h2>
+          <span className="setup-step-badge">Step {currentStep} of 5</span>
+        </header>
 
-      <main key={currentStep} className="setup-content fadeInUp">
-        {renderStepContent()}
-      </main>
+        <main key={currentStep} className="setup-card-content fadeInUp">
+          {renderStepContent()}
+        </main>
 
-      <footer className="setup-footer">
-        <button
-          onClick={nextStep}
-          disabled={isNextDisabled()}
-          className="btn btn-primary btn-lg"
-          style={{ width: '100%' }}
-        >
-          {currentStep === 5 ? 'Start Match 🎱' : 'Next'}
-        </button>
-      </footer>
+        <footer className="setup-card-footer">
+          <button onClick={prevStep} className="btn btn-setup-back">
+            {currentStep === 1 ? 'Cancel' : 'Back'}
+          </button>
+          <button
+            onClick={nextStep}
+            disabled={isNextDisabled()}
+            className="btn btn-setup-next"
+          >
+            {currentStep === 5 ? 'Start Match' : 'Next Step'}
+          </button>
+        </footer>
+      </div>
     </div>
   );
 }
+

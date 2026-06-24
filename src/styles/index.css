@@ -6,58 +6,58 @@
 /* --- CSS Custom Properties --- */
 :root {
   /* Primary Palette */
-  --bg-primary: #FAF8F5;
-  --bg-secondary: #F3F0EB;
-  --bg-card: rgba(255, 255, 255, 0.75);
-  --bg-card-solid: #FFFFFF;
-  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-primary: #0B0D0E;
+  --bg-secondary: #121517;
+  --bg-card: rgba(26, 29, 32, 0.75);
+  --bg-card-solid: #1A1D20;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
 
   /* Accent Colors */
-  --accent-sage: #7BA68A;
-  --accent-sage-light: #A3C4AE;
-  --accent-sage-dark: #5E8A6E;
-  --accent-lavender: #B8A9C9;
-  --accent-lavender-light: #D4C9E2;
-  --accent-peach: #F4C2A1;
-  --accent-peach-light: #F8D9C2;
+  --accent-sage: #05B064;
+  --accent-sage-light: #39D38D;
+  --accent-sage-dark: #048C4F;
+  --accent-lavender: #9080A5;
+  --accent-lavender-light: #B5A8C8;
+  --accent-peach: #E39B6F;
+  --accent-peach-light: #F5BE9E;
 
   /* Text Colors */
-  --text-primary: #2D2D2D;
-  --text-secondary: #6B6B6B;
-  --text-muted: #9E9E9E;
-  --text-inverse: #FFFFFF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #8A949E;
+  --text-muted: #5A626A;
+  --text-inverse: #0B0D0E;
 
   /* Snooker Ball Colors */
-  --ball-red: #D32F2F;
-  --ball-yellow: #FBC02D;
-  --ball-green: #388E3C;
-  --ball-brown: #5D4037;
-  --ball-blue: #1565C0;
-  --ball-pink: #E91E63;
-  --ball-black: #212121;
-  --ball-white: #F5F5F5;
+  --ball-red: #E53935;
+  --ball-yellow: #FDD835;
+  --ball-green: #43A047;
+  --ball-brown: #6D4C41;
+  --ball-blue: #1E88E5;
+  --ball-pink: #D81B60;
+  --ball-black: #111111;
+  --ball-white: #EEEEEE;
 
-  /* Scoring Screen (Dark Felt) */
-  --felt-dark: #1B5E20;
-  --felt-light: #2E7D32;
-  --felt-accent: #4CAF50;
+  /* Scoring Screen (Premium Dark Felt) */
+  --felt-dark: #0D1610;
+  --felt-light: #16241B;
+  --felt-accent: #05B064;
   --felt-text: #E8F5E9;
-  --felt-card: rgba(255, 255, 255, 0.08);
-  --felt-card-active: rgba(255, 255, 255, 0.15);
-  --felt-border: rgba(255, 255, 255, 0.12);
+  --felt-card: rgba(0, 0, 0, 0.35);
+  --felt-card-active: rgba(5, 176, 100, 0.12);
+  --felt-border: rgba(255, 255, 255, 0.08);
 
   /* Semantic Colors */
-  --success: #4CAF50;
-  --warning: #FF9800;
-  --error: #F44336;
-  --info: #2196F3;
+  --success: #05B064;
+  --warning: #FFB300;
+  --error: #E53935;
+  --info: #1E88E5;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
-  --shadow-glow: 0 0 20px rgba(123, 166, 138, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(5, 176, 100, 0.25);
 
   /* Border Radius */
   --radius-sm: 8px;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGame } from '../engine/GameContext';
-import type { BallType, Player, Team } from '../engine/types';
+import type { BallType } from '../engine/types';
 import {
   BALL_VALUES,
   isFrameOver,
@@ -249,33 +249,155 @@ export default function ScoringScreen() {
 
   const ballsList: BallType[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
-  // Render individual player panel details
-  const renderPlayerPanel = (player: Player, team?: Team) => {
-    const isActive = activePlayer.id === player.id;
-    const isPopping = poppingPlayerId === player.id;
+  const getMatchLead = () => {
+    if (state.players.length === 0) return 0;
+    
+    // For teams mode, calculate lead between teams
+    if (state.mode === 'team' && state.teams) {
+      const teamAScore = state.teams[0].totalScore;
+      const teamBScore = state.teams[1].totalScore;
+      const activeTeamIndex = state.teams[0].playerIds.includes(activePlayer.id) ? 0 : 1;
+      
+      if (activeTeamIndex === 0) {
+        return teamAScore - teamBScore;
+      } else {
+        return teamBScore - teamAScore;
+      }
+    }
 
-    // Determine frame wins
-    const winsKey = team ? team.id : player.id;
-    const frameWins = state.frameScores[winsKey] || 0;
+    const scores = state.players.map(p => p.score);
+    const maxScore = Math.max(...scores);
+    if (activePlayer.score === maxScore) {
+      const otherScores = state.players.filter(p => p.id !== activePlayer.id).map(p => p.score);
+      const secondMax = otherScores.length > 0 ? Math.max(...otherScores) : 0;
+      return activePlayer.score - secondMax;
+    } else {
+      return activePlayer.score - maxScore;
+    }
+  };
 
+  const getBallLabel = (ball: BallType) => {
+    switch (ball) {
+      case 'red': return 'RED';
+      case 'yellow': return 'YEL';
+      case 'green': return 'GRN';
+      case 'brown': return 'BRN';
+      case 'blue': return 'BLU';
+      case 'pink': return 'PNK';
+      case 'black': return 'BLK';
+      default: return '';
+    }
+  };
+
+  const renderOnBallIndicator = () => {
+    if (state.isFreeBall) {
+      return <span className="on-ball-text-label free-ball">FREE BALL</span>;
+    }
+    
+    const ballColor = state.phase === 'reds'
+      ? (state.expectedBall === 'red' ? 'red' : 'color')
+      : (state.phase === 'colorsInOrder' ? state.currentColorTarget : 'black');
+      
+    if (ballColor === 'color') {
+      return <span className="on-ball-text-label color-any">COLOR</span>;
+    }
+    
+    if (!ballColor) return <span className="on-ball-text-label">NONE</span>;
+    
     return (
-      <div className={`player-panel ${isActive ? 'active' : ''}`}>
-        {team && <div className="player-panel-team-label">{team.name}</div>}
-        <div className="player-name">
-          {player.name}
-          {isActive && <span className="active-dot"> ▶</span>}
-        </div>
-        <div className={`player-score-value ${isPopping ? 'score-pop' : ''}`}>
-          {team ? team.totalScore : player.score}
-        </div>
-        <div className="player-panel-substats">
-          <div className="player-break">Break: {player.currentBreak}</div>
-          <div className="player-timer">visit: {formatTimer(player.timeSpentMs)}</div>
-          <div className="player-highest-break">Best: {player.highestBreak}</div>
-          <div className="player-frames-won">Frames: {frameWins}</div>
-        </div>
+      <div className="on-ball-indicator-wrapper">
+        <span className={`tiny-ball-sphere ball-${ballColor}`} />
+        <span className={`on-ball-text text-${ballColor}`}>{ballColor.toUpperCase()}</span>
       </div>
     );
+  };
+
+  const renderPlayerList = () => {
+    if (state.mode === 'team' && state.teams) {
+      return state.teams.map((t, idx) => {
+        const activeTeamPlayer = state.players[state.turnOrder[state.currentPlayerIndex]];
+        const isActive = t.playerIds.includes(activeTeamPlayer.id);
+        const isPopping = t.playerIds.includes(poppingPlayerId || '');
+        const frameWins = state.frameScores[t.id] || 0;
+        
+        const firstPlayer = state.players.find(p => p.id === t.playerIds[0]);
+        const firstPlayerName = firstPlayer ? firstPlayer.name : '';
+        
+        return (
+          <div
+            key={t.id}
+            className={`player-panel-horizontal ${isActive ? 'active' : ''}`}
+          >
+            <div className="player-card-meta">
+              <div className="player-avatar-circle team-avatar">
+                {t.name.charAt(idx === 0 ? 5 : 5).toUpperCase() || 'T'}
+              </div>
+              <div className="player-card-name-wrapper">
+                <span className="player-card-name">{t.name}</span>
+                <span className="player-team-active-member">
+                  ({isActive ? activeTeamPlayer.name : firstPlayerName})
+                </span>
+                {isActive && <span className="glowing-active-dot"></span>}
+              </div>
+              <span className="player-card-wins">W: {frameWins}</span>
+            </div>
+            
+            <div className={`player-card-score ${isPopping ? 'score-pop' : ''}`}>
+              {t.totalScore}
+            </div>
+
+            <div className="player-card-stats">
+              <span className="player-card-timer">
+                ⏱ {formatTimer(isActive ? activeTeamPlayer.timeSpentMs : 0)}
+              </span>
+              <span className="player-card-break">
+                {isActive && activeTeamPlayer.currentBreak > 0 
+                  ? `Break: ${activeTeamPlayer.currentBreak}` 
+                  : `B: 0`}
+              </span>
+            </div>
+          </div>
+        );
+      });
+    }
+
+    // 1v1 and Free For All
+    return state.players.map((p, pIdx) => {
+      const isActive = activePlayer.id === p.id;
+      const isPopping = poppingPlayerId === p.id;
+      const isBreaker = state.turnOrder[0] === pIdx;
+      const frameWins = state.frameScores[p.id] || 0;
+
+      return (
+        <div
+          key={p.id}
+          className={`player-panel-horizontal ${isActive ? 'active' : ''}`}
+        >
+          <div className="player-card-meta">
+            <div className="player-avatar-circle">
+              {p.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="player-card-name-wrapper">
+              <span className="player-card-name">{p.name}</span>
+              {isBreaker && <span className="breaker-icon-dot" title="Breaker">B</span>}
+              {isActive && <span className="glowing-active-dot"></span>}
+            </div>
+            <span className="player-card-wins">W: {frameWins}</span>
+          </div>
+          
+          <div className={`player-card-score ${isPopping ? 'score-pop' : ''}`}>
+            {p.score}
+          </div>
+
+          <div className="player-card-stats">
+            <span className="player-card-timer">⏱ {formatTimer(p.timeSpentMs)}</span>
+            <span className="player-card-break">
+              {p.currentBreak > 0 ? `Break: ${p.currentBreak}` : `B: 0`}
+            </span>
+          </div>
+        </div>
+      );
+    });
   };
 
   return (
@@ -285,12 +407,13 @@ export default function ScoringScreen() {
       {/* Top Bar */}
       <header className="scoring-topbar">
         <div className="scoring-topbar-left">
-          <button onClick={() => setIsMenuOpen(true)} className="btn btn-ghost">
-            ☰ Menu
-          </button>
-          <span className="frame-info-badge">
-            Frame {state.frameNumber} / {state.bestOf}
-          </span>
+          <span className="frame-pill">Frame {state.frameNumber}</span>
+          <div className="session-name-wrapper">
+            <span className="session-title">SnookerBee</span>
+            <span className="sync-status">
+              <span className="sync-dot"></span> Synced
+            </span>
+          </div>
         </div>
 
         <div className="scoring-topbar-center">
@@ -298,211 +421,127 @@ export default function ScoringScreen() {
         </div>
 
         <div className="scoring-topbar-right">
-          <button
-            onClick={handleUndo}
-            disabled={state.undoStack.length === 0}
-            className="btn btn-ghost btn-undo"
-            title="Undo"
-          >
-            ↩ Undo
+          <button onClick={() => setIsMenuOpen(true)} className="btn-topbar-icon" title="Menu">
+            ⚙️
           </button>
-          <button onClick={() => setIsLogOpen(true)} className="btn btn-ghost">
-            📋 Log
+          <button onClick={() => setIsLogOpen(true)} className="btn-topbar-icon" title="Timeline & Log">
+            📋
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm('Concede this frame?')) {
+                dispatch({ type: 'CONCEDE_FRAME' });
+              }
+            }}
+            className="btn-end-frame"
+          >
+            End Frame
           </button>
         </div>
       </header>
 
       {/* Main Scoring Section */}
-      {state.mode === 'freeForAll' || state.players.length > 2 ? (
-        // Multi-player Layout: Horizontal Player List at top, controls below
-        <div className="scoring-multiplayer-container">
-          <div className="multiplayer-players-list">
-            {state.players.map(p => {
-              const isActive = activePlayer.id === p.id;
-              const isPopping = poppingPlayerId === p.id;
+      <div className="scoring-multiplayer-container">
+        <div className="multiplayer-players-list">
+          {renderPlayerList()}
+        </div>
+
+        {/* Info / Status Bar */}
+        <div className="scoring-status-bar">
+          <div className="status-bar-item">
+            <span className="status-bar-label">ON:</span>
+            {renderOnBallIndicator()}
+          </div>
+          <div className="status-bar-item">
+            <span className="status-bar-label">REDS:</span>
+            <span className="status-bar-value highlight-red">{state.redsRemaining}</span>
+          </div>
+          <div className="status-bar-item">
+            <span className="status-bar-label">POINTS LEFT:</span>
+            <span className="status-bar-value highlight-green">{getPointsOnTable()}</span>
+          </div>
+          <div className="status-bar-item">
+            <span className="status-bar-label">LEAD:</span>
+            <span className="status-bar-value highlight-yellow">{getMatchLead()}</span>
+          </div>
+          <div className="status-bar-item">
+            <span className="status-bar-label">STRIKER:</span>
+            <span className="status-bar-value highlight-white">{activePlayer.name}</span>
+          </div>
+          <span className="active-match-pill">ACTIVE</span>
+        </div>
+
+        {/* Central Controls Area */}
+        <div className="scoring-controls-center">
+          {/* Ball cards row */}
+          <div className="scoring-ball-cards-row">
+            {ballsList.map(ball => {
+              const enabled = isBallEnabled(ball);
+              const isExpected =
+                (state.expectedBall === ball && state.phase === 'reds') ||
+                (state.currentColorTarget === ball && state.phase === 'colorsInOrder') ||
+                (state.phase === 'respottedBlack' && ball === 'black');
+
+              const ballPoints = BALL_VALUES[ball];
+              const ballLabel = getBallLabel(ball);
+
               return (
-                <div
-                  key={p.id}
-                  className={`player-panel-horizontal ${isActive ? 'active' : ''}`}
+                <button
+                  key={ball}
+                  onClick={() => enabled && handlePotBall(ball)}
+                  disabled={!enabled}
+                  className={`scoring-ball-card ball-${ball} ${!enabled ? 'dimmed' : ''} ${
+                    isExpected ? 'expected' : ''
+                  }`}
                 >
-                  <div className="horizontal-player-name">
-                    {isActive && <span className="active-dot">▶ </span>}
-                    {p.name}
-                  </div>
-                  <div className={`horizontal-player-score ${isPopping ? 'score-pop' : ''}`}>
-                    {p.score}
-                  </div>
-                  <div className="horizontal-player-break">B: {p.currentBreak}</div>
-                </div>
+                  <span className="ball-card-name">{ballLabel}</span>
+                  <span className="ball-card-points">+{ballPoints}</span>
+                  {ball === 'red' && state.redsRemaining > 0 && (
+                    <span className="ball-card-red-count">{state.redsRemaining}</span>
+                  )}
+                </button>
               );
             })}
           </div>
 
-          <div className="scoring-controls-center">
-            {/* Ball buttons */}
-            <div className="ball-buttons-row">
-              {ballsList.map(ball => {
-                const enabled = isBallEnabled(ball);
-                const isExpected =
-                  (state.expectedBall === ball && state.phase === 'reds') ||
-                  (state.currentColorTarget === ball && state.phase === 'colorsInOrder') ||
-                  (state.phase === 'respottedBlack' && ball === 'black');
-
-                return (
-                  <button
-                    key={ball}
-                    onClick={() => enabled && handlePotBall(ball)}
-                    disabled={!enabled}
-                    className={`btn-ball ball-${ball} ${!enabled ? 'dimmed' : ''} ${
-                      isExpected ? 'expected' : ''
-                    }`}
-                  >
-                    {ball === 'red' && state.redsRemaining > 0 && (
-                      <span className="red-count-badge">{state.redsRemaining}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Actions row */}
-            <div className="action-buttons-row">
-              <button onClick={handleMiss} className="btn btn-action btn-miss">
-                Miss
-              </button>
-              <button
-                onClick={() => {
-                  setIsInOff(false);
-                  setIsFoulOpen(true);
-                }}
-                className="btn btn-action btn-foul"
-              >
-                Foul
-              </button>
-              <button
-                onClick={() => {
-                  setIsInOff(true);
-                  setIsFoulOpen(true);
-                }}
-                className="btn btn-action btn-inoff"
-              >
-                In-Off
-              </button>
-              <button
-                onClick={() => dispatch({ type: 'FREE_BALL' })}
-                className={`btn btn-action btn-freeball ${state.isFreeBall ? 'active' : ''}`}
-              >
-                {state.isFreeBall ? '✓ Free Ball' : 'Free Ball'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // 1v1 / Team Layout: Left Player, Center Controls, Right Player
-        <main className="scoring-main">
-          {/* Left Player / Team Panel */}
-          {state.mode === 'team'
-            ? renderPlayerPanel(state.players[state.turnOrder[0]], state.teams[0])
-            : renderPlayerPanel(state.players[0])}
-
-          {/* Center Scoring Controls */}
-          <div className="scoring-controls-center">
-            {/* Ball buttons */}
-            <div className="ball-buttons-row">
-              {ballsList.map(ball => {
-                const enabled = isBallEnabled(ball);
-                const isExpected =
-                  (state.expectedBall === ball && state.phase === 'reds') ||
-                  (state.currentColorTarget === ball && state.phase === 'colorsInOrder') ||
-                  (state.phase === 'respottedBlack' && ball === 'black');
-
-                return (
-                  <button
-                    key={ball}
-                    onClick={() => enabled && handlePotBall(ball)}
-                    disabled={!enabled}
-                    className={`btn-ball ball-${ball} ${!enabled ? 'dimmed' : ''} ${
-                      isExpected ? 'expected' : ''
-                    }`}
-                  >
-                    {ball === 'red' && state.redsRemaining > 0 && (
-                      <span className="red-count-badge">{state.redsRemaining}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Actions row */}
-            <div className="action-buttons-row">
-              <button onClick={handleMiss} className="btn btn-action btn-miss">
-                Miss
-              </button>
-              <button
-                onClick={() => {
-                  setIsInOff(false);
-                  setIsFoulOpen(true);
-                }}
-                className="btn btn-action btn-foul"
-              >
-                Foul
-              </button>
-              <button
-                onClick={() => {
-                  setIsInOff(true);
-                  setIsFoulOpen(true);
-                }}
-                className="btn btn-action btn-inoff"
-              >
-                In-Off
-              </button>
-              <button
-                onClick={() => dispatch({ type: 'FREE_BALL' })}
-                className={`btn btn-action btn-freeball ${state.isFreeBall ? 'active' : ''}`}
-              >
-                {state.isFreeBall ? '✓ Free Ball' : 'Free Ball'}
-              </button>
-            </div>
+          {/* Action buttons row */}
+          <div className="action-buttons-row-premium">
+            <button
+              onClick={handleUndo}
+              disabled={state.undoStack.length === 0}
+              className="btn-action-premium btn-action-undo"
+            >
+              ↩ UNDO
+            </button>
+            <button
+              onClick={() => {
+                setIsInOff(false);
+                setIsFoulOpen(true);
+              }}
+              className="btn-action-premium btn-action-foul"
+            >
+              ⚠️ FOUL
+            </button>
+            <button onClick={handleMiss} className="btn-action-premium btn-action-pass">
+              PASS ➔
+            </button>
           </div>
 
-          {/* Right Player / Team Panel */}
-          {state.mode === 'team'
-            ? renderPlayerPanel(state.players[state.turnOrder[1]], state.teams[1])
-            : renderPlayerPanel(state.players[1])}
-        </main>
-      )}
-
-      {/* Info Bar */}
-      <footer className="scoring-infobar">
-        <div className="infobar-item">
-          <span className="infobar-label">Active:</span>
-          <span className="infobar-value">{activePlayer.name}</span>
+          {/* Reset Frame action */}
+          <div className="reset-frame-container">
+            <button
+              onClick={() => {
+                if (window.confirm('Reset this frame? All current frame scores will be lost.')) {
+                  dispatch({ type: 'START_NEXT_FRAME' });
+                }
+              }}
+              className="btn-reset-frame"
+            >
+              Reset Frame
+            </button>
+          </div>
         </div>
-        <div className="infobar-item">
-          <span className="infobar-label">On:</span>
-          <span className="infobar-value">
-            {state.isFreeBall
-              ? 'Free Ball (Any)'
-              : state.phase === 'reds'
-              ? state.expectedBall === 'red'
-                ? 'Red'
-                : 'Color'
-              : state.phase === 'colorsInOrder'
-              ? state.currentColorTarget
-              : state.phase === 'respottedBlack'
-              ? 'Black (Re-spotted)'
-              : 'None'}
-          </span>
-        </div>
-        <div className="infobar-item">
-          <span className="infobar-label">Reds:</span>
-          <span className="infobar-value">{state.redsRemaining}</span>
-        </div>
-        <div className="infobar-item">
-          <span className="infobar-label">Points on Table:</span>
-          <span className="infobar-value">{getPointsOnTable()}</span>
-        </div>
-      </footer>
+      </div>
 
       {/* Foul entry Dialog */}
       <FoulDialog
@@ -527,6 +566,15 @@ export default function ScoringScreen() {
           <div className="menu-overlay-card card" onClick={e => e.stopPropagation()}>
             <h3 className="menu-title">Match Options</h3>
             <div className="menu-options-list">
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  dispatch({ type: 'FREE_BALL' });
+                }}
+                className={`btn btn-secondary ${state.isFreeBall ? 'active' : ''}`}
+              >
+                {state.isFreeBall ? '✓ Disable Free Ball' : '⭐ Award Free Ball'}
+              </button>
               <button
                 onClick={() => {
                   setIsMenuOpen(false);

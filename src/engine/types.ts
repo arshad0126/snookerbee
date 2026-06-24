@@ -218,6 +218,8 @@ export interface FoulAction {
   readonly type: 'FOUL';
   /** The ball involved in the foul (determines penalty if > 4). */
   ballInvolved: BallType;
+  customPenalty?: number;
+  redPottedOnFoul?: boolean;
 }
 
 /**
@@ -228,6 +230,8 @@ export interface InOffAction {
   readonly type: 'IN_OFF';
   /** The ball that was "on" or involved when the cue ball went in. */
   ballInvolved: BallType;
+  customPenalty?: number;
+  redPottedOnFoul?: boolean;
 }
 
 /** Player missed — no ball potted, turn passes. */

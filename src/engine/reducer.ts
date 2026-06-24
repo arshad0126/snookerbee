@@ -507,14 +507,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // FOUL — A foul is committed (not in-off)
     // -----------------------------------------------------------------------
     case 'FOUL': {
-      return handleFoul(state, action.ballInvolved, 'foul');
+      return handleFoul(
+        state,
+        action.ballInvolved,
+        'foul',
+        action.customPenalty,
+        action.redPottedOnFoul
+      );
     }
 
     // -----------------------------------------------------------------------
     // IN_OFF — Cue ball potted
     // -----------------------------------------------------------------------
     case 'IN_OFF': {
-      return handleFoul(state, action.ballInvolved, 'inOff');
+      return handleFoul(
+        state,
+        action.ballInvolved,
+        'inOff',
+        action.customPenalty,
+        action.redPottedOnFoul
+      );
     }
 
     // -----------------------------------------------------------------------
@@ -747,13 +759,15 @@ function handleFoul(
   state: GameState,
   ballInvolved: BallType,
   foulType: 'foul' | 'inOff',
+  customPenalty?: number,
+  redPottedOnFoul?: boolean,
 ): GameState {
   const undoStack = pushUndo(state);
   const currentPlayer = getCurrentPlayer(state);
   const playerIndex = state.turnOrder[state.currentPlayerIndex];
 
   // --- Calculate penalty ---
-  const penalty = calculateFoulPenalty(state, ballInvolved);
+  const penalty = customPenalty !== undefined ? customPenalty : calculateFoulPenalty(state, ballInvolved);
 
   // --- Award penalty points to opponents ---
   const opponentIds = getOpponentIds(state);
@@ -818,9 +832,13 @@ function handleFoul(
   }
 
   // --- Reset expected ball on foul in reds phase ---
+  let newRedsRemaining = state.redsRemaining;
   let newExpectedBall = state.expectedBall;
+  if (redPottedOnFoul && state.phase === 'reds' && state.redsRemaining > 0) {
+    newRedsRemaining = state.redsRemaining - 1;
+  }
   if (state.phase === 'reds') {
-    newExpectedBall = 'red';
+    newExpectedBall = newRedsRemaining === 0 ? 'color' : 'red';
   }
 
   // --- Create log entry ---
@@ -842,6 +860,7 @@ function handleFoul(
     currentPlayerIndex: advanceTurn(state),
     players: updatedPlayers,
     teams: updatedTeams,
+    redsRemaining: newRedsRemaining,
     expectedBall: newExpectedBall,
     actionLog: [...state.actionLog, logEntry],
     undoStack,
