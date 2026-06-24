@@ -35,6 +35,14 @@ export default function ScoringScreen() {
   // Frame score history tracking
   const [frameHistory, setFrameHistory] = useState<FrameHistoryItem[]>([]);
 
+  // Visit timer state
+  const [visitTimeMs, setVisitTimeMs] = useState(0);
+
+  // Reset visit timer on turn change or frame reset
+  useEffect(() => {
+    setVisitTimeMs(0);
+  }, [state.currentPlayerIndex, state.frameNumber]);
+
   // Initialize game setup from navigation state if available
   useEffect(() => {
     if (location.state?.config) {
@@ -65,6 +73,7 @@ export default function ScoringScreen() {
     if (state.phase === 'finished' || state.players.length === 0) return;
 
     const interval = setInterval(() => {
+      setVisitTimeMs(prev => prev + 1000);
       const nextMatchTime = state.matchTimerMs + 1000;
       const activePlayerIndex = state.turnOrder[state.currentPlayerIndex];
       const updatedPlayers = state.players.map((p, idx) => {
@@ -126,6 +135,14 @@ export default function ScoringScreen() {
     return `${mm}:${ss}`;
   };
 
+  // Format Visit Timer
+  const formatVisitTimer = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const ss = String(totalSeconds % 60).padStart(2, '0');
+    return `V: ${mm}:${ss} (${totalSeconds}s)`;
+  };
+
   // Ball Selection Eligibility Helper
   const isBallEnabled = (ball: BallType): boolean => {
     if (state.phase === 'finished') return false;
@@ -153,13 +170,13 @@ export default function ScoringScreen() {
   };
 
   // Foul Dialog Confirm
-  const handleConfirmFoul = (ball: BallType) => {
+  const handleConfirmFoul = (ball: BallType, customPenalty: number, redPottedOnFoul: boolean) => {
     setIsFoulOpen(false);
     audio.playFoul();
     if (isInOff) {
-      dispatch({ type: 'IN_OFF', ballInvolved: ball });
+      dispatch({ type: 'IN_OFF', ballInvolved: ball, customPenalty, redPottedOnFoul });
     } else {
-      dispatch({ type: 'FOUL', ballInvolved: ball });
+      dispatch({ type: 'FOUL', ballInvolved: ball, customPenalty, redPottedOnFoul });
     }
   };
 
@@ -322,39 +339,48 @@ export default function ScoringScreen() {
         
         const firstPlayer = state.players.find(p => p.id === t.playerIds[0]);
         const firstPlayerName = firstPlayer ? firstPlayer.name : '';
-        
+        const isBreaker = state.teams[0].playerIds.includes(state.players[state.turnOrder[0]].id) ? idx === 0 : idx === 1;
+
         return (
           <div
             key={t.id}
             className={`player-panel-horizontal ${isActive ? 'active' : ''}`}
           >
-            <div className="player-card-meta">
-              <div className="player-avatar-circle team-avatar">
-                {t.name.charAt(idx === 0 ? 5 : 5).toUpperCase() || 'T'}
-              </div>
-              <div className="player-card-name-wrapper">
-                <span className="player-card-name">{t.name}</span>
-                <span className="player-team-active-member">
-                  ({isActive ? activeTeamPlayer.name : firstPlayerName})
-                </span>
-                {isActive && <span className="glowing-active-dot"></span>}
+            <div className="player-card-top">
+              <div className="player-card-meta-left">
+                <div className="player-avatar-circle team-avatar">
+                  {t.name.charAt(0).toUpperCase() || 'T'}
+                </div>
+                <div className="player-card-name-wrapper">
+                  <span className="player-card-name">{t.name}</span>
+                  <span className="player-team-active-member">
+                    ({isActive ? activeTeamPlayer.name : firstPlayerName})
+                  </span>
+                  {isActive && <span className="glowing-active-dot"></span>}
+                </div>
+                {isBreaker && <span className="breaker-badge">B</span>}
               </div>
               <span className="player-card-wins">W: {frameWins}</span>
             </div>
             
-            <div className={`player-card-score ${isPopping ? 'score-pop' : ''}`}>
-              {t.totalScore}
+            <div className="player-card-middle">
+              <div className={`player-score-pill ${isPopping ? 'score-pop' : ''}`}>
+                {t.totalScore}
+              </div>
+              {isActive && activeTeamPlayer.currentBreak > 0 && (
+                <div className="player-break-badge">
+                  Break: {activeTeamPlayer.currentBreak}
+                </div>
+              )}
             </div>
 
-            <div className="player-card-stats">
+            <div className="player-card-bottom">
               <span className="player-card-timer">
                 ⏱ {formatTimer(isActive ? activeTeamPlayer.timeSpentMs : 0)}
               </span>
-              <span className="player-card-break">
-                {isActive && activeTeamPlayer.currentBreak > 0 
-                  ? `Break: ${activeTeamPlayer.currentBreak}` 
-                  : `B: 0`}
-              </span>
+              {isActive && (
+                <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
+              )}
             </div>
           </div>
         );
@@ -373,27 +399,36 @@ export default function ScoringScreen() {
           key={p.id}
           className={`player-panel-horizontal ${isActive ? 'active' : ''}`}
         >
-          <div className="player-card-meta">
-            <div className="player-avatar-circle">
-              {p.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="player-card-name-wrapper">
-              <span className="player-card-name">{p.name}</span>
-              {isBreaker && <span className="breaker-icon-dot" title="Breaker">B</span>}
-              {isActive && <span className="glowing-active-dot"></span>}
+          <div className="player-card-top">
+            <div className="player-card-meta-left">
+              <div className="player-avatar-circle">
+                {p.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="player-card-name-wrapper">
+                <span className="player-card-name">{p.name}</span>
+                {isActive && <span className="glowing-active-dot"></span>}
+              </div>
+              {isBreaker && <span className="breaker-badge">B</span>}
             </div>
             <span className="player-card-wins">W: {frameWins}</span>
           </div>
           
-          <div className={`player-card-score ${isPopping ? 'score-pop' : ''}`}>
-            {p.score}
+          <div className="player-card-middle">
+            <div className={`player-score-pill ${isPopping ? 'score-pop' : ''}`}>
+              {p.score}
+            </div>
+            {p.currentBreak > 0 && (
+              <div className="player-break-badge">
+                Break: {p.currentBreak}
+              </div>
+            )}
           </div>
 
-          <div className="player-card-stats">
+          <div className="player-card-bottom">
             <span className="player-card-timer">⏱ {formatTimer(p.timeSpentMs)}</span>
-            <span className="player-card-break">
-              {p.currentBreak > 0 ? `Break: ${p.currentBreak}` : `B: 0`}
-            </span>
+            {isActive && (
+              <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
+            )}
           </div>
         </div>
       );
@@ -422,10 +457,20 @@ export default function ScoringScreen() {
 
         <div className="scoring-topbar-right">
           <button onClick={() => setIsMenuOpen(true)} className="btn-topbar-icon" title="Menu">
-            ⚙️
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
           </button>
           <button onClick={() => setIsLogOpen(true)} className="btn-topbar-icon" title="Timeline & Log">
-            📋
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <line x1="9" y1="12" x2="15" y2="12"></line>
+              <line x1="9" y1="16" x2="15" y2="16"></line>
+              <line x1="9" y1="8" x2="10" y2="8"></line>
+            </svg>
           </button>
           <button
             onClick={() => {
@@ -511,7 +556,11 @@ export default function ScoringScreen() {
               disabled={state.undoStack.length === 0}
               className="btn-action-premium btn-action-undo"
             >
-              ↩ UNDO
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              UNDO
             </button>
             <button
               onClick={() => {
@@ -520,7 +569,12 @@ export default function ScoringScreen() {
               }}
               className="btn-action-premium btn-action-foul"
             >
-              ⚠️ FOUL
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}>
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              FOUL
             </button>
             <button onClick={handleMiss} className="btn-action-premium btn-action-pass">
               PASS ➔
@@ -537,6 +591,9 @@ export default function ScoringScreen() {
               }}
               className="btn-reset-frame"
             >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px', verticalAlign: 'middle'}}>
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
               Reset Frame
             </button>
           </div>

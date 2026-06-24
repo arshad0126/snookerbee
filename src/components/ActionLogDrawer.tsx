@@ -70,15 +70,26 @@ export default function ActionLogDrawer({
     <div className="action-log-overlay" onClick={onClose}>
       <div className="action-log-drawer card" onClick={(e) => e.stopPropagation()}>
         <div className="action-log-header">
-          <h3 className="action-log-title">Action Log</h3>
+          <h3 className="action-log-title">TIMELINE & LOG</h3>
           <button onClick={onClose} className="btn-close" aria-label="Close action log">
             ✕
           </button>
         </div>
 
+        <div className="action-log-subbar">
+          <div className="action-log-subbar-left">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px', opacity: 0.7, verticalAlign: 'middle'}}>
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>ACTIVE TIMELINE & AUDIT LOG</span>
+          </div>
+          <span className="events-count-badge">{actionLog.length} Events</span>
+        </div>
+
         <div className="action-log-list">
           {actionLog.length === 0 ? (
-            <div className="action-log-empty">No actions in this frame yet.</div>
+            <div className="action-log-empty">Waiting for break-off shot...</div>
           ) : (
             actionLog.map((entry, index) => (
               <div key={index} className={`action-log-entry ${getLogClass(entry.type)}`}>
