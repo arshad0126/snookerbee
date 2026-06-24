@@ -103,6 +103,50 @@
   --z-modal: 1000;
   --z-toast: 1100;
   --z-orientation: 9999;
+
+  /* Theme color mappings */
+  --bg-topbar: #0B0D0E;
+  --bg-status-bar: #111416;
+  --bg-ball-card: #14171A;
+  --bg-dialog: #121416;
+  --bg-drawer: #111416;
+  --bg-drawer-header: #171B1E;
+  --bg-drawer-subbar: #15191C;
+  --bg-btn-secondary: #1C1F22;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-dim: rgba(255, 255, 255, 0.04);
+  --shadow-color: rgba(0, 0, 0, 0.6);
+}
+
+body.light-theme {
+  --bg-primary: #F0F2F5;
+  --bg-secondary: #E4E6EB;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-solid: #FFFFFF;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --text-primary: #1C1E21;
+  --text-secondary: #5F6368;
+  --text-muted: #80868B;
+  
+  --bg-topbar: #FFFFFF;
+  --bg-status-bar: #E4E6EB;
+  --bg-ball-card: #FFFFFF;
+  --bg-dialog: #FFFFFF;
+  --bg-drawer: #FFFFFF;
+  --bg-drawer-header: #F0F2F5;
+  --bg-drawer-subbar: #E4E6EB;
+  --bg-btn-secondary: #F0F2F5;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color-dim: rgba(0, 0, 0, 0.04);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  /* Scoring Screen light mode overrides */
+  --felt-dark: #E8F5E9;
+  --felt-light: #C8E6C9;
+  --felt-text: #1B5E20;
+  --felt-card: rgba(255, 255, 255, 0.8);
+  --felt-card-active: rgba(5, 176, 100, 0.06);
+  --felt-border: rgba(0, 0, 0, 0.08);
 }
 
 /* --- Reset & Base --- */
@@ -321,4 +365,29 @@ ul, ol {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+}
+
+/* Floating Theme Toggle button */
+.theme-toggle-floating {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle-floating:hover {
+  background: var(--bg-btn-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
