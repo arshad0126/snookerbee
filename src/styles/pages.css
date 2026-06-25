@@ -11,7 +11,7 @@
   justify-content: center;
   padding: var(--space-xl);
   text-align: center;
-  background: radial-gradient(circle at center, #0f2c1d 0%, #05100a 100%);
+  background: radial-gradient(circle at center, #171d26 0%, #07090b 100%);
   position: relative;
   overflow: hidden;
 }

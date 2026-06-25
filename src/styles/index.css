@@ -37,13 +37,13 @@
   --ball-black: #0f172a;
   --ball-white: #f1f5f9;
 
-  /* Scoring Screen (Premium Dark Felt) */
-  --felt-dark: #051a0f;
-  --felt-light: #0d3820;
-  --felt-accent: #10b981;
-  --felt-text: #ecfdf5;
-  --felt-card: rgba(18, 22, 28, 0.45);
-  --felt-card-active: rgba(16, 185, 129, 0.15);
+  /* Scoring Screen (Premium Minimalist Slate) */
+  --felt-dark: #07090b;
+  --felt-light: #12161f;
+  --felt-accent: var(--accent-sage);
+  --felt-text: var(--text-primary);
+  --felt-card: rgba(20, 24, 33, 0.55);
+  --felt-card-active: rgba(59, 130, 246, 0.12);
   --felt-border: rgba(255, 255, 255, 0.08);
 
   /* Semantic Colors */
@@ -141,11 +141,11 @@ body.light-theme {
   --shadow-color: rgba(0, 0, 0, 0.05);
   
   /* Scoring Screen light mode overrides */
-  --felt-dark: #d1fae5;
-  --felt-light: #ecfdf5;
-  --felt-text: #065f46;
-  --felt-card: rgba(255, 255, 255, 0.85);
-  --felt-card-active: rgba(16, 185, 129, 0.08);
+  --felt-dark: #e2e8f0;
+  --felt-light: #f8fafc;
+  --felt-text: var(--text-primary);
+  --felt-card: rgba(255, 255, 255, 0.8);
+  --felt-card-active: rgba(59, 130, 246, 0.08);
   --felt-border: rgba(0, 0, 0, 0.08);
 }
 
