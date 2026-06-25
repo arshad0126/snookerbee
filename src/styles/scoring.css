@@ -1228,15 +1228,17 @@
   text-align: center;
 }
 
-.summary-player-score .score-value {
+.summary-player-score .summary-score-val {
   font-family: var(--font-mono);
   font-size: var(--text-4xl);
   font-weight: 700;
+  color: var(--text-primary);
 }
 
-.summary-player-score .player-name {
+.summary-player-score .summary-score-name {
   font-size: var(--text-sm);
   color: var(--text-secondary);
+  display: block;
 }
 
 .summary-vs {
