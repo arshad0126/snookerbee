@@ -21,6 +21,7 @@ export default function MatchSummary() {
   const navigate = useNavigate();
   const { isGuest } = useAuth();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [dbError, setDbError] = useState<string | null>(null);
 
   // Retrieve match state passed from ScoringScreen
   const stateData = location.state as {
@@ -149,16 +150,19 @@ export default function MatchSummary() {
           },
         ];
 
-        const matchId = await saveMatch(matchRec, playerRecs, frameRecs);
-        if (matchId) {
+        const result = await saveMatch(matchRec, playerRecs, frameRecs);
+        if (result.success) {
           setSaveStatus('saved');
+          setDbError(null);
         } else {
           setSaveStatus('error');
+          setDbError(result.error || 'Database operation failed.');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving match:', error);
       setSaveStatus('error');
+      setDbError(error?.message || String(error));
     }
   };
 
@@ -280,7 +284,7 @@ export default function MatchSummary() {
             </div>
           ) : saveStatus === 'error' ? (
             <div className="save-status-msg error card">
-              ⚠ Error saving match record.
+              ⚠ Error saving match record: {dbError || 'Unknown error'}
             </div>
           ) : null}
 

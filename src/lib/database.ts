@@ -38,10 +38,10 @@ export async function saveMatch(
   match: MatchRecord,
   players: MatchPlayerRecord[],
   frames: MatchFrameRecord[]
-): Promise<string | null> {
+): Promise<{ success: boolean; matchId?: string; error?: string }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return { success: false, error: 'No authenticated user session found.' };
 
     // Insert match
     const { data: matchData, error: matchError } = await supabase
@@ -69,10 +69,10 @@ export async function saveMatch(
 
     if (framesError) throw framesError;
 
-    return matchId;
-  } catch (error) {
+    return { success: true, matchId };
+  } catch (error: any) {
     console.error('Error saving match:', error);
-    return null;
+    return { success: false, error: error?.message || String(error) };
   }
 }
 
