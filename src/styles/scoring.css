@@ -30,7 +30,7 @@
 
 /* --- Top Bar --- */
 .scoring-topbar {
-  background: rgba(7, 9, 11, 0.85);
+  background: var(--bg-topbar);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--felt-border);

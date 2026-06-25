@@ -11,7 +11,7 @@
   justify-content: center;
   padding: var(--space-xl);
   text-align: center;
-  background: radial-gradient(circle at center, #171d26 0%, #07090b 100%);
+  background: radial-gradient(circle at center, var(--felt-light) 0%, var(--felt-dark) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -169,7 +169,7 @@
 .dashboard-page {
   min-height: 100dvh;
   padding: var(--space-lg);
-  background: radial-gradient(circle at 50% 0%, #0d1117 0%, #07090b 100%);
+  background: radial-gradient(circle at 50% 0%, var(--felt-light) 0%, var(--felt-dark) 100%);
 }
 
 .dashboard-header {
@@ -314,7 +314,7 @@
 .setup-page {
   min-height: 100dvh;
   padding: var(--space-lg);
-  background: radial-gradient(circle at center, #0f131a 0%, #07090b 100%);
+  background: radial-gradient(circle at center, var(--felt-light) 0%, var(--felt-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,7 +400,7 @@
 }
 
 .setup-option:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--text-muted);
   background: var(--bg-btn-secondary);
   transform: translateY(-1px);
 }
@@ -490,7 +490,7 @@
 
 .btn-setup-back {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 10px 24px;
   border-radius: var(--radius-md);
@@ -499,9 +499,9 @@
 }
 
 .btn-setup-back:hover {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--text-muted);
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-btn-secondary);
 }
 
 .btn-setup-next {
@@ -629,7 +629,7 @@
 
 .btn-breaker {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: var(--text-xs);
   font-weight: 600;
@@ -640,7 +640,7 @@
 }
 
 .btn-breaker:hover:not(.active) {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--text-muted);
   color: var(--text-primary);
 }
 
@@ -768,7 +768,7 @@
 }
 
 .toggle-option-large:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--text-muted);
   background: var(--bg-btn-secondary);
   transform: translateY(-1px);
 }
@@ -818,7 +818,7 @@
 }
 
 .setup-option-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--text-muted);
   background: var(--bg-btn-secondary);
   transform: translateY(-1px);
 }
@@ -856,8 +856,8 @@
 
 /* Custom styles for team grouping and inputs */
 .team-group {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color-dim);
   padding: var(--space-md);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
