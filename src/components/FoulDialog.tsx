@@ -29,7 +29,8 @@ export default function FoulDialog({
       setCustomPenalty(std);
       setRedPottedOnFoul(isInOff); // auto-check if In-Off is clicked
     }
-  }, [isOpen, isInOff, gameState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isInOff]);
 
   if (!isOpen) return null;
 
