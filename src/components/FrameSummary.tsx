@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, Fragment } from 'react';
 import type { GameState } from '../engine/types';
 import { isMatchOver } from '../engine/validators';
 import { audio } from '../lib/audio';
@@ -112,13 +112,13 @@ export default function FrameSummary({
             </>
           ) : (
             players.map((p, i) => (
-              <div key={p.id} className="summary-score-row">
+              <Fragment key={p.id}>
                 <div className="summary-player-score">
                   <span className="summary-score-name">{p.name}</span>
                   <span className="summary-score-val">{p.score}</span>
                 </div>
                 {i < players.length - 1 && <span className="summary-vs">vs</span>}
-              </div>
+              </Fragment>
             ))
           )}
         </div>
@@ -126,20 +126,20 @@ export default function FrameSummary({
         <h3 className="summary-stats-title">Frame Stats</h3>
         <div className="summary-stats">
           <div className="summary-stat">
-            <span className="summary-stat-label">Highest Break</span>
-            <span className="summary-stat-value">
+            <div className="summary-stat-value">
               {players.reduce((max, p) => Math.max(max, p.highestBreak), 0)}
-            </span>
+            </div>
+            <div className="summary-stat-label">Highest Break</div>
           </div>
           <div className="summary-stat">
-            <span className="summary-stat-label">Total Fouls</span>
-            <span className="summary-stat-value">
+            <div className="summary-stat-value">
               {players.reduce((sum, p) => sum + p.foulsCommitted, 0)}
-            </span>
+            </div>
+            <div className="summary-stat-label">Total Fouls</div>
           </div>
           <div className="summary-stat">
-            <span className="summary-stat-label">Duration</span>
-            <span className="summary-stat-value">{formatDuration(gameState.frameStartTime)}</span>
+            <div className="summary-stat-value">{formatDuration(gameState.frameStartTime)}</div>
+            <div className="summary-stat-label">Duration</div>
           </div>
         </div>
 
