@@ -544,19 +544,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           : p,
       );
 
-      // If we were in 'reds' phase and expecting a color (just potted a red),
-      // a miss means the next player still needs to pot a color? No —
-      // Actually in snooker, a miss doesn't change what's expected.
-      // If a red was just potted and the player misses the color, the
-      // incoming player must pot a red (the color expectation resets on miss).
-      // Wait: actually after potting a red, the same player tries for a color.
-      // If they miss, the turn passes. But the sequence resets: the incoming
-      // player must pot a red. The "expected color after red" is personal to
-      // the break. On a new turn, it always starts with red expected.
       let newExpectedBall = state.expectedBall;
+      let newPhase = state.phase;
+      let newColorTarget = state.currentColorTarget;
+
       if (state.phase === 'reds') {
-        // On miss, reset to expecting red (incoming player starts fresh)
-        newExpectedBall = 'red';
+        if (state.redsRemaining === 0 && state.expectedBall === 'color') {
+          // Missed the color after the last red — transition to colors in order (yellow)
+          newPhase = 'colorsInOrder';
+          newExpectedBall = null;
+          newColorTarget = COLORS_IN_ORDER[0]; // yellow
+        } else {
+          // On miss, reset to expecting red (incoming player starts fresh)
+          newExpectedBall = 'red';
+        }
       }
 
       const logEntry = createLogEntry({
@@ -567,9 +568,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       return {
         ...state,
+        phase: newPhase,
         currentPlayerIndex: advanceTurn(state),
         players: updatedPlayers,
         expectedBall: newExpectedBall,
+        currentColorTarget: newColorTarget,
         actionLog: [...state.actionLog, logEntry],
         undoStack,
         isFreeBall: false,
@@ -834,11 +837,21 @@ function handleFoul(
   // --- Reset expected ball on foul in reds phase ---
   let newRedsRemaining = state.redsRemaining;
   let newExpectedBall = state.expectedBall;
+  let newColorTarget = state.currentColorTarget;
+
   if (redPottedOnFoul && state.phase === 'reds' && state.redsRemaining > 0) {
     newRedsRemaining = state.redsRemaining - 1;
   }
+
   if (state.phase === 'reds') {
-    newExpectedBall = newRedsRemaining === 0 ? 'color' : 'red';
+    if (newRedsRemaining === 0) {
+      // All reds are gone and a foul occurred — transition to colors in order (yellow)
+      newPhase = 'colorsInOrder';
+      newExpectedBall = null;
+      newColorTarget = COLORS_IN_ORDER[0]; // yellow
+    } else {
+      newExpectedBall = 'red';
+    }
   }
 
   // --- Create log entry ---
@@ -862,6 +875,7 @@ function handleFoul(
     teams: updatedTeams,
     redsRemaining: newRedsRemaining,
     expectedBall: newExpectedBall,
+    currentColorTarget: newColorTarget,
     actionLog: [...state.actionLog, logEntry],
     undoStack,
     isFreeBall: false,

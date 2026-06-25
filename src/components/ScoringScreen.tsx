@@ -6,6 +6,7 @@ import type { BallType } from '../engine/types';
 import {
   BALL_VALUES,
   isFrameOver,
+  getPointsRemaining,
 } from '../engine';
 import { audio } from '../lib/audio';
 import OrientationWarning from './OrientationWarning';
@@ -152,7 +153,7 @@ export default function ScoringScreen() {
     if (state.phase === 'colorsInOrder') return ball === state.currentColorTarget;
     if (state.phase === 'finalColor') return ball !== 'red';
     if (state.phase === 'reds') {
-      if (state.expectedBall === 'red') return ball === 'red';
+      if (state.expectedBall === 'red') return ball === 'red' && state.redsRemaining > 0;
       if (state.expectedBall === 'color') return ball !== 'red';
     }
     if (state.isFreeBall) return true;
@@ -246,22 +247,7 @@ export default function ScoringScreen() {
 
   // Remaining Points Calculator helper
   const getPointsOnTable = () => {
-    if (state.phase === 'reds') {
-      return (state.redsRemaining * 8) + 27;
-    }
-    if (state.phase === 'finalColor') {
-      return 27; // all 6 colors
-    }
-    if (state.phase === 'colorsInOrder') {
-      const colors = ['yellow', 'green', 'brown', 'blue', 'pink', 'black'] as BallType[];
-      const targetIndex = colors.indexOf(state.currentColorTarget || 'yellow');
-      if (targetIndex === -1) return 0;
-      return colors.slice(targetIndex).reduce((sum, c) => sum + BALL_VALUES[c], 0);
-    }
-    if (state.phase === 'respottedBlack') {
-      return 7;
-    }
-    return 0;
+    return getPointsRemaining(state);
   };
 
   const showFrameSummary = isFrameOver(state) || state.phase === 'finished';
