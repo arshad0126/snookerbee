@@ -5,13 +5,16 @@
 
 /* --- Scoring Screen Container --- */
 .scoring-screen {
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: radial-gradient(circle at center, var(--felt-light) 0%, var(--felt-dark) 100%);
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
   font-family: var(--font-ui);
 }
 
