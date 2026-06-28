@@ -702,13 +702,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         totalScore: 0,
       }));
 
-      // Rotate who breaks: advance starting player each frame
-      const newStartIndex =
-        (state.frameNumber) % state.turnOrder.length;
+      // Rotate who breaks: custom selection from payload or fallback automatic rotation
+      let newTurnOrder = [...state.turnOrder];
+      let newStartIndex = 0;
+
+      if (action.payload) {
+        const { breakingPlayerId, turnOrderIds } = action.payload;
+        if (turnOrderIds) {
+          newTurnOrder = turnOrderIds.map(id => state.players.findIndex(p => p.id === id));
+        }
+        if (breakingPlayerId) {
+          const breakerIndex = state.players.findIndex(p => p.id === breakingPlayerId);
+          newStartIndex = newTurnOrder.indexOf(breakerIndex);
+          if (newStartIndex === -1) newStartIndex = 0;
+        }
+      } else {
+        newStartIndex = (state.frameNumber) % state.turnOrder.length;
+      }
 
       const logEntry = createLogEntry({
         type: 'frameStart',
-        playerName: resetPlayers[state.turnOrder[newStartIndex]].name,
+        playerName: resetPlayers[newTurnOrder[newStartIndex]].name,
         description: `Frame ${state.frameNumber + 1} started`,
       });
 
@@ -735,6 +749,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
+        turnOrder: newTurnOrder,
       };
     }
 

@@ -272,6 +272,10 @@ export interface EndFrameAction {
 /** Start the next frame in a best-of match. */
 export interface StartNextFrameAction {
   readonly type: 'START_NEXT_FRAME';
+  payload?: {
+    breakingPlayerId: string;
+    turnOrderIds?: string[];
+  };
 }
 
 /** Tick the match timer. */
