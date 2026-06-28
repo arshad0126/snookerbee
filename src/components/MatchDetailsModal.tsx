@@ -275,6 +275,126 @@ export default function MatchDetailsModal({
     document.body.removeChild(a);
   };
 
+  const handleDownloadFrameCard = (frame: FrameDetail) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw background gradient (Snooker Green Felt style)
+    const gradient = ctx.createLinearGradient(0, 0, 0, 600);
+    gradient.addColorStop(0, '#0F3C23');
+    gradient.addColorStop(1, '#071F11');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 800, 600);
+
+    // Golden frame border
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 14;
+    ctx.strokeRect(7, 7, 786, 586);
+
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(25, 25, 750, 550);
+
+    // Title
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(' SNOOKERBEE', 400, 75);
+
+    ctx.fillStyle = '#94D3A2';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText(
+      `Frame ${frame.frameNumber} Breakdown  •  ${matchData.mode.toUpperCase()} Mode`,
+      400,
+      110
+    );
+    ctx.fillStyle = '#789F82';
+    ctx.fillText(matchData.date, 400, 138);
+
+    // Frame Stats computation
+    const frameAnalysis = analyzeFrameLog(frame.actionLog);
+
+    // Scoreboard header
+    ctx.fillStyle = '#8ABF97';
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('STATISTIC', 120, 200);
+
+    // Draw player names headers
+    let playerX = 380;
+    const spacingX = 140;
+
+    matchData.players.forEach(p => {
+      ctx.textAlign = 'center';
+      ctx.fillText(p.name.toUpperCase(), playerX, 200);
+      playerX += spacingX;
+    });
+
+    // Divider
+    ctx.strokeStyle = 'rgba(138, 191, 151, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(120, 215);
+    ctx.lineTo(680, 215);
+    ctx.stroke();
+
+    // Row definitions
+    const statRows = [
+      { label: 'Reds Potted', key: 'redsPotted', color: '#10b981' },
+      { label: 'Colors Potted', key: 'colorsPotted', color: '#a78bfa' },
+      { label: 'Fouls Committed', key: 'foulsCommitted', color: '#ef4444' },
+      { label: 'Highest Break', key: 'highestBreak', color: '#ffffff' }
+    ];
+
+    let y = 260;
+    statRows.forEach(row => {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '18px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(row.label, 120, y);
+
+      playerX = 380;
+      matchData.players.forEach(p => {
+        const val = (frameAnalysis[row.key as keyof FrameAnalysis] && frameAnalysis[row.key as keyof FrameAnalysis][p.name]) || 0;
+        ctx.fillStyle = row.color;
+        ctx.font = 'bold 18px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(val), playerX, y);
+        playerX += spacingX;
+      });
+
+      y += 50;
+    });
+
+    // Divider
+    ctx.strokeStyle = 'rgba(138, 191, 151, 0.2)';
+    ctx.beginPath();
+    ctx.moveTo(120, 480);
+    ctx.lineTo(680, 480);
+    ctx.stroke();
+
+    // Duration Footer
+    ctx.fillStyle = '#8ABF97';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `Frame Duration: ${formatDuration(frame.durationMs)}`,
+      400,
+      525
+    );
+
+    // Trigger download
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snookerbee_match_${matchData.id.slice(-6)}_frame_${frame.frameNumber}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const activeFrame = activeFrameIndex !== null ? frames[activeFrameIndex] : null;
   const frameAnalysis = activeFrame ? analyzeFrameLog(activeFrame.actionLog) : null;
 
@@ -365,13 +485,24 @@ export default function MatchDetailsModal({
                 {/* Frame list tabs */}
                 <div className="frame-tabs">
                   {frames.map((f, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveFrameIndex(idx)}
-                      className={`frame-tab-btn ${activeFrameIndex === idx ? 'active' : ''}`}
-                    >
-                      Frame {f.frameNumber} ({formatDuration(f.durationMs)})
-                    </button>
+                    <div key={idx} className="frame-tab-container">
+                      <button
+                        onClick={() => setActiveFrameIndex(idx)}
+                        className={`frame-tab-btn ${activeFrameIndex === idx ? 'active' : ''}`}
+                      >
+                        Frame {f.frameNumber} ({formatDuration(f.durationMs)})
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadFrameCard(f);
+                        }}
+                        className="frame-share-icon-btn"
+                        title={`Share Frame ${f.frameNumber} Summary Card`}
+                      >
+                        📤
+                      </button>
+                    </div>
                   ))}
                 </div>
 
