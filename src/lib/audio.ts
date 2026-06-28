@@ -48,7 +48,7 @@ class AudioManager {
   }
 
   /**
-   * Play a satisfying "pot" sound — short click with descending pitch
+   * Play a satisfying "pot" sound
    */
   playPot(): void {
     if (this._muted || !this.context) return;
@@ -56,7 +56,42 @@ class AudioManager {
     const ctx = this.context;
     const now = ctx.currentTime;
 
-    // Main click
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Brighter, glassier pastel chime-click
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1100, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.07);
+
+      osc.start(now);
+      osc.stop(now + 0.07);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(1700, now + 0.01);
+      osc2.frequency.exponentialRampToValueAtTime(1000, now + 0.06);
+
+      gain2.gain.setValueAtTime(0.05, now + 0.01);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+
+      osc2.start(now + 0.01);
+      osc2.stop(now + 0.06);
+      return;
+    }
+
+    // Default Dark Mode Click
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -72,7 +107,6 @@ class AudioManager {
     osc.start(now);
     osc.stop(now + 0.12);
 
-    // Subtle secondary tone
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.connect(gain2);
@@ -97,6 +131,29 @@ class AudioManager {
 
     const ctx = this.context;
     const now = ctx.currentTime;
+
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Soft descending pastel double chime warning
+      const playChime = (timeOffset: number, freq: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + timeOffset);
+        gain.gain.setValueAtTime(0, now + timeOffset);
+        gain.gain.linearRampToValueAtTime(0.12, now + timeOffset + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + timeOffset + 0.18);
+
+        osc.start(now + timeOffset);
+        osc.stop(now + timeOffset + 0.18);
+      };
+      playChime(0, 392.00); // G4
+      playChime(0.1, 311.13); // Eb4 (soothing, gentle warning)
+      return;
+    }
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -124,8 +181,32 @@ class AudioManager {
 
     const ctx = this.context;
     const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
 
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Extended pentatonic soft arpeggio
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+
+        const startTime = now + i * 0.1;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.22);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.22);
+      });
+      return;
+    }
+
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -153,9 +234,32 @@ class AudioManager {
 
     const ctx = this.context;
     const now = ctx.currentTime;
-    // C5, E5, G5, C6
-    const notes = [523.25, 659.25, 783.99, 1046.5];
 
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Sparkling sweet pastel pentatonic victory fanfare
+      const notes = [587.33, 659.25, 783.99, 880.00, 1174.66]; // D5, E5, G5, A5, D6
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const startTime = now + i * 0.08;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.18, startTime + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.45);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.45);
+      });
+      return;
+    }
+
+    const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -185,6 +289,25 @@ class AudioManager {
     const ctx = this.context;
     const now = ctx.currentTime;
 
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Extremely light high-frequency tick
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.value = 1800;
+
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+
+      osc.start(now);
+      osc.stop(now + 0.03);
+      return;
+    }
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -208,6 +331,26 @@ class AudioManager {
 
     const ctx = this.context;
     const now = ctx.currentTime;
+
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Soft glassy descending whoosh
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.linearRampToValueAtTime(400, now + 0.18);
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+
+      osc.start(now);
+      osc.stop(now + 0.18);
+      return;
+    }
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -233,6 +376,26 @@ class AudioManager {
 
     const ctx = this.context;
     const now = ctx.currentTime;
+
+    const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
+    if (isLightMode) {
+      // Gentle soft water drop pop
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(380, now);
+      osc.frequency.exponentialRampToValueAtTime(750, now + 0.05);
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+
+      osc.start(now);
+      osc.stop(now + 0.06);
+      return;
+    }
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
