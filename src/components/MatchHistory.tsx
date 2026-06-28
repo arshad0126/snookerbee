@@ -9,30 +9,21 @@ import {
   type MatchRecord,
   type MatchPlayerRecord,
 } from '../lib/database';
-
-type UnifiedMatch = {
-  id: string;
-  date: string;
-  mode: string;
-  bestOf: number;
-  redsCount: number;
-  durationMs: number;
-  winnerName: string;
-  players: { name: string; score: number; won: boolean; teamName?: string }[];
-};
+import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 
 export default function MatchHistory() {
   const { isGuest } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [matches, setMatches] = useState<UnifiedMatch[]>([]);
+  const [matches, setMatches] = useState<MatchDetailsData[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
 
   const fetchMatches = async () => {
     setLoading(true);
     try {
       if (isGuest) {
         const localHistory = getLocalMatchHistory();
-        const mapped = localHistory.map((m): UnifiedMatch => ({
+        const mapped = localHistory.map((m): MatchDetailsData => ({
           id: m.id,
           date: new Date(m.createdAt).toLocaleDateString(undefined, {
             year: 'numeric',
@@ -48,15 +39,19 @@ export default function MatchHistory() {
           winnerName: m.winnerName,
           players: m.players.map(p => ({
             name: p.name,
-            score: p.totalScore,
-            won: p.name === m.winnerName,
             teamName: p.teamName,
+            totalScore: p.totalScore,
+            highestBreak: p.highestBreak,
+            framesWon: p.framesWon,
+            foulsCommitted: p.foulsCommitted,
+            timeSpentMs: p.timeSpentMs,
           })),
+          frames: m.frames,
         }));
         setMatches(mapped);
       } else {
         const dbHistory = await getMatchHistory();
-        const mapped = dbHistory.map((m: MatchRecord & { players: MatchPlayerRecord[] }): UnifiedMatch => ({
+        const mapped = dbHistory.map((m: MatchRecord & { players: MatchPlayerRecord[] }): MatchDetailsData => ({
           id: m.id || '',
           date: m.created_at
             ? new Date(m.created_at).toLocaleDateString(undefined, {
@@ -74,9 +69,12 @@ export default function MatchHistory() {
           winnerName: m.winner_name,
           players: m.players.map(p => ({
             name: p.player_name,
-            score: p.total_score,
-            won: p.player_name === m.winner_name,
             teamName: p.team_name ?? undefined,
+            totalScore: p.total_score,
+            highestBreak: p.highest_break,
+            framesWon: p.frames_won,
+            foulsCommitted: p.fouls_committed,
+            timeSpentMs: p.time_spent_ms,
           })),
         }));
         setMatches(mapped);
@@ -99,12 +97,18 @@ export default function MatchHistory() {
     try {
       if (isGuest) {
         deleteLocalMatch(matchId);
+        setMatches(prev => prev.filter(m => m.id !== matchId));
       } else {
-        await deleteMatch(matchId);
+        const success = await deleteMatch(matchId);
+        if (success) {
+          setMatches(prev => prev.filter(m => m.id !== matchId));
+        } else {
+          alert('Failed to delete match from server. Please check your connection and try again.');
+        }
       }
-      setMatches(prev => prev.filter(m => m.id !== matchId));
     } catch (err) {
       console.error('Failed to delete match:', err);
+      alert('An unexpected error occurred while deleting the match.');
     }
   };
 
@@ -149,23 +153,31 @@ export default function MatchHistory() {
         ) : (
           <div className="history-list">
             {matches.map(match => (
-              <div key={match.id} className="history-card card">
+              <div
+                key={match.id}
+                onClick={() => setSelectedMatch(match)}
+                className="history-card card ripple"
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="history-card-header">
                   <span className="history-card-date">{match.date}</span>
                   <span className="history-card-mode badge">{match.mode}</span>
                 </div>
 
                 <div className="history-card-players">
-                  {match.players.map((p, i) => (
-                    <div key={i} className={`history-card-player ${p.won ? 'history-card-winner' : ''}`}>
-                      <span className="player-name-span">
-                        {p.teamName ? `[${p.teamName}] ` : ''}
-                        {p.name}
-                      </span>
-                      <span className="history-card-score">{p.score}</span>
-                      {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
-                    </div>
-                  ))}
+                  {match.players.map((p, i) => {
+                    const isWinner = p.name === match.winnerName || p.teamName === match.winnerName;
+                    return (
+                      <div key={i} className={`history-card-player ${isWinner ? 'history-card-winner' : ''}`}>
+                        <span className="player-name-span">
+                          {p.teamName ? `[${p.teamName}] ` : ''}
+                          {p.name}
+                        </span>
+                        <span className="history-card-score">{p.totalScore}</span>
+                        {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="history-card-details">
@@ -187,6 +199,14 @@ export default function MatchHistory() {
           </div>
         )}
       </main>
+
+      {selectedMatch && (
+        <MatchDetailsModal
+          isOpen={!!selectedMatch}
+          onClose={() => setSelectedMatch(null)}
+          matchData={selectedMatch}
+        />
+      )}
     </div>
   );
 }

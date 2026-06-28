@@ -111,6 +111,12 @@ export interface ActionLogEntry {
   description: string;
 }
 
+export interface CompletedFrame {
+  frameNumber: number;
+  durationMs: number;
+  actionLog: ActionLogEntry[];
+}
+
 // ---------------------------------------------------------------------------
 // Game State
 // ---------------------------------------------------------------------------
@@ -183,6 +189,10 @@ export interface GameState {
   frameStartTime: string;
   /** Total elapsed match time in milliseconds (updated via UPDATE_TIMER). */
   matchTimerMs: number;
+  /** Duration of the current frame in milliseconds. */
+  currentFrameDurationMs: number;
+  /** List of completed frames in this match. */
+  completedFrames: CompletedFrame[];
 
   // --- Special States ---
   /**
@@ -267,8 +277,6 @@ export interface StartNextFrameAction {
 /** Tick the match timer. */
 export interface UpdateTimerAction {
   readonly type: 'UPDATE_TIMER';
-  /** New total elapsed match time in milliseconds. */
-  matchTimerMs: number;
 }
 
 /** Replace the entire state (for hydration / debugging). */

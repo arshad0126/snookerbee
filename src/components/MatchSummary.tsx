@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -18,6 +18,7 @@ interface FrameHistoryItem {
 
 export default function MatchSummary() {
   const location = useLocation();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { isGuest } = useAuth();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -98,13 +99,25 @@ export default function MatchSummary() {
             return {
               name: p.name,
               teamName: playerTeam?.name,
-              totalScore: p.score, // accumulated score (could be over multiple frames in components)
+              totalScore: p.score, // accumulated score
               highestBreak: p.highestBreak,
               framesWon,
               foulsCommitted: p.foulsCommitted,
               timeSpentMs: p.timeSpentMs,
             };
           }),
+          frames: [
+            ...(gameState.completedFrames || []).map(f => ({
+              frameNumber: f.frameNumber,
+              durationMs: f.durationMs,
+              actionLog: f.actionLog,
+            })),
+            {
+              frameNumber: gameState.frameNumber,
+              durationMs: gameState.currentFrameDurationMs,
+              actionLog: gameState.actionLog,
+            }
+          ],
         };
         saveMatchLocally(localRecord);
         setSaveStatus('saved');
@@ -143,11 +156,16 @@ export default function MatchSummary() {
 
         // Frame records with action log
         const frameRecs: MatchFrameRecord[] = [
+          ...(gameState.completedFrames || []).map(f => ({
+            frame_number: f.frameNumber,
+            duration_ms: f.durationMs,
+            action_log: f.actionLog,
+          })),
           {
             frame_number: gameState.frameNumber,
-            duration_ms: matchTimerMs, // approximated for the match/frame
+            duration_ms: gameState.currentFrameDurationMs,
             action_log: gameState.actionLog,
-          },
+          }
         ];
 
         const result = await saveMatch(matchRec, playerRecs, frameRecs);
@@ -164,6 +182,135 @@ export default function MatchSummary() {
       setSaveStatus('error');
       setDbError(error?.message || String(error));
     }
+  };
+
+  const handleDownloadCard = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw background gradient (Snooker Green Felt style)
+    const gradient = ctx.createLinearGradient(0, 0, 0, 600);
+    gradient.addColorStop(0, '#0F3C23');
+    gradient.addColorStop(1, '#071F11');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 800, 600);
+
+    // Golden frame border
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 14;
+    ctx.strokeRect(7, 7, 786, 586);
+
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(25, 25, 750, 550);
+
+    // Title
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(' SNOOKERBEE', 400, 75);
+
+    ctx.fillStyle = '#94D3A2';
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillText(
+      `Match Summary  •  ${mode.toUpperCase()} Mode  •  Best of ${bestOf}`,
+      400,
+      110
+    );
+    ctx.fillStyle = '#789F82';
+    const dateStr = new Date().toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    ctx.fillText(dateStr, 400, 138);
+
+    // Winner Banner
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.1)';
+    ctx.fillRect(120, 170, 560, 110);
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(120, 170, 560, 110);
+
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.fillText('WINNER', 400, 205);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.fillText(winnerName, 400, 255);
+
+    // Scoreboard header
+    ctx.fillStyle = '#8ABF97';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('PLAYER', 120, 320);
+    ctx.textAlign = 'center';
+    ctx.fillText('SCORE', 380, 320);
+    ctx.fillText('FRAMES', 480, 320);
+    ctx.fillText('MAX BREAK', 580, 320);
+    ctx.fillText('FOULS', 660, 320);
+
+    // Divider
+    ctx.strokeStyle = 'rgba(138, 191, 151, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(120, 335);
+    ctx.lineTo(680, 335);
+    ctx.stroke();
+
+    // Players listing
+    let y = 370;
+    players.forEach((p) => {
+      const pTeam = mode === 'team'
+        ? teams.find(t => t.playerIds.includes(p.id))
+        : undefined;
+
+      const framesWon = mode === 'team' && pTeam
+        ? (gameState.frameScores[pTeam.id] || 0)
+        : (gameState.frameScores[p.id] || 0);
+
+      const isWinner = p.name === winnerName || (pTeam && pTeam.name === winnerName);
+      ctx.fillStyle = isWinner ? '#D4AF37' : '#FFFFFF';
+      ctx.font = isWinner
+        ? 'bold 18px system-ui, sans-serif'
+        : '18px system-ui, sans-serif';
+
+      ctx.textAlign = 'left';
+      const nameText = pTeam ? `[${pTeam.name}] ${p.name}` : p.name;
+      ctx.fillText(nameText, 120, y);
+
+      ctx.textAlign = 'center';
+      ctx.fillText(String(p.score), 380, y);
+      ctx.fillText(String(framesWon), 480, y);
+      ctx.fillText(String(p.highestBreak), 580, y);
+      ctx.fillText(String(p.foulsCommitted), 660, y);
+
+      y += 40;
+    });
+
+    // Duration Footer
+    ctx.fillStyle = '#8ABF97';
+    ctx.font = '16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `Match Duration: ${formatTime(matchTimerMs)}  •  Reds: ${gameState.redsTotal}`,
+      400,
+      545
+    );
+
+    // Trigger download
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snookerbee_match_summary.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
@@ -300,6 +447,13 @@ export default function MatchSummary() {
               </button>
             )}
             <button
+              onClick={handleDownloadCard}
+              className="btn btn-secondary btn-lg"
+              style={{ flex: 1 }}
+            >
+              📤 Share Card
+            </button>
+            <button
               onClick={() => navigate('/dashboard')}
               className="btn btn-secondary btn-lg"
               style={{ flex: 1 }}
@@ -309,6 +463,9 @@ export default function MatchSummary() {
           </div>
         </div>
       </main>
+      
+      {/* Off-screen canvas for image generation */}
+      <canvas ref={canvasRef} width={800} height={600} style={{ display: 'none' }} />
     </div>
   );
 }

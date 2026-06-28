@@ -8,14 +8,7 @@ import {
   type MatchRecord,
   type MatchPlayerRecord,
 } from '../lib/database';
-
-type UnifiedMatch = {
-  id: string;
-  date: string;
-  mode: string;
-  players: { name: string; score: number; won: boolean }[];
-  winnerName: string;
-};
+import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 
 export default function Dashboard() {
   const { user, isGuest, signOut } = useAuth();
@@ -23,7 +16,8 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalGames: 0, highestBreak: 0, winRate: 0 });
-  const [recentMatches, setRecentMatches] = useState<UnifiedMatch[]>([]);
+  const [recentMatches, setRecentMatches] = useState<MatchDetailsData[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest';
   const avatarUrl = user?.user_metadata?.avatar_url;
@@ -61,16 +55,24 @@ export default function Dashboard() {
           setStats({ totalGames, highestBreak: maxBreak, winRate });
 
           // Map to unified match format
-          const mapped: UnifiedMatch[] = localHistory.slice(0, 5).map(m => ({
+          const mapped: MatchDetailsData[] = localHistory.slice(0, 5).map(m => ({
             id: m.id,
             date: new Date(m.createdAt).toLocaleDateString(),
             mode: m.mode,
+            bestOf: m.bestOf,
+            redsCount: m.redsCount,
+            durationMs: m.durationMs,
             winnerName: m.winnerName,
             players: m.players.map(p => ({
               name: p.name,
-              score: p.totalScore,
-              won: p.name === m.winnerName,
+              teamName: p.teamName,
+              totalScore: p.totalScore,
+              highestBreak: p.highestBreak,
+              framesWon: p.framesWon,
+              foulsCommitted: p.foulsCommitted,
+              timeSpentMs: p.timeSpentMs,
             })),
+            frames: m.frames,
           }));
           setRecentMatches(mapped);
         } else {
@@ -101,15 +103,22 @@ export default function Dashboard() {
           const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
           setStats({ totalGames, highestBreak: maxBreak, winRate });
 
-          const mapped: UnifiedMatch[] = dbHistory.slice(0, 5).map(m => ({
+          const mapped: MatchDetailsData[] = dbHistory.slice(0, 5).map(m => ({
             id: m.id || '',
             date: m.created_at ? new Date(m.created_at).toLocaleDateString() : '',
             mode: m.mode,
+            bestOf: m.best_of,
+            redsCount: m.reds_count,
+            durationMs: m.duration_ms,
             winnerName: m.winner_name,
             players: m.players.map(p => ({
               name: p.player_name,
-              score: p.total_score,
-              won: p.player_name === m.winner_name,
+              teamName: p.team_name ?? undefined,
+              totalScore: p.total_score,
+              highestBreak: p.highest_break,
+              framesWon: p.frames_won,
+              foulsCommitted: p.fouls_committed,
+              timeSpentMs: p.time_spent_ms,
             })),
           }));
           setRecentMatches(mapped);
@@ -219,7 +228,7 @@ export default function Dashboard() {
               {recentMatches.map(match => (
                 <div
                   key={match.id}
-                  onClick={() => navigate('/history')}
+                  onClick={() => setSelectedMatch(match)}
                   className="history-card card"
                 >
                   <div className="history-card-header">
@@ -227,12 +236,15 @@ export default function Dashboard() {
                     <span className="history-card-mode badge">{match.mode}</span>
                   </div>
                   <div className="history-card-players">
-                    {match.players.map((p, i) => (
-                      <span key={i} className={p.won ? 'history-card-winner' : ''}>
-                        {p.name} ({p.score})
-                        {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
-                      </span>
-                    ))}
+                    {match.players.map((p, i) => {
+                      const isWinner = p.name === match.winnerName || p.teamName === match.winnerName;
+                      return (
+                        <span key={i} className={isWinner ? 'history-card-winner' : ''}>
+                          {p.teamName ? `[${p.teamName}] ` : ''}{p.name} ({p.totalScore})
+                          {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -250,6 +262,14 @@ export default function Dashboard() {
           )}
         </section>
       </main>
+
+      {selectedMatch && (
+        <MatchDetailsModal
+          isOpen={!!selectedMatch}
+          onClose={() => setSelectedMatch(null)}
+          matchData={selectedMatch}
+        />
+      )}
     </div>
   );
 }

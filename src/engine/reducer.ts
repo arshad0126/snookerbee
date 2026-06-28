@@ -307,6 +307,8 @@ export function createInitialState(config: GameSetupConfig): GameState {
     matchStartTime: now,
     frameStartTime: now,
     matchTimerMs: 0,
+    currentFrameDurationMs: 0,
+    completedFrames: [],
     isFreeBall: false,
     winner: null,
   };
@@ -710,6 +712,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         description: `Frame ${state.frameNumber + 1} started`,
       });
 
+      const completedFrame = {
+        frameNumber: state.frameNumber,
+        durationMs: state.currentFrameDurationMs,
+        actionLog: state.actionLog,
+      };
+
       return {
         ...state,
         phase: 'reds',
@@ -723,6 +731,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         actionLog: [logEntry],
         undoStack: [],
         frameStartTime: now,
+        currentFrameDurationMs: 0,
+        completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
       };
@@ -732,9 +742,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     // UPDATE_TIMER — Tick the match timer
     // -----------------------------------------------------------------------
     case 'UPDATE_TIMER': {
+      if (state.phase === 'finished' || state.players.length === 0) {
+        return state;
+      }
+      const activePlayerIndex = state.turnOrder[state.currentPlayerIndex];
+      const updatedPlayers = state.players.map((p, idx) => {
+        if (idx === activePlayerIndex) {
+          return { ...p, timeSpentMs: p.timeSpentMs + 1000 };
+        }
+        return p;
+      });
       return {
         ...state,
-        matchTimerMs: action.matchTimerMs,
+        matchTimerMs: state.matchTimerMs + 1000,
+        currentFrameDurationMs: state.currentFrameDurationMs + 1000,
+        players: updatedPlayers,
       };
     }
 

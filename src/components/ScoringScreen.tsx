@@ -77,27 +77,11 @@ export default function ScoringScreen() {
 
     const interval = setInterval(() => {
       setVisitTimeMs(prev => prev + 1000);
-      const nextMatchTime = state.matchTimerMs + 1000;
-      const activePlayerIndex = state.turnOrder[state.currentPlayerIndex];
-      const updatedPlayers = state.players.map((p, idx) => {
-        if (idx === activePlayerIndex) {
-          return { ...p, timeSpentMs: p.timeSpentMs + 1000 };
-        }
-        return p;
-      });
-
-      dispatch({
-        type: 'SET_STATE',
-        state: {
-          ...state,
-          matchTimerMs: nextMatchTime,
-          players: updatedPlayers,
-        },
-      });
+      dispatch({ type: 'UPDATE_TIMER' });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state, dispatch]);
+  }, [state.phase, state.players.length, dispatch]);
 
   // Handle score pop animation when scores increase
   useEffect(() => {
@@ -440,7 +424,7 @@ export default function ScoringScreen() {
         </div>
 
         <div className="scoring-topbar-center">
-          <span className="match-timer-display">⏱ {formatTimer(state.matchTimerMs)}</span>
+          <span className="match-timer-display" title="Current Frame Time">⏱ {formatTimer(state.currentFrameDurationMs)}</span>
         </div>
 
         <div className="scoring-topbar-right">

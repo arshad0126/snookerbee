@@ -224,6 +224,7 @@ export default function GameSetup() {
                             type="text"
                             value={playerNames[pIdx] || ''}
                             onChange={(e) => handleNameChange(pIdx, e.target.value)}
+                            maxLength={20}
                             className="input"
                             placeholder={`Team A Player ${idx + 1}`}
                           />
@@ -242,6 +243,7 @@ export default function GameSetup() {
                             type="text"
                             value={playerNames[pIdx] || ''}
                             onChange={(e) => handleNameChange(pIdx, e.target.value)}
+                            maxLength={20}
                             className="input"
                             placeholder={`Team B Player ${idx + 1}`}
                           />
@@ -259,6 +261,7 @@ export default function GameSetup() {
                         type="text"
                         value={name}
                         onChange={(e) => handleNameChange(idx, e.target.value)}
+                        maxLength={20}
                         className="input"
                         placeholder={`Player ${idx + 1}`}
                       />

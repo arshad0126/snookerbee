@@ -121,35 +121,60 @@ export async function deleteMatch(matchId: string): Promise<boolean> {
 }
 
 /**
- * Get user stats (aggregated from match history)
+ * Fetch frames for a specific match from Supabase
  */
+export async function getMatchFrames(matchId: string): Promise<MatchFrameRecord[]> {
+  try {
+    const { data, error } = await supabase
+      .from('match_frames')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('frame_number', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching match frames:', error);
+    return [];
+  }
+}
+
 export async function getUserStats() {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: matches } = await supabase
+    // 1. Efficient COUNT query for total games
+    const { count, error: countError } = await supabase
       .from('matches')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id);
 
-    const { data: players } = await supabase
-      .from('match_players')
-      .select('highest_break, frames_won')
-      .in('match_id', (matches || []).map(m => m.id));
+    if (countError) throw countError;
+    const totalGames = count || 0;
 
-    const totalGames = matches?.length || 0;
-    const highestBreak = players?.reduce((max, p) => Math.max(max, p.highest_break || 0), 0) || 0;
+    // 2. Fetch the top highest_break directly from matching user matches via inner join
+    const { data: topBreakRecord, error: breakError } = await supabase
+      .from('match_players')
+      .select('highest_break, matches!inner(user_id)')
+      .eq('matches.user_id', user.id)
+      .order('highest_break', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (breakError) throw breakError;
+    const highestBreak = topBreakRecord?.highest_break || 0;
 
     return { totalGames, highestBreak };
-  } catch {
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
     return { totalGames: 0, highestBreak: 0 };
   }
 }
 
 // --- Local Storage Fallback for Guest Sessions ---
 
-const LOCAL_HISTORY_KEY = 'snooker-counter-history';
+const LOCAL_HISTORY_KEY = 'snookerbee-history';
 
 export interface LocalMatchRecord {
   id: string;
@@ -167,6 +192,11 @@ export interface LocalMatchRecord {
     framesWon: number;
     foulsCommitted: number;
     timeSpentMs: number;
+  }[];
+  frames: {
+    frameNumber: number;
+    durationMs: number;
+    actionLog: any[];
   }[];
 }
 

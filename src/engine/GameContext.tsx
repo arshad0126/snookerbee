@@ -62,6 +62,8 @@ const PLACEHOLDER_STATE: GameState = {
   matchStartTime: '',
   frameStartTime: '',
   matchTimerMs: 0,
+  currentFrameDurationMs: 0,
+  completedFrames: [],
   isFreeBall: false,
   winner: null,
 };
