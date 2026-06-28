@@ -109,7 +109,7 @@
 }
 
 .btn-topbar-icon {
-  background: rgba(18, 22, 28, 0.6);
+  background: var(--bg-card-solid);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   width: 36px;
@@ -121,16 +121,17 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: var(--text-sm);
+  box-shadow: 0 1px 2px var(--shadow-color);
 }
 
 .btn-topbar-icon:hover {
-  background: rgba(36, 40, 44, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage-dark);
 }
 
 .btn-end-frame {
-  background: rgba(18, 22, 28, 0.6);
+  background: var(--bg-card-solid);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   padding: 0 var(--space-md);
@@ -140,12 +141,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px var(--shadow-color);
 }
 
 .btn-end-frame:hover {
-  background: rgba(36, 40, 44, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage-dark);
 }
 
 /* --- Multiplayer Player Cards row --- */
@@ -606,8 +608,8 @@
   opacity: 0.15;
   cursor: not-allowed;
   filter: grayscale(0.85);
-  background: rgba(18, 22, 28, 0.35) !important;
-  border-color: rgba(255, 255, 255, 0.03) !important;
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color-dim) !important;
 }
 
 .scoring-ball-card.dimmed .ball-card-name, 
@@ -714,9 +716,9 @@
 }
 
 .btn-action-undo:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: #24282C;
-  color: var(--text-primary);
+  border-color: var(--accent-sage);
+  background: var(--bg-secondary);
+  color: var(--accent-sage-dark);
   transform: translateY(-1px);
 }
 
