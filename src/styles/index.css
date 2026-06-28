@@ -119,43 +119,43 @@
 }
 
 body.light-theme {
-  --bg-primary: #FAF8F5; /* Warm Linen Cream background */
-  --bg-secondary: #EDF3EF; /* Soothing Sage Green tint background */
+  --bg-primary: #FAF9F6; /* Warm Paper Cream background */
+  --bg-secondary: #EEF4F8; /* Soothing Sky Blue tint background */
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-card-solid: #ffffff;
-  --bg-overlay: rgba(26, 38, 30, 0.25);
-  --text-primary: #1C2E24; /* Deep Forest Green/Slate for high readability */
-  --text-secondary: #556B5C; /* Warm herbal olive text */
-  --text-muted: #7E9484; /* Soft sage grey for subtle info */
+  --bg-overlay: rgba(30, 41, 59, 0.25);
+  --text-primary: #1C2538; /* Deep Indigo Slate for high readability */
+  --text-secondary: #53627E; /* Slate blue secondary text */
+  --text-muted: #7E8DA8; /* Muted periwinkle slate */
   
   --bg-topbar: #ffffff;
-  --bg-status-bar: #EDF3EF;
+  --bg-status-bar: #EEF4F8;
   --bg-ball-card: #ffffff;
   --bg-dialog: #ffffff;
   --bg-drawer: #ffffff;
-  --bg-drawer-header: #FAF8F5;
-  --bg-drawer-subbar: #EDF3EF;
-  --bg-btn-secondary: #EDF3EF;
-  --border-color: rgba(28, 46, 36, 0.08); /* Organic soft border */
-  --border-color-dim: rgba(28, 46, 36, 0.04);
-  --shadow-color: rgba(28, 46, 36, 0.04);
+  --bg-drawer-header: #FAF9F6;
+  --bg-drawer-subbar: #EEF4F8;
+  --bg-btn-secondary: #EEF4F8;
+  --border-color: rgba(28, 37, 56, 0.08); /* Soft slate border */
+  --border-color-dim: rgba(28, 37, 56, 0.04);
+  --shadow-color: rgba(28, 37, 56, 0.04);
 
-  /* Overwrite accents for fresh pastel feel in light mode */
-  --accent-sage: #44B384; /* Mint Sage */
-  --accent-sage-light: #7BE0B5;
-  --accent-sage-dark: #238A60;
-  --accent-lavender: #8F76E2; /* Pastel lavender */
-  --accent-lavender-light: #C0B1F8;
-  --accent-peach: #F08E6E; /* Soothing coral peach */
-  --accent-peach-light: #FFBAA3;
+  /* Overwrite accents for fresh pastel periwinkle feel in light mode */
+  --accent-sage: #4E95FF; /* Soothing Sky Blue */
+  --accent-sage-light: #9BC5FF;
+  --accent-sage-dark: #226FD6;
+  --accent-lavender: #9A8BFA; /* Soothing lavender */
+  --accent-lavender-light: #CBBFFE;
+  --accent-peach: #F39B7A; /* Soothing coral peach */
+  --accent-peach-light: #FFCAB8;
   
   /* Scoring Screen light mode overrides */
-  --felt-dark: #D7E5DC; /* Soft light Sage Felt */
-  --felt-light: #EDF5F0; /* Soft warm felt */
+  --felt-dark: #D6E3ED; /* Soft light Periwinkle Felt */
+  --felt-light: #EEF5FA; /* Soft warm felt */
   --felt-text: var(--text-primary);
   --felt-card: rgba(255, 255, 255, 0.88);
-  --felt-card-active: rgba(68, 179, 132, 0.08);
-  --felt-border: rgba(28, 46, 36, 0.06);
+  --felt-card-active: rgba(78, 149, 255, 0.08);
+  --felt-border: rgba(28, 37, 56, 0.06);
 }
 
 /* --- Reset & Base --- */
