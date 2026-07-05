@@ -33,6 +33,7 @@ export default function ScoringScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNextFrameSetupOpen, setIsNextFrameSetupOpen] = useState(false);
   const [isPreviousFramesOpen, setIsPreviousFramesOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [nextFrameBreakerId, setNextFrameBreakerId] = useState('');
   const [nextFramePlayersOrder, setNextFramePlayersOrder] = useState<Player[]>([]);
 
@@ -78,7 +79,7 @@ export default function ScoringScreen() {
 
   // Timer Tick and player timing
   useEffect(() => {
-    if (state.phase === 'finished' || state.players.length === 0) return;
+    if (state.phase === 'finished' || state.players.length === 0 || isPaused) return;
 
     const interval = setInterval(() => {
       setVisitTimeMs(prev => prev + 1000);
@@ -86,7 +87,7 @@ export default function ScoringScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.phase, state.players.length, dispatch]);
+  }, [state.phase, state.players.length, isPaused, dispatch]);
 
   // Handle score pop animation when scores increase
   useEffect(() => {
@@ -137,6 +138,7 @@ export default function ScoringScreen() {
 
   // Ball Selection Eligibility Helper
   const isBallEnabled = (ball: BallType): boolean => {
+    if (isPaused) return false;
     if (state.phase === 'finished') return false;
     if (state.phase === 'respottedBlack') return ball === 'black';
     if (state.phase === 'colorsInOrder') return ball === state.currentColorTarget;
@@ -482,6 +484,22 @@ export default function ScoringScreen() {
             )}
           </button>
           <button
+            onClick={() => setIsPaused(prev => !prev)}
+            className={`btn-topbar-icon ${isPaused ? 'active-pause' : ''}`}
+            title={isPaused ? 'Resume Play' : 'Pause Play'}
+          >
+            {isPaused ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+            )}
+          </button>
+          <button
             onClick={() => setIsPreviousFramesOpen(true)}
             className="btn-topbar-icon"
             title="Previous Frames"
@@ -551,7 +569,9 @@ export default function ScoringScreen() {
             <span className="status-bar-label">STRIKER:</span>
             <span className="status-bar-value highlight-white">{activePlayer.name}</span>
           </div>
-          <span className="active-match-pill">ACTIVE</span>
+          <span className={`active-match-pill ${isPaused ? 'paused' : ''}`}>
+            {isPaused ? 'PAUSED' : 'ACTIVE'}
+          </span>
         </div>
 
         {/* Central Controls Area */}
@@ -591,7 +611,7 @@ export default function ScoringScreen() {
           <div className="action-buttons-row-premium">
             <button
               onClick={handleUndo}
-              disabled={state.undoStack.length === 0}
+              disabled={state.undoStack.length === 0 || isPaused}
               className="btn-action-premium btn-action-undo"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}>
@@ -602,9 +622,11 @@ export default function ScoringScreen() {
             </button>
             <button
               onClick={() => {
+                if (isPaused) return;
                 setIsInOff(false);
                 setIsFoulOpen(true);
               }}
+              disabled={isPaused}
               className="btn-action-premium btn-action-foul"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px'}}>
@@ -614,7 +636,7 @@ export default function ScoringScreen() {
               </svg>
               FOUL
             </button>
-            <button onClick={handleMiss} className="btn-action-premium btn-action-pass">
+            <button onClick={handleMiss} disabled={isPaused} className="btn-action-premium btn-action-pass">
               PASS ➔
             </button>
           </div>

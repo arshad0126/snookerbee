@@ -1917,3 +1917,22 @@ body.light-theme .orientation-banner-dismiss:hover {
   color: var(--text-primary);
 }
 
+/* --- Pause Button & Active match status (orange-warning) --- */
+.active-match-pill.paused {
+  background: rgba(245, 158, 11, 0.1);
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
+.btn-topbar-icon.active-pause {
+  border-color: #F59E0B !important;
+  color: #F59E0B !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}
+
+body.light-theme .btn-topbar-icon.active-pause {
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+
