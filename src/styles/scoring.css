@@ -1132,43 +1132,318 @@
   transform: translateY(-1px);
 }
 
-/* --- Orientation Warning --- */
-.orientation-warning {
+/* --- Orientation Banner (Non-blocking) --- */
+.orientation-banner {
   position: fixed;
-  inset: 0;
-  background: var(--bg-topbar);
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-orientation);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideInUp var(--transition-normal) ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.orientation-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orientation-banner-icon {
+  font-size: 20px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.orientation-banner-text {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.orientation-banner-dismiss {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.orientation-banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* Hide banner entirely in landscape */
+@media (orientation: landscape) {
+  .orientation-banner {
+    display: none;
+  }
+}
+
+/* --- Foul Counter Badge --- */
+.player-card-fouls {
+  color: #EF4444;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* --- Previous Frames Modal --- */
+.prev-frames-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 520px;
+  max-height: 80vh;
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn var(--transition-normal) ease-out;
+  z-index: var(--z-modal);
+  overflow: hidden;
+}
+
+.prev-frames-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.prev-frames-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.prev-frames-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.prev-frames-close-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.prev-frames-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.prev-frames-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
-  color: var(--text-primary);
+  padding: var(--space-2xl) var(--space-lg);
   text-align: center;
-  padding: var(--space-xl);
 }
 
-.orientation-icon {
-  font-size: 72px;
-  animation: bounce 2s ease-in-out infinite;
+.prev-frames-empty-icon {
+  font-size: 36px;
+  margin-bottom: var(--space-md);
+  opacity: 0.4;
 }
 
-.orientation-title {
-  font-size: var(--text-xl);
-  font-weight: 700;
-}
-
-.orientation-text {
+.prev-frames-empty-text {
   font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--text-secondary);
-  max-width: 280px;
+  margin: 0 0 var(--space-xs);
 }
 
-/* Hide warning in landscape */
-@media (orientation: landscape) {
-  .orientation-warning {
-    display: none;
-  }
+.prev-frames-empty-subtext {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.prev-frames-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.prev-frame-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.prev-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-btn-secondary);
+  border-bottom: 1px solid var(--border-color-dim);
+}
+
+.prev-frame-number {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.prev-frame-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.prev-frame-duration {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.prev-frame-winner-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-sage);
+  background: rgba(16, 185, 129, 0.08);
+  padding: 2px 8px;
+  border-radius: 100px;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+body.light-theme .prev-frame-winner-badge {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent-sage);
+  border-color: rgba(37, 99, 235, 0.15);
+}
+
+.prev-frame-players {
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.prev-frame-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.prev-frame-player-row.winner {
+  background: rgba(16, 185, 129, 0.06);
+}
+
+body.light-theme .prev-frame-player-row.winner {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.prev-frame-player-name-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.prev-frame-player-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+body.light-theme .prev-frame-player-avatar {
+  background: var(--bg-btn-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.prev-frame-player-name {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prev-frame-winner-icon {
+  color: var(--accent-sage);
+  margin-left: 4px;
+  font-size: 10px;
+}
+
+.prev-frame-player-stats {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.prev-frame-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 42px;
+}
+
+.prev-frame-stat-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.prev-frame-stat-value.prev-frame-fouls-val {
+  color: #EF4444;
+}
+
+.prev-frame-stat-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 /* --- Frame/Match Summary Overlay --- */
@@ -1247,6 +1522,14 @@
   font-size: var(--text-lg);
   font-weight: 700;
   color: var(--text-muted);
+}
+
+.summary-stats-title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .summary-stats {
@@ -1332,3 +1615,305 @@
     margin-top: 0;
   }
 }
+
+/* =============================================
+   LIGHT THEME — Scoring Screen Overrides
+   ============================================= */
+
+body.light-theme .scoring-topbar {
+  border-bottom-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .frame-pill {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent-sage);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+
+/* Player cards — visible elevation */
+body.light-theme .player-panel-horizontal {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .player-panel-horizontal.active {
+  border-color: var(--accent-sage);
+  background: rgba(37, 99, 235, 0.04);
+  box-shadow:
+    0 4px 16px rgba(37, 99, 235, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .player-avatar-circle {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+body.light-theme .player-panel-horizontal.active .player-avatar-circle {
+  background: var(--accent-sage);
+  border-color: var(--accent-sage-light);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.25);
+}
+
+body.light-theme .breaker-badge {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+body.light-theme .player-panel-horizontal.active .breaker-badge {
+  background: var(--accent-sage);
+  border-color: var(--accent-sage-light);
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.25);
+}
+
+body.light-theme .player-card-wins {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* Score pill — light mode */
+body.light-theme .player-score-pill {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .player-panel-horizontal.active .player-score-pill {
+  border-color: var(--accent-sage);
+  color: var(--accent-sage);
+  background: rgba(37, 99, 235, 0.04);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.05),
+    0 0 8px rgba(37, 99, 235, 0.12);
+}
+
+body.light-theme .player-break-badge {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+body.light-theme .player-panel-horizontal.active .player-break-badge {
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--accent-sage);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+body.light-theme .player-card-bottom {
+  border-top-color: var(--border-color-dim);
+  color: var(--text-muted);
+}
+
+body.light-theme .player-card-visit {
+  color: var(--accent-sage);
+}
+
+body.light-theme .glowing-active-dot {
+  background: var(--accent-sage);
+  box-shadow: 0 0 8px var(--accent-sage);
+}
+
+/* Status bar */
+body.light-theme .scoring-status-bar {
+  background: #FFFFFF;
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .status-bar-value.highlight-white {
+  color: var(--text-primary);
+}
+
+body.light-theme .active-match-pill {
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--accent-sage);
+  border-color: rgba(37, 99, 235, 0.12);
+}
+
+body.light-theme .on-ball-text-label.color-any {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Ball cards — dimmed state */
+body.light-theme .scoring-ball-card.dimmed {
+  opacity: 0.35;
+  background: var(--bg-secondary) !important;
+}
+
+/* Action buttons */
+body.light-theme .btn-action-undo {
+  background: #FFFFFF;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .btn-action-undo:hover:not(:disabled) {
+  border-color: var(--accent-sage);
+  background: rgba(37, 99, 235, 0.04);
+  color: var(--accent-sage);
+}
+
+body.light-theme .btn-action-premium:disabled {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-color-dim) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Reset frame */
+body.light-theme .btn-reset-frame {
+  color: rgba(220, 38, 38, 0.6);
+}
+
+body.light-theme .btn-reset-frame:hover {
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.06);
+}
+
+/* Foul dialog */
+body.light-theme .foul-dialog-card {
+  box-shadow: var(--shadow-xl);
+}
+
+body.light-theme .foul-ball-btn:hover:not(.selected) {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+body.light-theme .foul-penalty-btn:hover:not(.selected) {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+body.light-theme .foul-checkbox-label {
+  background: rgba(0, 0, 0, 0.01);
+  border-color: var(--border-color-dim);
+}
+
+body.light-theme .foul-checkbox-label:hover {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: var(--border-color);
+}
+
+body.light-theme .btn-foul-cancel {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+body.light-theme .btn-foul-cancel:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* Action log drawer */
+body.light-theme .action-log-drawer {
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .action-log-entry .log-time {
+  color: var(--text-muted);
+}
+
+body.light-theme .action-log-entry.log-pot {
+  color: #16A34A;
+}
+
+body.light-theme .action-log-entry.log-foul {
+  color: #DC2626;
+  background: rgba(220, 38, 38, 0.04);
+}
+
+body.light-theme .action-log-entry.log-turn {
+  color: var(--text-muted);
+}
+
+body.light-theme .action-log-entry.log-undo {
+  color: #2563EB;
+}
+
+body.light-theme .action-log-entry.log-frame {
+  color: var(--accent-peach);
+}
+
+/* Summary overlay */
+body.light-theme .summary-overlay {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+body.light-theme .summary-card {
+  box-shadow: var(--shadow-xl);
+}
+
+/* Menu overlay */
+body.light-theme .menu-overlay-card {
+  box-shadow: var(--shadow-xl);
+}
+
+/* Sync dot */
+body.light-theme .sync-dot {
+  background: var(--accent-sage);
+  box-shadow: 0 0 6px var(--accent-sage);
+}
+
+/* Topbar buttons */
+body.light-theme .btn-topbar-icon {
+  background: #FFFFFF;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .btn-topbar-icon:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage);
+}
+
+body.light-theme .btn-topbar-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+body.light-theme .btn-end-frame {
+  background: #FFFFFF;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .btn-end-frame:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage);
+}
+
+/* Orientation banner light theme */
+body.light-theme .orientation-banner {
+  background: rgba(255, 255, 255, 0.92);
+  border-top-color: var(--border-color);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .orientation-banner-text {
+  color: var(--text-secondary);
+}
+
+body.light-theme .orientation-banner-dismiss {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-muted);
+}
+
+body.light-theme .orientation-banner-dismiss:hover {
+  background: var(--bg-btn-secondary);
+  color: var(--text-primary);
+}
+

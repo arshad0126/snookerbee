@@ -111,10 +111,21 @@ export interface ActionLogEntry {
   description: string;
 }
 
+export interface CompletedFramePlayerStats {
+  playerId: string;
+  playerName: string;
+  score: number;
+  highestBreak: number;
+  foulsCommitted: number;
+}
+
 export interface CompletedFrame {
   frameNumber: number;
   durationMs: number;
   actionLog: ActionLogEntry[];
+  winnerId: string | null;
+  winnerName: string | null;
+  playerStats: CompletedFramePlayerStats[];
 }
 
 // ---------------------------------------------------------------------------

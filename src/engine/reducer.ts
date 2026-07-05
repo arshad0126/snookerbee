@@ -19,6 +19,7 @@
 
 import type {
   BallType,
+  CompletedFrame,
   GameAction,
   GameSetupConfig,
   GameState,
@@ -726,10 +727,32 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         description: `Frame ${state.frameNumber + 1} started`,
       });
 
-      const completedFrame = {
+      // Determine frame winner for historical record
+      const frameWinnerId = determineFrameWinner(state);
+      let frameWinnerName: string | null = null;
+      if (frameWinnerId) {
+        if (state.mode === 'team') {
+          const winnerTeam = state.teams.find(t => t.id === frameWinnerId);
+          frameWinnerName = winnerTeam?.name ?? null;
+        } else {
+          const winnerPlayer = state.players.find(p => p.id === frameWinnerId);
+          frameWinnerName = winnerPlayer?.name ?? null;
+        }
+      }
+
+      const completedFrame: CompletedFrame = {
         frameNumber: state.frameNumber,
         durationMs: state.currentFrameDurationMs,
         actionLog: state.actionLog,
+        winnerId: frameWinnerId,
+        winnerName: frameWinnerName,
+        playerStats: state.players.map(p => ({
+          playerId: p.id,
+          playerName: p.name,
+          score: p.score,
+          highestBreak: p.highestBreak,
+          foulsCommitted: p.foulsCommitted,
+        })),
       };
 
       return {

@@ -12,6 +12,8 @@ export type {
   Team,
   ActionLogType,
   ActionLogEntry,
+  CompletedFrame,
+  CompletedFramePlayerStats,
   GameState,
   GameAction,
   PotBallAction,

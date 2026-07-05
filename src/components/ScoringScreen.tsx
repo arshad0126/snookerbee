@@ -13,6 +13,7 @@ import OrientationWarning from './OrientationWarning';
 import FoulDialog from './FoulDialog';
 import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
+import PreviousFramesModal from './PreviousFramesModal';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -31,6 +32,7 @@ export default function ScoringScreen() {
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNextFrameSetupOpen, setIsNextFrameSetupOpen] = useState(false);
+  const [isPreviousFramesOpen, setIsPreviousFramesOpen] = useState(false);
   const [nextFrameBreakerId, setNextFrameBreakerId] = useState('');
   const [nextFramePlayersOrder, setNextFramePlayersOrder] = useState<Player[]>([]);
 
@@ -334,6 +336,10 @@ export default function ScoringScreen() {
         const firstPlayer = state.players.find(p => p.id === t.playerIds[0]);
         const firstPlayerName = firstPlayer ? firstPlayer.name : '';
         const isBreaker = state.teams[0].playerIds.includes(state.players[state.turnOrder[0]].id) ? idx === 0 : idx === 1;
+        const teamFouls = t.playerIds.reduce((sum, pid) => {
+          const player = state.players.find(p => p.id === pid);
+          return sum + (player?.foulsCommitted ?? 0);
+        }, 0);
 
         return (
           <div
@@ -354,7 +360,10 @@ export default function ScoringScreen() {
                 </div>
                 {isBreaker && <span className="breaker-badge">B</span>}
               </div>
-              <span className="player-card-wins">W: {frameWins}</span>
+              <span className="player-card-wins">
+                W:{frameWins}
+                {teamFouls > 0 && <span className="player-card-fouls">F:{teamFouls}</span>}
+              </span>
             </div>
             
             <div className="player-card-middle">
@@ -404,7 +413,10 @@ export default function ScoringScreen() {
               </div>
               {isBreaker && <span className="breaker-badge">B</span>}
             </div>
-            <span className="player-card-wins">W: {frameWins}</span>
+            <span className="player-card-wins">
+              W:{frameWins}
+              {p.foulsCommitted > 0 && <span className="player-card-fouls">F:{p.foulsCommitted}</span>}
+            </span>
           </div>
           
           <div className="player-card-middle">
@@ -468,6 +480,19 @@ export default function ScoringScreen() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
             )}
+          </button>
+          <button
+            onClick={() => setIsPreviousFramesOpen(true)}
+            className="btn-topbar-icon"
+            title="Previous Frames"
+            disabled={state.completedFrames.length === 0}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
           </button>
           <button onClick={() => setIsMenuOpen(true)} className="btn-topbar-icon" title="Menu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -623,6 +648,13 @@ export default function ScoringScreen() {
       />
 
       {/* Action Log Drawer */}
+      {/* Previous Frames Modal */}
+      <PreviousFramesModal
+        isOpen={isPreviousFramesOpen}
+        onClose={() => setIsPreviousFramesOpen(false)}
+        completedFrames={state.completedFrames}
+      />
+
       <ActionLogDrawer
         isOpen={isLogOpen}
         onClose={() => setIsLogOpen(false)}
