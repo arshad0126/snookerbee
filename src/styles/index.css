@@ -116,6 +116,17 @@
   --border-color: rgba(255, 255, 255, 0.08);
   --border-color-dim: rgba(255, 255, 255, 0.04);
   --shadow-color: rgba(0, 0, 0, 0.6);
+
+  /* Gold accent (winner highlights) */
+  --accent-gold: #fbbf24;
+
+  /* Gradients — reuse accent tokens so they adapt across themes */
+  --gradient-primary: linear-gradient(135deg, var(--accent-sage-light) 0%, var(--accent-sage-dark) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--accent-sage) 0%, var(--accent-lavender) 100%);
+  --gradient-score: linear-gradient(135deg, var(--accent-sage-light) 0%, var(--accent-sage) 100%);
+  --gradient-active-card: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(139, 92, 246, 0.10) 100%);
+  --gradient-danger: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+  --gradient-success: linear-gradient(135deg, #39d38d 0%, #05b064 100%);
 }
 
 body.light-theme {
@@ -168,6 +179,10 @@ body.light-theme {
   --felt-card: rgba(255, 255, 255, 0.90);
   --felt-card-active: rgba(37, 99, 235, 0.06);
   --felt-border: rgba(15, 23, 42, 0.10);
+
+  /* Winner gold + active-card gradient tuned for the light (blue) palette */
+  --accent-gold: #D97706;
+  --gradient-active-card: linear-gradient(135deg, rgba(37, 99, 235, 0.10) 0%, rgba(124, 58, 237, 0.06) 100%);
 }
 
 /* --- Reset & Base --- */

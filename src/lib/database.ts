@@ -107,10 +107,15 @@ export async function getMatchHistory(): Promise<(MatchRecord & { players: Match
  */
 export async function deleteMatch(matchId: string): Promise<boolean> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Scope delete to the current user as defense-in-depth alongside RLS
     const { error } = await supabase
       .from('matches')
       .delete()
-      .eq('id', matchId);
+      .eq('id', matchId)
+      .eq('user_id', user.id);
 
     if (error) throw error;
     return true;

@@ -10,13 +10,13 @@ export function useTheme() {
   });
 
   useEffect(() => {
-    if (theme === 'light') {
-      document.body.classList.add('light-theme');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.body.classList.remove('light-theme');
-      localStorage.setItem('theme', 'dark');
-    }
+    const isLight = theme === 'light';
+    document.body.classList.toggle('light-theme', isLight);
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+
+    // Keep the browser chrome / status bar color in sync with the active theme
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', isLight ? '#F5F6F8' : '#07090b');
   }, [theme]);
 
   const toggleTheme = () => {

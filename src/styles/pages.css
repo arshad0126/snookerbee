@@ -505,7 +505,7 @@
 }
 
 .btn-setup-next {
-  background: var(--accent-sage);
+  background: var(--gradient-primary);
   color: #FFFFFF;
   padding: 10px 28px;
   border-radius: var(--radius-md);
@@ -515,7 +515,7 @@
 }
 
 .btn-setup-next:hover:not(:disabled) {
-  background: var(--accent-sage-light);
+  filter: brightness(1.06);
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(5, 176, 100, 0.35);
 }
@@ -588,9 +588,9 @@
   background: rgba(255, 255, 255, 0.04);
   border: none;
   color: var(--text-secondary);
-  font-size: 8px;
-  width: 22px;
-  height: 20px;
+  font-size: 10px;
+  width: 32px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
