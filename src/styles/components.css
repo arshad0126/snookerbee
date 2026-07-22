@@ -36,13 +36,13 @@
 }
 
 .btn-primary {
-  background: var(--accent-sage);
-  color: var(--text-inverse);
+  background: var(--gradient-primary);
+  color: #ffffff;
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
 }
 
 .btn-primary:hover {
-  background: var(--accent-sage-light);
+  filter: brightness(1.06);
   box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   transform: translateY(-1px);
 }

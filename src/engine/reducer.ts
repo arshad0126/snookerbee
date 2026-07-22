@@ -56,14 +56,18 @@ function generateId(prefix: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a deep clone of the game state, excluding the undoStack
- * to prevent nested stacks from consuming excessive memory.
+ * Creates a snapshot of the game state for the undo stack.
+ *
+ * The reducer treats state immutably — every mutation replaces the affected
+ * arrays/objects via spread or `.map` rather than mutating in place. That means
+ * a shallow copy is a valid, stable snapshot: the referenced sub-objects
+ * (players, teams, completedFrames, actionLog, …) are never modified after the
+ * fact, so we can share them by reference instead of deep-cloning on every tap.
+ *
+ * The undoStack is reset to empty in the snapshot to avoid nesting stacks.
  */
 function cloneStateForUndo(state: GameState): GameState {
-  // We strip the undoStack from the clone to avoid deeply nested copies.
-  // When we restore from undo, we reconstruct the undo stack.
-  const { undoStack: _, ...rest } = state;
-  return JSON.parse(JSON.stringify({ ...rest, undoStack: [] })) as GameState;
+  return { ...state, undoStack: [] };
 }
 
 // ---------------------------------------------------------------------------

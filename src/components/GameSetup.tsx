@@ -305,25 +305,34 @@ export default function GameSetup() {
                   key={idx}
                   className={`breaking-option-row ${breakingPlayerIndex === idx ? 'selected' : ''}`}
                 >
-                  <div className="rotation-controls">
-                    <button
-                      onClick={() => movePlayer(idx, 'up')}
-                      disabled={idx === 0}
-                      className="rotation-arrow-btn"
-                      title="Move Up"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      onClick={() => movePlayer(idx, 'down')}
-                      disabled={idx === playerNames.length - 1}
-                      className="rotation-arrow-btn"
-                      title="Move Down"
-                    >
-                      ▼
-                    </button>
-                  </div>
-                  <span className="breaking-option-name">{idx + 1}. {name}</span>
+                  {/* Turn order in team mode is fixed by team interleaving, so
+                      reordering is only offered for 1v1 / free-for-all. */}
+                  {gameMode !== 'team' && (
+                    <div className="rotation-controls">
+                      <button
+                        onClick={() => movePlayer(idx, 'up')}
+                        disabled={idx === 0}
+                        className="rotation-arrow-btn"
+                        title="Move Up"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => movePlayer(idx, 'down')}
+                        disabled={idx === playerNames.length - 1}
+                        className="rotation-arrow-btn"
+                        title="Move Down"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
+                  <span className="breaking-option-name">
+                    {idx + 1}. {name}
+                    {gameMode === 'team' && (
+                      <span style={{ color: 'var(--text-muted)' }}> · Team {idx % 2 === 0 ? 'A' : 'B'}</span>
+                    )}
+                  </span>
                   {breakingPlayerIndex === idx && (
                     <span className="breaking-option-badge">Breaks Off</span>
                   )}
