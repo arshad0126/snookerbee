@@ -1,0 +1,239 @@
+/* ============================================================================
+   SnookerBee v2 — Design Tokens
+   Apple-inspired: light, calm, generous, precise.
+   Every colour, radius, spacing, type and motion value in the app comes from
+   here. Nothing downstream hardcodes a raw value.
+   ============================================================================ */
+
+:root {
+  /* --- Surfaces (light mode, primary) --- */
+  --bg-base:         #F2F2F7;   /* app background — iOS systemGroupedBackground */
+  --bg-elevated:     #FFFFFF;   /* cards, sheets, list rows */
+  --bg-secondary:    #FFFFFF;
+  --bg-tertiary:     #F9F9FB;
+  --fill-quaternary: #E5E5EA;   /* inactive segment, track backgrounds */
+
+  /* --- Labels --- */
+  --label-primary:   #1C1C1E;
+  --label-secondary: rgba(60, 60, 67, 0.60);
+  --label-tertiary:  rgba(60, 60, 67, 0.30);
+  --separator:       rgba(60, 60, 67, 0.18);
+  --separator-opaque:#C6C6C8;
+
+  /* --- Interactive / semantic --- */
+  --accent:  #007AFF;   /* the single interactive blue */
+  --accent-tint: rgba(0, 122, 255, 0.10);
+  --success: #34C759;
+  --warning: #FF9F0A;
+  --danger:  #FF3B30;
+  --danger-tint: rgba(255, 59, 48, 0.10);
+
+  /* --- Ball palette (the only saturated colour in the app) --- */
+  --ball-red:    #D6252B;
+  --ball-yellow: #F5B301;
+  --ball-green:  #1E8E4E;
+  --ball-brown:  #8A5A2B;
+  --ball-blue:   #0B63C5;
+  --ball-pink:   #E8628C;
+  --ball-black:  #1A1A1A;
+  --ball-white:  #FAFAF7;
+  /* Label colour to place ON a ball (contrast-safe per ball, see §NFR a11y) */
+  --on-ball-red:    #FFFFFF;
+  --on-ball-yellow: #1A1A1A;
+  --on-ball-green:  #FFFFFF;
+  --on-ball-brown:  #FFFFFF;
+  --on-ball-blue:   #FFFFFF;
+  --on-ball-pink:   #1A1A1A;
+  --on-ball-black:  #FFFFFF;
+  --on-ball-white:  #1A1A1A;
+
+  /* --- Typography --- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter var",
+    "Inter", system-ui, sans-serif;
+  --font-numeric: "SF Mono", ui-monospace, "JetBrains Mono", "Space Mono", monospace;
+
+  /* Sizes are rem (off the root) so Dynamic Type / browser zoom scale text.
+     Root stays at the UA default (usually 16px) — never override html font-size. */
+  --type-large-title-size: 2.125rem;  /* 34 */
+  --type-large-title-weight: 700;
+  --type-large-title-lh: 2.5625rem;    /* 41 */
+  --type-large-title-tracking: 0.023em;
+
+  --type-title-1-size: 1.75rem;        /* 28 */
+  --type-title-1-weight: 700;
+  --type-title-1-lh: 2.125rem;         /* 34 */
+  --type-title-1-tracking: 0.021em;
+
+  --type-title-2-size: 1.375rem;       /* 22 */
+  --type-title-2-weight: 600;
+  --type-title-2-lh: 1.75rem;          /* 28 */
+  --type-title-2-tracking: -0.017em;
+
+  --type-title-3-size: 1.25rem;        /* 20 */
+  --type-title-3-weight: 600;
+  --type-title-3-lh: 1.5625rem;        /* 25 */
+  --type-title-3-tracking: -0.023em;
+
+  --type-headline-size: 1.0625rem;     /* 17 */
+  --type-headline-weight: 600;
+  --type-headline-lh: 1.375rem;        /* 22 */
+  --type-headline-tracking: -0.025em;
+
+  --type-body-size: 1.0625rem;         /* 17 */
+  --type-body-weight: 400;
+  --type-body-lh: 1.375rem;            /* 22 */
+  --type-body-tracking: -0.025em;
+
+  --type-callout-size: 1rem;           /* 16 */
+  --type-callout-weight: 400;
+  --type-callout-lh: 1.3125rem;        /* 21 */
+  --type-callout-tracking: -0.020em;
+
+  --type-subhead-size: 0.9375rem;      /* 15 */
+  --type-subhead-weight: 400;
+  --type-subhead-lh: 1.25rem;          /* 20 */
+  --type-subhead-tracking: -0.015em;
+
+  --type-footnote-size: 0.8125rem;     /* 13 */
+  --type-footnote-weight: 400;
+  --type-footnote-lh: 1.125rem;        /* 18 */
+  --type-footnote-tracking: -0.006em;
+
+  --type-caption-size: 0.75rem;        /* 12 */
+  --type-caption-weight: 400;
+  --type-caption-lh: 1rem;             /* 16 */
+  --type-caption-tracking: 0;
+
+  /* --- Spacing — strict 4pt grid, 8pt preferred --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+
+  /* Layout gutters + safe clearance (§1.3) */
+  --gutter: 20px;                 /* portrait min horizontal */
+  --gutter-landscape: 24px;
+  --content-max: 640px;          /* readable cap on wide screens */
+
+  /* --- Radii (continuous-feel, plain fallback) --- */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-pill: 999px;
+
+  /* --- Elevation — soft, low --- */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  /* --- Materials --- */
+  --material-bg: rgba(255, 255, 255, 0.72);
+  --material-blur: blur(24px) saturate(180%);
+  --scrim: rgba(0, 0, 0, 0.30);
+
+  /* --- Motion --- */
+  --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 400ms;
+
+  /* --- Z-index scale --- */
+  --z-nav: 100;
+  --z-sheet-scrim: 900;
+  --z-sheet: 1000;
+  --z-toast: 1100;
+  --z-debug: 2000;
+
+  color-scheme: light dark;
+}
+
+/* ============================================================================
+   Dark mode — prefers-color-scheme only (no manual toggle in this phase).
+   ============================================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-base:         #000000;
+    --bg-elevated:     #1C1C1E;
+    --bg-secondary:    #1C1C1E;
+    --bg-tertiary:     #2C2C2E;
+    --fill-quaternary: #2C2C2E;
+
+    --label-primary:   #FFFFFF;
+    --label-secondary: rgba(235, 235, 245, 0.60);
+    --label-tertiary:  rgba(235, 235, 245, 0.30);
+    --separator:       rgba(84, 84, 88, 0.60);
+    --separator-opaque:#38383A;
+
+    --accent:  #0A84FF;
+    --accent-tint: rgba(10, 132, 255, 0.18);
+    --success: #30D158;
+    --warning: #FFD60A;
+    --danger:  #FF453A;
+    --danger-tint: rgba(255, 69, 58, 0.18);
+
+    /* Ball colours brightened ~8% for dark surfaces */
+    --ball-red:    #E63B41;
+    --ball-yellow: #FFC01F;
+    --ball-green:  #2BA55F;
+    --ball-brown:  #A06A34;
+    --ball-blue:   #2277DA;
+    --ball-pink:   #F075A0;
+    --ball-black:  #2A2A2A;
+    --ball-white:  #FFFFFF;
+    --on-ball-black:  #FFFFFF;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.30);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.40);
+    --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.60), 0 2px 8px rgba(0, 0, 0, 0.40);
+
+    --material-bg: rgba(28, 28, 30, 0.72);
+    --scrim: rgba(0, 0, 0, 0.50);
+  }
+}
+
+/* ============================================================================
+   Type utility classes — apply the scale consistently.
+   All score numbers get tabular figures so widths never jitter.
+   ============================================================================ */
+.type-large-title { font: var(--type-large-title-weight) var(--type-large-title-size)/var(--type-large-title-lh) var(--font-sans); letter-spacing: var(--type-large-title-tracking); }
+.type-title-1 { font: var(--type-title-1-weight) var(--type-title-1-size)/var(--type-title-1-lh) var(--font-sans); letter-spacing: var(--type-title-1-tracking); }
+.type-title-2 { font: var(--type-title-2-weight) var(--type-title-2-size)/var(--type-title-2-lh) var(--font-sans); letter-spacing: var(--type-title-2-tracking); }
+.type-title-3 { font: var(--type-title-3-weight) var(--type-title-3-size)/var(--type-title-3-lh) var(--font-sans); letter-spacing: var(--type-title-3-tracking); }
+.type-headline { font: var(--type-headline-weight) var(--type-headline-size)/var(--type-headline-lh) var(--font-sans); letter-spacing: var(--type-headline-tracking); }
+.type-body { font: var(--type-body-weight) var(--type-body-size)/var(--type-body-lh) var(--font-sans); letter-spacing: var(--type-body-tracking); }
+.type-callout { font: var(--type-callout-weight) var(--type-callout-size)/var(--type-callout-lh) var(--font-sans); letter-spacing: var(--type-callout-tracking); }
+.type-subhead { font: var(--type-subhead-weight) var(--type-subhead-size)/var(--type-subhead-lh) var(--font-sans); letter-spacing: var(--type-subhead-tracking); }
+.type-footnote { font: var(--type-footnote-weight) var(--type-footnote-size)/var(--type-footnote-lh) var(--font-sans); letter-spacing: var(--type-footnote-tracking); }
+.type-caption { font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-lh) var(--font-sans); letter-spacing: var(--type-caption-tracking); }
+
+.numeric {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ============================================================================
+   Reduced motion — a correctness requirement, not a nicety.
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

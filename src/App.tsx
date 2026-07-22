@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { GameProvider } from './engine/GameContext';
+import { ToastProvider, LayoutDebug } from './components/ui';
 import LandingPage from './components/LandingPage';
 import AuthCallback from './components/AuthCallback';
 import Dashboard from './components/Dashboard';
@@ -8,6 +9,7 @@ import GameSetup from './components/GameSetup';
 import ScoringScreen from './components/ScoringScreen';
 import MatchSummary from './components/MatchSummary';
 import MatchHistory from './components/MatchHistory';
+import UIDemo from './components/dev/UIDemo';
 
 /**
  * Protected route wrapper — redirects to landing if not authenticated or guest
@@ -65,6 +67,9 @@ function AppRoutes() {
       />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
+      {/* Phase 1 design-system demo (not linked from the app) */}
+      <Route path="/ui" element={<UIDemo />} />
+
       {/* Protected routes */}
       <Route
         path="/dashboard"
@@ -118,9 +123,12 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+        <LayoutDebug />
+      </ToastProvider>
     </BrowserRouter>
   );
 }
