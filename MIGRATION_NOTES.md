@@ -89,10 +89,11 @@ SegmentedControl, Button, Sheet, Stepper, Ball, Avatar, StatTile, EmptyState, To
 
 ---
 
-## 5. ⚠️ N-player reconciliation — NEEDS SIGN-OFF (§8.3) before Phase 6
+## 5. ✅ N-player reconciliation — APPROVED (§8.3) 2026-07-22
 
 The brief's §5.2 schema, §2.3 foul event, §3.4 layout, and §5.5 stats are all **two-player**.
-"Keep all three modes" forces deviations from that fixed schema. Proposed changes, for approval:
+"Keep all three modes" forces deviations from that fixed schema. **The owner approved the
+changes below as proposed.** Applied at their phases (schema → Phase 6, engine → Phase 2).
 
 | Brief as written (2-player) | Proposed change (N-player) | Affected phase |
 |---|---|---|
@@ -103,13 +104,22 @@ The brief's §5.2 schema, §2.3 foul event, §3.4 layout, and §5.5 stats are al
 | Head-to-head = 2 players | H2H = any two selected players across shared matches; unchanged UI, broader query | 7 |
 | Tie → "Match drawn" | Multi-way tie handling for 3+ players/teams | 4 |
 
-**Open questions to resolve at their phase (not blocking Phase 1):**
+**Resolved decisions (2026-07-22):**
 
-1. **§8.1 — Team mode turn order:** current app interleaves teams (T1P1,T2P1,T1P2…). Confirm
-   this carries into the event model as `setActive`-driven, or if the engine should own
-   round-robin turn rotation for team/FFA.
-2. **§8.1 — Stats for team/FFA:** are per-player stats (highest break, breaks 50+, etc.)
-   tracked identically in team/FFA, and does "win %" mean frame wins or match wins in FFA?
+1. **§8.1 — Turn order (RESOLVED):** the **engine owns turn rotation**. On `endTurn` it
+   auto-advances round-robin; team mode interleaves teams (T1P1,T2P1,T1P2…) as today. A
+   `setActive` event can override the active player at any time (free/forgiving philosophy).
+2. **§8.1 — Free-for-all standings & stats (RESOLVED):** FFA produces **full ranked standings,
+   not binary win/lose**. Per frame: rank all players by frame score (1st = highest / cleared,
+   2nd = next, … Nth). Per match: rank by frames won, tiebreak by total points across frames;
+   remaining exact ties share the position. Stats track **placements** — count of 1st/2nd/3rd
+   finishes and average finishing position; headline "win rate" = 1st-place finishes ÷ played.
+   Per-player break stats (highest break, 20/30/50+, centuries) are identical across all modes.
+   Final frame scores are already stored in `frame_scores`, so standings are derivable without
+   extra schema.
+
+**Still open (to resolve at their phase, not blocking Phase 1):**
+
 3. **§8.2 — Vitest:** §2.10 mandates Vitest but it isn't in the §0 approved list. Treating the
    brief's own requirement as approval; confirm. (No other off-list deps needed for Phases 0–5.)
 4. **§8.3 — Supabase environment:** no `supabase/` dir or CLI config exists; current tables were
