@@ -2021,21 +2021,19 @@ body.light-theme .btn-topbar-icon.active-pause {
 /* ============================================================================
    Century — the club game (see engine/century.ts)
    ---------------------------------------------------------------------------
-   Land exactly on the target. Balls that would take you past it stay tappable
-   but are marked, because that shot happens at the table and the visit still
-   has to end. A ball already potted twice in a row is disabled outright — the
-   rule is enforced by removing the option rather than penalising it after.
+   Deliberately thin: the screen reuses the scoring screen's felt background,
+   player panels, ball cards and action row, so the two games read as one app
+   rather than two. Only what differs is defined here.
+
+   Balls that would take a player past the target are dimmed but stay tappable
+   — that shot happens at the table whether or not it counts, and the visit
+   still has to end. A ball already potted twice is disabled outright.
    ========================================================================= */
 .century-screen {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  height: 100dvh;
-  padding: calc(env(safe-area-inset-top, 0px) + 8px)
-           calc(env(safe-area-inset-right, 0px) + 12px)
-           calc(env(safe-area-inset-bottom, 0px) + 8px)
-           calc(env(safe-area-inset-left, 0px) + 12px);
-  background: var(--bg-primary, var(--bg-base));
+  justify-content: flex-start;
 }
 
 .century-topbar {
@@ -2044,13 +2042,14 @@ body.light-theme .btn-topbar-icon.active-pause {
   justify-content: space-between;
   gap: var(--space-md);
   flex: none;
+  padding-bottom: 2px;
 }
 
 .century-topbar-side {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  min-width: 96px;
+  min-width: 100px;
 }
 
 .century-topbar-right {
@@ -2060,185 +2059,74 @@ body.light-theme .btn-topbar-icon.active-pause {
 
 .century-target {
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
   font-weight: 800;
   color: var(--accent-sage);
+  text-shadow: 0 0 18px rgba(164, 216, 255, 0.35);
 }
 
 .century-target-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-/* --- standings --- */
 .century-players {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 8px;
   flex: none;
 }
 
-.century-player {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 8px 10px;
-  border-radius: 14px;
-  border: 1.5px solid var(--border-color-dim);
-  background: var(--bg-elevated);
-}
-
-.century-player.active {
-  border-color: var(--accent-sage);
-  background: var(--accent-tint);
-}
-
-.century-player.done {
-  opacity: 0.6;
-}
-
-.century-player-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.century-player-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* A player who is safe recedes without disappearing. */
+.player-panel-horizontal.century-done {
+  opacity: 0.55;
 }
 
 .century-done-badge {
   flex: none;
-  padding: 1px 7px;
+  padding: 2px 9px;
   border-radius: 999px;
   background: var(--accent-sage);
   color: var(--on-accent);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.century-player-score {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.05;
-  color: var(--text-primary);
-}
-
-.century-player-need {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 800;
 }
 
-/* --- balls --- */
 .century-balls {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
 }
 
-.century-ball {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 0;
-  padding: 8px 4px;
-  border: 1.5px solid transparent;
-  border-radius: 14px;
-  background: var(--bg-elevated);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 120ms ease, opacity 140ms ease, border-color 140ms ease;
-}
-
-.century-ball:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.century-ball-dot {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--ball-colour, #888);
-  box-shadow: inset -3px -3px 6px rgba(0, 0, 0, 0.4),
-              inset 2px 2px 4px rgba(255, 255, 255, 0.25);
-}
-
-.century-ball.ball-red    { --ball-colour: var(--ball-red); }
-.century-ball.ball-yellow { --ball-colour: var(--ball-yellow); }
-.century-ball.ball-green  { --ball-colour: var(--ball-green); }
-.century-ball.ball-brown  { --ball-colour: var(--ball-brown); }
-.century-ball.ball-blue   { --ball-colour: var(--ball-blue); }
-.century-ball.ball-pink   { --ball-colour: var(--ball-pink); }
-.century-ball.ball-black  { --ball-colour: var(--ball-black); }
-
-.century-ball-value {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-
-.century-ball-flag {
-  font-size: 9px;
+/* Corner flag on a ball card — the checkout, or a ball that is out of turn. */
+.century-flag {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent-sage);
+  letter-spacing: 0.07em;
 }
 
-/* Exactly finishes the player — the checkout. */
-.century-ball.checkout {
-  border-color: var(--accent-sage);
-  background: var(--accent-tint);
+.century-flag--stop {
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--danger, #ff6b6b);
 }
 
-/* Would go past the target: still tappable, because it happens at the table. */
-.century-ball.busts {
-  opacity: 0.34;
-}
-
-/* Potted twice in a row already — the option is removed, not penalised. */
-.century-ball.blocked {
-  opacity: 0.28;
-  cursor: not-allowed;
-}
-
-.century-ball.blocked .century-ball-flag {
-  color: var(--danger);
-}
-
-/* --- outcomes --- */
+/* Four outcomes rather than three, so the row divides evenly. */
 .century-actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
   flex: none;
 }
 
-.century-miss-red {
-  background: var(--danger-tint, rgba(192, 57, 43, 0.12));
-  color: var(--danger);
-  border: 1px solid var(--danger);
-  font-weight: 700;
+/* Opening the foul picker is a step, not the penalty itself — softer than the
+   red that actually costs points. */
+.btn-action-foul--soft {
+  filter: saturate(0.55) brightness(0.9);
 }
 
 .century-hint {
@@ -2254,13 +2142,14 @@ body.light-theme .btn-topbar-icon.active-pause {
 .century-foul-card,
 .century-result-card {
   position: relative;
-  width: min(92vw, 460px);
+  width: min(92vw, 520px);
   max-height: 88dvh;
   overflow-y: auto;
   padding: var(--space-lg);
   border-radius: var(--radius-xl);
   background: var(--bg-card-solid, var(--bg-elevated));
   border: 1px solid var(--border-color-dim);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   z-index: var(--z-modal, 1000);
 }
 
@@ -2280,6 +2169,10 @@ body.light-theme .btn-topbar-icon.active-pause {
   margin-bottom: var(--space-md);
 }
 
+.century-foul-balls .scoring-ball-card {
+  min-height: 62px;
+}
+
 .century-result-list {
   list-style: none;
   margin: 0 0 var(--space-lg);
@@ -2291,17 +2184,19 @@ body.light-theme .btn-topbar-icon.active-pause {
 
 .century-result-row {
   display: grid;
-  grid-template-columns: 28px 1fr auto;
+  grid-template-columns: 30px 1fr auto;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 11px 13px;
   border-radius: 12px;
   background: var(--bg-secondary);
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .century-result-row.loser {
-  background: var(--danger-tint, rgba(192, 57, 43, 0.12));
+  background: var(--danger-tint, rgba(192, 57, 43, 0.14));
+  border: 1px solid var(--danger);
   color: var(--danger);
 }
 

@@ -28,6 +28,11 @@ import { useAuth } from '../hooks/useAuth';
 
 const BALLS: BallType[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
+const BALL_LABELS: Record<BallType, string> = {
+  red: 'RED', yellow: 'YEL', green: 'GRN', brown: 'BRN',
+  blue: 'BLU', pink: 'PNK', black: 'BLK',
+};
+
 export default function CenturyScreen() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -93,6 +98,28 @@ export default function CenturyScreen() {
     );
   }, [state, isGuest]);
 
+  // The AudioContext can only be created from a user gesture, so it is armed
+  // on first interaction exactly as the scoring screen does. Without this
+  // nothing would play at all.
+  useEffect(() => {
+    const arm = () => {
+      audio.init();
+      window.removeEventListener('click', arm);
+      window.removeEventListener('touchstart', arm);
+    };
+    window.addEventListener('click', arm);
+    window.addEventListener('touchstart', arm);
+    return () => {
+      window.removeEventListener('click', arm);
+      window.removeEventListener('touchstart', arm);
+    };
+  }, []);
+
+  // Fanfare when the game resolves.
+  useEffect(() => {
+    if (state.finished) audio.playVictory();
+  }, [state.finished]);
+
   // Nothing to play — no setup and nothing stored.
   useEffect(() => {
     if (!setup && state.players.length === 0) navigate('/setup');
@@ -111,12 +138,23 @@ export default function CenturyScreen() {
   const remaining = state.target - player.score;
 
   const pot = (ball: BallType) => {
+    // Busting is not a pot — it sounds like the miss it effectively is.
+    if (wouldBust(state, ball)) {
+      audio.playMiss();
+      dispatch({ type: 'POT', ball });
+      return;
+    }
+
     audio.playPot();
+    // Landing exactly on the target is this game's milestone.
+    if (isCheckout(state, ball)) {
+      setTimeout(() => audio.playBreakMilestone(), 260);
+    }
     dispatch({ type: 'POT', ball });
   };
 
   return (
-    <div className="century-screen">
+    <div className="scoring-screen felt-bg century-screen">
       <header className="century-topbar">
         <div className="century-topbar-side">
           <span className="century-target">{state.target}</span>
@@ -126,14 +164,6 @@ export default function CenturyScreen() {
         <WallClock frameStartTime={state.startedAt} />
 
         <div className="century-topbar-side century-topbar-right">
-          <button
-            onClick={() => dispatch({ type: 'UNDO' })}
-            disabled={state.undoStack.length === 0}
-            className="icon-btn"
-            aria-label="Undo"
-          >
-            <Icon name="arrow-left" size={18} />
-          </button>
           <button
             onClick={() => {
               if (window.confirm('Abandon this game?')) {
@@ -149,86 +179,105 @@ export default function CenturyScreen() {
         </div>
       </header>
 
-      {/* Standings */}
-      <div className="century-players">
+      {/* Standings — the scoring screen's player panels, same visual weight */}
+      <div className="scoring-players-row century-players">
         {state.turnOrder.map((idx) => {
           const p = state.players[idx];
           const active = !state.finished && idx === state.turnOrder[state.currentTurn];
           return (
             <div
               key={p.id}
-              className={`century-player ${active ? 'active' : ''} ${
-                p.finishedAt ? 'done' : ''
+              className={`player-panel-horizontal ${active ? 'active' : ''} ${
+                p.finishedAt ? 'century-done' : ''
               }`}
             >
-              <div className="century-player-top">
-                <span className="century-player-name">{p.name}</span>
+              <div className="player-card-top">
+                <div className="player-card-meta-left">
+                  <div className="player-avatar-circle">
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="player-card-name-wrapper">
+                    <span className="player-card-name">{p.name}</span>
+                    {active && <span className="glowing-active-dot" />}
+                  </div>
+                </div>
                 {p.finishedAt && (
                   <span className="century-done-badge">#{p.finishedAt}</span>
                 )}
               </div>
-              <span className="century-player-score">{p.score}</span>
-              <span className="century-player-need">
-                {p.finishedAt ? 'safe' : `needs ${state.target - p.score}`}
-              </span>
+
+              <div className="player-card-middle">
+                <div className="player-score-pill">{p.score}</div>
+                <div className="player-break-badge">
+                  {p.finishedAt ? 'safe' : `needs ${state.target - p.score}`}
+                </div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Balls */}
-      <div className="century-balls">
+      {/* Balls — same cards as the scoring screen, so the two read as one app */}
+      <div className="scoring-ball-cards-row century-balls">
         {BALLS.map((ball) => {
           const blocked = isBallBlocked(state, ball);
           const busts = wouldBust(state, ball);
           const checkout = isCheckout(state, ball);
+          const dulled = blocked || busts;
           return (
             <button
               key={ball}
               onClick={() => pot(ball)}
               disabled={blocked || state.finished}
-              className={`century-ball ball-${ball} ${busts ? 'busts' : ''} ${
-                checkout ? 'checkout' : ''
-              } ${blocked ? 'blocked' : ''}`}
+              className={`scoring-ball-card ball-${ball} ${dulled ? 'dimmed' : ''} ${
+                checkout ? 'expected' : ''
+              }`}
               title={
                 blocked
-                  ? 'Already potted twice in a row — take another ball'
+                  ? 'Potted twice already — take another ball'
                   : busts
                     ? `Past ${state.target} — would not score`
                     : undefined
               }
             >
-              <span className="century-ball-dot" />
-              <span className="century-ball-value">+{CENTURY_VALUES[ball]}</span>
-              {checkout && <span className="century-ball-flag">finish</span>}
-              {blocked && <span className="century-ball-flag">×2</span>}
+              <span className="ball-card-name">{BALL_LABELS[ball]}</span>
+              <span className="ball-card-points">+{CENTURY_VALUES[ball]}</span>
+              {checkout && <span className="century-flag">FINISH</span>}
+              {blocked && <span className="century-flag century-flag--stop">×2</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Turn outcomes */}
-      <div className="century-actions">
+      {/* Turn outcomes — the scoring screen's premium action row */}
+      <div className="action-buttons-row-premium century-actions">
+        <button
+          onClick={() => { audio.playUndo(); dispatch({ type: 'UNDO' }); }}
+          disabled={state.undoStack.length === 0}
+          className="btn-action-premium btn-action-undo"
+        >
+          <Icon name="arrow-left" size={15} /> UNDO
+        </button>
         <button
           onClick={() => { audio.playFoul(); dispatch({ type: 'MISS_RED' }); }}
           disabled={state.finished}
-          className="btn century-miss-red"
+          className="btn-action-premium btn-action-foul"
         >
-          Missed red −{RED_MISS_PENALTY}
-        </button>
-        <button
-          onClick={() => dispatch({ type: 'MISS_COLOUR' })}
-          disabled={state.finished}
-          className="btn btn-secondary"
-        >
-          Miss / pass
+          <Icon name="alert" size={15} /> MISSED RED −{RED_MISS_PENALTY}
         </button>
         <button
           onClick={() => setFoulOpen(true)}
           disabled={state.finished}
-          className="btn btn-danger"
+          className="btn-action-premium btn-action-foul btn-action-foul--soft"
         >
-          <Icon name="alert" size={16} /> Foul
+          FOUL
+        </button>
+        <button
+          onClick={() => { audio.playMiss(); dispatch({ type: 'MISS_COLOUR' }); }}
+          disabled={state.finished}
+          className="btn-action-premium btn-action-pass"
+        >
+          PASS <Icon name="pass" size={17} />
         </button>
       </div>
 
@@ -252,9 +301,9 @@ export default function CenturyScreen() {
                     dispatch({ type: 'FOUL', ball });
                     setFoulOpen(false);
                   }}
-                  className={`century-ball ball-${ball}`}
+                  className={`scoring-ball-card ball-${ball}`}
                 >
-                  <span className="century-ball-dot" />
+                  <span className="ball-card-name">{BALL_LABELS[ball]}</span>
                 </button>
               ))}
             </div>
