@@ -731,11 +731,19 @@
 }
 
 .preset-chip-row {
+  /* One line that scrolls sideways rather than wrapping onto a second row and
+     stealing height from the roster. */
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   margin-top: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
 }
+
+.preset-chip-row::-webkit-scrollbar { display: none; }
+
+.preset-chip { flex: none; }
 
 .preset-chip {
   display: inline-flex;
@@ -2338,7 +2346,9 @@ body.light-theme .summary-page {
   }
   .roster-list {
     flex: 1 1 auto;
-    min-height: 0;
+    /* A floor, so the surrounding blocks can never crush the list into a
+       sliver that has to be scrolled to see two names. */
+    min-height: 132px;
     overflow-y: auto;         /* only place that ever scrolls */
     -webkit-overflow-scrolling: touch;
   }

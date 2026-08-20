@@ -132,6 +132,13 @@ export default function GameSetup() {
 
   const canGrow = gameMode === 'freeForAll' && playerNames.length < 8;
 
+  // Chips are a quick-add, so only offer regulars who are not already seated.
+  // Showing all three regardless duplicated the roster directly beneath them,
+  // wrapped to two rows, and squeezed the list into a ~100px scroller.
+  const unseated = PRESET_PLAYERS.filter(
+    (preset) => !playerNames.some((n) => n.trim() === preset)
+  );
+
   return (
     <div className="setup-page">
       <button
@@ -235,27 +242,24 @@ export default function GameSetup() {
             )}
           </div>
 
-          <div className="preset-chip-row">
-            {PRESET_PLAYERS.map((preset) => {
-              const picked = playerNames.some((n) => n.trim() === preset);
-              const full = !picked && !playerNames.some(isFreeSlot) && !canGrow;
-              return (
+          {unseated.length > 0 && (
+            <div className="preset-chip-row">
+              {unseated.map((preset) => (
                 <button
                   key={preset}
                   type="button"
                   onClick={() => togglePreset(preset)}
-                  disabled={full}
-                  aria-pressed={picked}
-                  className={`preset-chip ${picked ? 'picked' : ''}`}
+                  disabled={!playerNames.some(isFreeSlot) && !canGrow}
+                  className="preset-chip"
                 >
                   <span className="preset-chip-glyph">
-                    <Icon name={picked ? 'check' : 'plus'} size={13} />
+                    <Icon name="plus" size={13} />
                   </span>
                   <span className="preset-chip-name">{preset}</span>
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="roster-list" role="radiogroup" aria-label="Who breaks first">
             {playerNames.map((name, idx) => {
@@ -310,12 +314,12 @@ export default function GameSetup() {
                     </button>
                   </div>
 
-                  {gameMode === 'freeForAll' && playerNames.length > 2 && (
+                  {(name.trim() || (gameMode === 'freeForAll' && playerNames.length > 2)) && (
                     <button
                       type="button"
-                      onClick={() => removePlayer(idx)}
+                      onClick={() => (name.trim() ? setName(idx, '') : removePlayer(idx))}
                       className="roster-remove"
-                      aria-label={`Remove ${name.trim() || `Player ${idx + 1}`}`}
+                      aria-label={name.trim() ? `Clear ${name.trim()}` : `Remove slot ${idx + 1}`}
                     >
                       <Icon name="close" size={14} />
                     </button>
@@ -326,7 +330,7 @@ export default function GameSetup() {
           </div>
 
           <p className="setup-hint roster-hint">
-            Tap the number to choose who breaks. Blank names become “Player N”.
+            Tap a number to set who breaks.
           </p>
 
           <div className="setup-cta">
