@@ -31,29 +31,42 @@ export default function GameSetup() {
     } else if (mode === 'freeForAll') {
       count = 3; // default for freeForAll
     }
-    const newNames = Array.from({ length: count }, (_, i) => `Player ${i + 1}`);
-    setPlayerNames(newNames);
+    setPlayerNames(Array.from({ length: count }, () => ''));
     setBreakingPlayerIndex(0);
   };
 
   const handleTeamSizeChange = (size: 2 | 3) => {
     setTeamSize(size);
-    const count = size * 2;
-    const newNames = Array.from({ length: count }, (_, i) => `Player ${i + 1}`);
-    setPlayerNames(newNames);
+    setPlayerNames(Array.from({ length: size * 2 }, () => ''));
     setBreakingPlayerIndex(0);
   };
 
-  /** Tap a regular to drop them into the first free slot; tap again to remove. */
+  /**
+   * A slot counts as free if it is blank or still holds an untouched
+   * "Player N" default, so tapping a regular never silently overwrites a name
+   * somebody actually typed.
+   */
+  const isFreeSlot = (name: string) =>
+    !name.trim() || /^player\s*\d+$/i.test(name.trim());
+
+  /** Tap a regular to seat them; tap again to remove. */
   const togglePreset = (preset: string) => {
-    const at = playerNames.findIndex((n) => n.trim() === preset);
+    const seated = playerNames.findIndex((n) => n.trim() === preset);
     const next = [...playerNames];
-    if (at !== -1) {
-      next[at] = '';
-    } else {
-      const free = next.findIndex((n) => !n.trim());
-      if (free === -1) return;   // every slot taken — Add Player first
+
+    if (seated !== -1) {
+      next[seated] = '';
+      setPlayerNames(next);
+      return;
+    }
+
+    const free = next.findIndex(isFreeSlot);
+    if (free !== -1) {
       next[free] = preset;
+    } else if (gameMode === 'freeForAll' && next.length < 8) {
+      next.push(preset);            // no room, but free-for-all can grow
+    } else {
+      return;
     }
     setPlayerNames(next);
   };
@@ -66,8 +79,7 @@ export default function GameSetup() {
 
   const addFfaPlayer = () => {
     if (playerNames.length >= 8) return;
-    const count = playerNames.length + 1;
-    setPlayerNames([...playerNames, `Player ${count}`]);
+    setPlayerNames([...playerNames, '']);
   };
 
   const removeFfaPlayer = () => {
@@ -280,7 +292,9 @@ export default function GameSetup() {
                     <div className="preset-chip-row">
                       {PRESET_PLAYERS.map((preset) => {
                         const picked = playerNames.some((n) => n.trim() === preset);
-                        const full = !picked && playerNames.every((n) => n.trim());
+                        const canGrow = gameMode === 'freeForAll' && playerNames.length < 8;
+                        const full =
+                          !picked && !playerNames.some(isFreeSlot) && !canGrow;
                         return (
                           <button
                             key={preset}
