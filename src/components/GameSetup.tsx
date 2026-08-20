@@ -222,14 +222,6 @@ export default function GameSetup() {
             </p>
           </fieldset>
 
-          <div className="setup-cta">
-            <button onClick={() => navigate('/dashboard')} className="btn btn-ghost">
-              Cancel
-            </button>
-            <button onClick={startMatch} className="btn btn-primary btn-lg setup-start">
-              Start Match
-            </button>
-          </div>
         </aside>
 
         {/* ---------------- Right: who's playing ---------------- */}
@@ -334,6 +326,15 @@ export default function GameSetup() {
           <p className="setup-hint roster-hint">
             Tap the number to choose who breaks. Blank names become “Player N”.
           </p>
+
+          <div className="setup-cta">
+            <button onClick={() => navigate('/dashboard')} className="btn btn-ghost">
+              Cancel
+            </button>
+            <button onClick={startMatch} className="btn btn-primary btn-lg setup-start">
+              Start Match
+            </button>
+          </div>
         </section>
       </div>
     </div>
