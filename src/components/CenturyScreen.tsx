@@ -154,7 +154,7 @@ export default function CenturyScreen() {
   };
 
   return (
-    <div className="scoring-screen felt-bg century-screen">
+    <div className="century-screen">
       <header className="century-topbar">
         <div className="century-topbar-side">
           <span className="century-target">{state.target}</span>
@@ -180,7 +180,7 @@ export default function CenturyScreen() {
       </header>
 
       {/* Standings — the scoring screen's player panels, same visual weight */}
-      <div className="scoring-players-row century-players">
+      <div className="century-players">
         {state.turnOrder.map((idx) => {
           const p = state.players[idx];
           const active = !state.finished && idx === state.turnOrder[state.currentTurn];

@@ -2021,35 +2021,45 @@ body.light-theme .btn-topbar-icon.active-pause {
 /* ============================================================================
    Century — the club game (see engine/century.ts)
    ---------------------------------------------------------------------------
-   Deliberately thin: the screen reuses the scoring screen's felt background,
-   player panels, ball cards and action row, so the two games read as one app
-   rather than two. Only what differs is defined here.
+   The screen borrows the scoring screen's *look* — felt, player panels, ball
+   cards, action buttons — but owns its own layout. Inheriting .scoring-screen
+   as a shell did not work: that class is a fixed flex column tuned to its own
+   children, and a different structure inside it collapsed (players stacked
+   into a column, balls overflowing under the action row).
 
-   Balls that would take a player past the target are dimmed but stay tappable
-   — that shot happens at the table whether or not it counts, and the visit
-   still has to end. A ball already potted twice is disabled outright.
+   Five rows, one of which flexes. Nothing scrolls; everything is sized to the
+   viewport, because a scoring screen you have to scroll is a broken one.
    ========================================================================= */
 .century-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  justify-content: flex-start;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px)
+           calc(env(safe-area-inset-right, 0px) + 14px)
+           calc(env(safe-area-inset-bottom, 0px) + 10px)
+           calc(env(safe-area-inset-left, 0px) + 14px);
+  background: radial-gradient(circle at center, var(--felt-light) 0%, var(--felt-dark) 100%);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
 }
 
+/* --- top bar --- */
 .century-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  flex: none;
-  padding-bottom: 2px;
 }
 
 .century-topbar-side {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  min-width: 100px;
+  min-width: 110px;
 }
 
 .century-topbar-right {
@@ -2074,13 +2084,49 @@ body.light-theme .btn-topbar-icon.active-pause {
   color: var(--text-muted);
 }
 
+/* --- players: one equal column each, however many are playing --- */
 .century-players {
-  flex: none;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
 }
 
-/* A player who is safe recedes without disappearing. */
+/* The shared panel is written for a flex row with fixed bounds; inside this
+   grid it must simply fill its column. */
+.century-players .player-panel-horizontal {
+  flex: initial;
+  min-width: 0;
+  max-width: none;
+  padding: 10px 12px;
+  gap: 6px;
+}
+
+.century-players .player-card-middle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The shared pill is a fixed 52x70 block and .player-card-middle adds a margin
+   top and bottom — together they left a tall empty band in the middle of each
+   panel and pushed the balls into a thin strip. Century has no break badge to
+   fill that space, so it is reclaimed. */
+.century-players .player-score-pill {
+  width: auto;
+  min-width: 64px;
+  height: 46px;
+  padding: 0 12px;
+  font-size: 28px;
+}
+
+.century-players .player-card-middle {
+  margin: 4px 0 0;
+}
+
 .player-panel-horizontal.century-done {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .century-done-badge {
@@ -2093,12 +2139,19 @@ body.light-theme .btn-topbar-icon.active-pause {
   font-weight: 800;
 }
 
+/* --- balls: fill the flexible row, no inherited margins --- */
 .century-balls {
-  flex: 1 1 auto;
+  margin: 0;
+  max-width: none;
   min-height: 0;
+  gap: 10px;
 }
 
-/* Corner flag on a ball card — the checkout, or a ball that is out of turn. */
+.century-balls .scoring-ball-card {
+  min-height: 0;
+  padding: 8px 4px;
+}
+
 .century-flag {
   position: absolute;
   top: 5px;
@@ -2113,20 +2166,37 @@ body.light-theme .btn-topbar-icon.active-pause {
 }
 
 .century-flag--stop {
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--danger, #ff6b6b);
+  background: rgba(0, 0, 0, 0.62);
+  color: #ff8f8f;
 }
 
-/* Four outcomes rather than three, so the row divides evenly. */
+/* --- actions: four outcomes, evenly divided --- */
 .century-actions {
-  grid-template-columns: repeat(4, 1fr);
-  flex: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: none;
+  margin: 0;
+  gap: 10px;
 }
 
-/* Opening the foul picker is a step, not the penalty itself — softer than the
-   red that actually costs points. */
+.century-actions .btn-action-premium {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Opening the foul picker is a step, not the penalty itself. Desaturating the
+   solid red read as disabled, so it becomes an outline instead: clearly the
+   same family as MISSED RED, clearly secondary to it. */
 .btn-action-foul--soft {
-  filter: saturate(0.55) brightness(0.9);
+  background: transparent;
+  border: 1.5px solid var(--ball-red, #ef4444);
+  color: var(--ball-red, #ef4444);
+  box-shadow: none;
+  filter: none;
+}
+
+.btn-action-foul--soft:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  box-shadow: none;
 }
 
 .century-hint {
@@ -2135,7 +2205,6 @@ body.light-theme .btn-topbar-icon.active-pause {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  flex: none;
 }
 
 /* --- foul picker + result --- */
@@ -2143,7 +2212,7 @@ body.light-theme .btn-topbar-icon.active-pause {
 .century-result-card {
   position: relative;
   width: min(92vw, 520px);
-  max-height: 88dvh;
+  max-height: 86dvh;
   overflow-y: auto;
   padding: var(--space-lg);
   border-radius: var(--radius-xl);
@@ -2170,7 +2239,7 @@ body.light-theme .btn-topbar-icon.active-pause {
 }
 
 .century-foul-balls .scoring-ball-card {
-  min-height: 62px;
+  min-height: 58px;
 }
 
 .century-result-list {
@@ -2209,4 +2278,12 @@ body.light-theme .btn-topbar-icon.active-pause {
 .century-result-score {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* Short landscape phones: give the balls the room. */
+@media (orientation: landscape) and (max-height: 430px) {
+  .century-screen { gap: 7px; }
+  .century-players .player-panel-horizontal { padding: 7px 10px; }
+  .century-players .player-score-pill { font-size: 24px; }
+  .century-hint { display: none; }
 }
