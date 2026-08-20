@@ -88,6 +88,7 @@ export default function FrameSummary({
       <div className="confetti-container">{confettiPieces}</div>
 
       <div className="summary-card card fadeInUp">
+        <div className="summary-scroll">
         <h2 className="summary-winner">
           {isTied ? (
             <span className="summary-winner-name">Frame Tied!</span>
@@ -142,6 +143,23 @@ export default function FrameSummary({
             <div className="summary-stat-value">{formatDuration(gameState.frameStartTime)}</div>
             <div className="summary-stat-label">Duration</div>
           </div>
+          {players.reduce((n, p) => n + p.centuries, 0) > 0 && (
+            <div className="summary-stat summary-stat--milestone">
+              <div className="summary-stat-value">
+                {players.reduce((n, p) => n + p.centuries, 0)}
+              </div>
+              <div className="summary-stat-label">Centuries</div>
+            </div>
+          )}
+          {players.reduce((n, p) => n + p.halfCenturies, 0) > 0 && (
+            <div className="summary-stat summary-stat--milestone">
+              <div className="summary-stat-value">
+                {players.reduce((n, p) => n + p.halfCenturies, 0)}
+              </div>
+              <div className="summary-stat-label">Fifties</div>
+            </div>
+          )}
+        </div>
         </div>
 
         <div className="summary-actions">

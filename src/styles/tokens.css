@@ -158,10 +158,20 @@
 }
 
 /* ============================================================================
-   Dark mode — prefers-color-scheme only (no manual toggle in this phase).
+   Dark mode — driven by the app's own theme toggle.
+   ---------------------------------------------------------------------------
+   This block used to be `@media (prefers-color-scheme: dark)`, which keyed off
+   the SYSTEM setting while every other sheet keys off `body.light-theme`, set
+   by useTheme. The two disagreed whenever the phone and the app disagreed:
+   with iOS in light mode and the app set to dark, index.css painted the page
+   dark while these tokens stayed light, so anything token-styled (setup option
+   cards, list rows, sheets) rendered as white cards with pale text on a dark
+   page — unreadable.
+
+   `body:not(.light-theme)` follows the same signal as everything else, so the
+   toggle now moves the whole app together. (Tracked as issue #13.)
    ============================================================================ */
-@media (prefers-color-scheme: dark) {
-  :root {
+body:not(.light-theme) {
     --bg-base:         #1E1E1E;
     --bg-elevated:     #272727;   /* Shadow Grey */
     --bg-secondary:    #272727;
@@ -197,9 +207,8 @@
     --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.40);
     --shadow-3: 0 12px 32px rgba(0, 0, 0, 0.60), 0 2px 8px rgba(0, 0, 0, 0.40);
 
-    --material-bg: rgba(28, 28, 30, 0.72);
-    --scrim: rgba(0, 0, 0, 0.50);
-  }
+  --material-bg: rgba(28, 28, 30, 0.72);
+  --scrim: rgba(0, 0, 0, 0.50);
 }
 
 /* ============================================================================
