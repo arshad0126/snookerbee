@@ -10,6 +10,7 @@ import {
   type MatchPlayerRecord,
 } from '../lib/database';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
+import { Icon } from './ui';
 
 export default function MatchHistory() {
   const { isGuest } = useAuth();
@@ -135,7 +136,7 @@ export default function MatchHistory() {
     <div className="history-page page">
       <header className="history-header">
         <button onClick={() => navigate('/dashboard')} className="setup-back-btn btn-back">
-          ←
+          <Icon name="arrow-left" size={20} />
         </button>
         <h2 className="history-title">Match History</h2>
       </header>
@@ -143,11 +144,11 @@ export default function MatchHistory() {
       <main className="history-content">
         {matches.length === 0 ? (
           <div className="empty-state card">
-            <div className="empty-state-icon">🏆</div>
+            <div className="empty-state-icon"><Icon name="trophy" size={40} /></div>
             <h3 className="empty-state-title">No matches yet</h3>
             <p className="empty-state-text">Play your first game to record match history!</p>
             <button onClick={() => navigate('/setup')} className="btn btn-primary" style={{ marginTop: 'var(--space-lg)' }}>
-              Start Match 🎱
+              Start Match <Icon name="ball" size={18} />
             </button>
           </div>
         ) : (
@@ -191,7 +192,7 @@ export default function MatchHistory() {
                     className="history-card-delete btn btn-ghost"
                     title="Delete Match"
                   >
-                    🗑️
+                    <Icon name="trash" size={18} />
                   </button>
                 </div>
               </div>

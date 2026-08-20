@@ -9,6 +9,7 @@ import {
   type MatchPlayerRecord,
 } from '../lib/database';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
+import { Icon } from './ui';
 
 export default function Dashboard() {
   const { user, isGuest, signOut } = useAuth();
@@ -164,23 +165,7 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
           <button onClick={toggleTheme} className="btn-topbar-icon" style={{ borderRadius: 'var(--radius-md)' }} aria-label="Toggle theme">
-            {theme === 'dark' ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            )}
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
           </button>
           <button onClick={handleLogout} className="btn btn-ghost">
             Log Out
@@ -193,7 +178,7 @@ export default function Dashboard() {
           onClick={() => navigate('/setup')}
           className="dashboard-card-new-game card ripple"
         >
-          <div className="new-game-icon">🎱</div>
+          <div className="new-game-icon"><Icon name="ball" size={40} /></div>
           <div>
             <h3>New Game</h3>
             <p>Start a new frame</p>
@@ -219,7 +204,7 @@ export default function Dashboard() {
           <h3 className="dashboard-section-title">Recent Matches</h3>
           {recentMatches.length === 0 ? (
             <div className="empty-state card">
-              <div className="empty-state-icon">🏆</div>
+              <div className="empty-state-icon"><Icon name="trophy" size={40} /></div>
               <h4 className="empty-state-title">No matches yet</h4>
               <p className="empty-state-text">Play your first game to see history!</p>
             </div>
@@ -257,7 +242,7 @@ export default function Dashboard() {
               className="btn btn-ghost view-all-btn"
               style={{ marginTop: 'var(--space-md)', width: '100%' }}
             >
-              View All History →
+              View All History <Icon name="arrow-right" size={16} />
             </button>
           )}
         </section>

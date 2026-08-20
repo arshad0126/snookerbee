@@ -3,6 +3,7 @@ import type { ActionLogEntry } from '../engine/types';
 import { getMatchFrames } from '../lib/database';
 import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard, drawFrameCard } from '../lib/shareCard';
+import { Icon } from './ui';
 
 interface PlayerDetail {
   name: string;
@@ -231,176 +232,157 @@ export default function MatchDetailsModal({
       {/* Off-screen canvas for image generation */}
       <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
 
-      <div className="match-details-card" onClick={(e) => e.stopPropagation()}>
-        <header className="match-details-header">
+      <div className="ma-sheet" onClick={(e) => e.stopPropagation()}>
+        <header className="ma-header">
           <div>
-            <h3 className="match-details-title">Match Analysis</h3>
-            <span className="match-details-subtitle">{matchData.date}</span>
+            <h3 className="ma-title">Match Analysis</h3>
+            <span className="ma-date">{matchData.date}</span>
           </div>
-          <button className="match-details-close-btn" onClick={onClose}>
-            ✕
+          <button className="icon-btn" onClick={onClose} aria-label="Close match analysis">
+            <Icon name="close" size={20} />
           </button>
         </header>
 
-        <div className="match-details-body">
-          {/* Quick summary header */}
-          <div className="details-summary-strip">
-            <div className="summary-strip-item">
-              <span className="strip-label">WINNER</span>
-              <span className="strip-val winner-text">🏆 {matchData.winnerName}</span>
+        <div className="ma-body">
+          {/* Result */}
+          <div className="ma-result">
+            <div className="ma-result-top">
+              <Icon name="trophy" size={26} className="ma-result-trophy" />
+              <div className="ma-result-names">
+                <span className="ma-result-label">Winner</span>
+                <span className="ma-result-name">{matchData.winnerName}</span>
+              </div>
             </div>
-            <div className="summary-strip-item">
-              <span className="strip-label">DURATION</span>
-              <span className="strip-val">⏱ {formatDuration(matchData.durationMs)}</span>
+
+            <div className="ma-meta-row">
+              <span className="ma-meta"><Icon name="clock" size={14} />{formatDuration(matchData.durationMs)}</span>
+              <span className="ma-meta"><Icon name="target" size={14} />{matchData.mode.toUpperCase()}</span>
+              <span className="ma-meta"><Icon name="ball" size={14} />Best of {matchData.bestOf}</span>
             </div>
-            <div className="summary-strip-item">
-              <span className="strip-label">MODE</span>
-              <span className="strip-val">{matchData.mode.toUpperCase()}</span>
-            </div>
-            <button className="btn btn-primary share-card-btn" onClick={() => { void handleShareCard(); }}>
-              📤 Share Summary Card
+
+            <button className="ma-share" onClick={() => { void handleShareCard(); }}>
+              <Icon name="share" size={17} />
+              Share Summary Card
             </button>
           </div>
 
-          {/* Player stats comparison */}
-          <section className="details-section">
-            <h4 className="section-title-small">Player Performance</h4>
-            <div className="details-players-table-wrapper">
-              <table className="details-players-table">
-                <thead>
-                  <tr>
-                    <th>Player</th>
-                    <th className="text-center">Score</th>
-                    <th className="text-center">Frames Won</th>
-                    <th className="text-center">Max Break</th>
-                    <th className="text-center">Fouls</th>
-                    <th className="text-center">Time Spent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {matchData.players.map((p, i) => {
-                    const isWinner = p.name === matchData.winnerName || p.teamName === matchData.winnerName;
-                    return (
-                      <tr key={i} className={isWinner ? 'winner-row' : ''}>
-                        <td>
-                          {p.teamName ? <span className="team-badge">{p.teamName}</span> : null}{' '}
-                          <span className="player-bold">{p.name}</span>
-                        </td>
-                        <td className="text-center">{p.totalScore}</td>
-                        <td className="text-center font-bold text-lavender">{p.framesWon}</td>
-                        <td className="text-center">{p.highestBreak}</td>
-                        <td className="text-center text-red">{p.foulsCommitted}</td>
-                        <td className="text-center">{formatTimeSimple(p.timeSpentMs)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Players — stacked cards rather than a table, so nothing is cut off
+              on a phone the way the old six-column layout was. */}
+          <section className="ma-section">
+            <h4 className="ma-section-title">Player Performance</h4>
+            <div className="ma-players">
+              {matchData.players.map((p, i) => {
+                const isWinner =
+                  p.name === matchData.winnerName || p.teamName === matchData.winnerName;
+                return (
+                  <article key={i} className={`ma-player${isWinner ? ' is-winner' : ''}`}>
+                    <div className="ma-player-head">
+                      {isWinner && <Icon name="trophy" size={15} className="ma-player-trophy" />}
+                      <span className="ma-player-name">{p.name}</span>
+                      {p.teamName ? <span className="ma-team">{p.teamName}</span> : null}
+                      <span className="ma-player-score">{p.totalScore}</span>
+                    </div>
+                    <div className="ma-stats">
+                      <div className="ma-stat">
+                        <b>{p.framesWon}</b><span>Frames</span>
+                      </div>
+                      <div className="ma-stat">
+                        <b>{p.highestBreak}</b><span>Max break</span>
+                      </div>
+                      <div className="ma-stat">
+                        <b className={p.foulsCommitted > 0 ? 'is-warn' : undefined}>{p.foulsCommitted}</b><span>Fouls</span>
+                      </div>
+                      <div className="ma-stat">
+                        <b>{formatTimeSimple(p.timeSpentMs)}</b><span>Time</span>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
-          {/* Frame-by-frame breakdown */}
-          <section className="details-section">
-            <h4 className="section-title-small">Frame Breakdown</h4>
+          {/* Frames */}
+          <section className="ma-section">
+            <h4 className="ma-section-title">Frame Breakdown</h4>
             {loadingFrames ? (
               <div className="spinner-container">
                 <div className="spinner" />
               </div>
             ) : frames.length === 0 ? (
-              <div className="no-frames-text">No frame data recorded for this match.</div>
+              <p className="ma-empty">No frame data recorded for this match.</p>
             ) : (
-              <div>
-                {/* Frame list tabs */}
-                <div className="frame-tabs">
+              <>
+                <div className="ma-chips">
                   {frames.map((f, idx) => (
-                    <div key={idx} className="frame-tab-container">
+                    <div key={idx} className={`ma-chip${activeFrameIndex === idx ? ' is-active' : ''}`}>
                       <button
+                        className="ma-chip-main"
                         onClick={() => setActiveFrameIndex(idx)}
-                        className={`frame-tab-btn ${activeFrameIndex === idx ? 'active' : ''}`}
+                        aria-pressed={activeFrameIndex === idx}
                       >
-                        Frame {f.frameNumber} ({formatDuration(f.durationMs)})
+                        <span className="ma-chip-n">Frame {f.frameNumber}</span>
+                        <span className="ma-chip-t">{formatDuration(f.durationMs)}</span>
                       </button>
                       <button
+                        className="ma-chip-share"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleShareFrameCard(f);
                         }}
-                        className="frame-share-icon-btn"
-                        title={`Share Frame ${f.frameNumber} Summary Card`}
+                        aria-label={`Share frame ${f.frameNumber} card`}
                       >
-                        📤
+                        <Icon name="share" size={15} />
                       </button>
                     </div>
                   ))}
                 </div>
 
-                {/* Active Frame details */}
                 {activeFrame && frameAnalysis && (
-                  <div className="frame-analysis-panel">
-                    <h5 className="analysis-panel-title">Frame {activeFrame.frameNumber} Statistics</h5>
-                    
-                    {/* Computed frame stats */}
-                    <div className="frame-stats-grid">
+                  <div className="ma-frame">
+                    <div className="ma-players">
                       {matchData.players.map((p, i) => (
-                        <div key={i} className="frame-player-stat-card">
-                          <span className="stat-player-name">{p.name}</span>
-                          <div className="stat-rows">
-                            <div className="stat-row">
-                              <span>Reds Potted</span>
-                              <span className="stat-val font-bold text-green">
-                                {frameAnalysis.redsPotted[p.name] || 0}
-                              </span>
+                        <article key={i} className="ma-player">
+                          <div className="ma-player-head">
+                            <span className="ma-player-name">{p.name}</span>
+                          </div>
+                          <div className="ma-stats">
+                            <div className="ma-stat">
+                              <b>{frameAnalysis.redsPotted[p.name] || 0}</b><span>Reds</span>
                             </div>
-                            <div className="stat-row">
-                              <span>Colors Potted</span>
-                              <span className="stat-val font-bold text-lavender">
-                                {frameAnalysis.colorsPotted[p.name] || 0}
-                              </span>
+                            <div className="ma-stat">
+                              <b>{frameAnalysis.colorsPotted[p.name] || 0}</b><span>Colors</span>
                             </div>
-                            <div className="stat-row">
-                              <span>Fouls Committed</span>
-                              <span className="stat-val font-bold text-red">
+                            <div className="ma-stat">
+                              <b>{frameAnalysis.highestBreak[p.name] || 0}</b><span>Break</span>
+                            </div>
+                            <div className="ma-stat">
+                              <b className={(frameAnalysis.foulsCommitted[p.name] || 0) > 0 ? 'is-warn' : undefined}>
                                 {frameAnalysis.foulsCommitted[p.name] || 0}
-                              </span>
-                            </div>
-                            <div className="stat-row">
-                              <span>Highest Break</span>
-                              <span className="stat-val font-bold">
-                                {frameAnalysis.highestBreak[p.name] || 0}
-                              </span>
+                              </b><span>Fouls</span>
                             </div>
                           </div>
-                        </div>
+                        </article>
                       ))}
                     </div>
 
-                    {/* Frame event timeline */}
-                    <h5 className="analysis-panel-title" style={{ marginTop: 'var(--space-md)' }}>
-                      Event Timeline
-                    </h5>
-                    <div className="frame-timeline">
+                    <h5 className="ma-sub-title">Event Timeline</h5>
+                    <ol className="ma-timeline">
                       {activeFrame.actionLog.length === 0 ? (
-                        <div className="no-events-text">No events logged in this frame.</div>
+                        <li className="ma-empty">No events logged in this frame.</li>
                       ) : (
-                        activeFrame.actionLog.map((entry, idx) => {
-                          const isFoul = entry.type === 'foul' || entry.type === 'inOff';
-                          return (
-                            <div key={idx} className="timeline-item">
-                              <div className="timeline-dot-wrapper">
-                                <span className={`timeline-dot dot-${entry.type} ${isFoul ? 'dot-foul' : ''}`} />
-                              </div>
-                              <div className="timeline-content">
-                                <span className="timeline-player">{entry.playerName}</span>
-                                <p className="timeline-desc">{entry.description}</p>
-                              </div>
-                            </div>
-                          );
-                        })
+                        activeFrame.actionLog.map((entry, idx) => (
+                          <li key={idx} className={`ma-event ma-event--${entry.type}`}>
+                            <span className="ma-event-dot" />
+                            <span className="ma-event-who">{entry.playerName}</span>
+                            <span className="ma-event-what">{entry.description}</span>
+                          </li>
+                        ))
                       )}
-                    </div>
+                    </ol>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </section>
         </div>

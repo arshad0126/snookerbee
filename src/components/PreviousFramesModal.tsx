@@ -1,4 +1,5 @@
 import type { CompletedFrame } from '../engine/types';
+import { Icon } from './ui';
 
 interface PreviousFramesModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export default function PreviousFramesModal({
         <div className="prev-frames-content">
           {completedFrames.length === 0 ? (
             <div className="prev-frames-empty">
-              <span className="prev-frames-empty-icon">🎱</span>
+              <span className="prev-frames-empty-icon"><Icon name="ball" size={36} /></span>
               <p className="prev-frames-empty-text">No completed frames yet.</p>
               <p className="prev-frames-empty-subtext">Frame summaries will appear here after each completed frame.</p>
             </div>
@@ -55,12 +56,12 @@ export default function PreviousFramesModal({
                     <div className="prev-frame-header-right">
                       {frame.durationMs > 0 && (
                         <span className="prev-frame-duration">
-                          ⏱ {formatDuration(frame.durationMs)}
+                          <Icon name="clock" size={14} /> {formatDuration(frame.durationMs)}
                         </span>
                       )}
                       {frame.winnerName && (
                         <span className="prev-frame-winner-badge">
-                          🏆 {frame.winnerName}
+                          <Icon name="trophy" size={14} /> {frame.winnerName}
                         </span>
                       )}
                     </div>
@@ -81,7 +82,7 @@ export default function PreviousFramesModal({
                             </span>
                             <span className="prev-frame-player-name">
                               {ps.playerName}
-                              {isWinner && <span className="prev-frame-winner-icon">★</span>}
+                              {isWinner && <span className="prev-frame-winner-icon"><Icon name="star" size={14} /></span>}
                             </span>
                           </div>
                           <div className="prev-frame-player-stats">

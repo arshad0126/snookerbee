@@ -1,3 +1,5 @@
+import { Icon } from './Icon';
+
 export interface StepperProps {
   value: number;
   onChange: (value: number) => void;
@@ -20,7 +22,7 @@ export function Stepper({
         disabled={value <= min}
         aria-label="Decrease"
       >
-        −
+        <Icon name="minus" size={18} />
       </button>
       <span className="ui-stepper-value numeric" aria-live="polite">{value}</span>
       <button

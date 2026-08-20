@@ -482,3 +482,107 @@ button.ui-row:active { background: var(--fill-quaternary); }
   border-left: env(safe-area-inset-left) solid rgba(0, 122, 255, 0.16);
   border-right: env(safe-area-inset-right) solid rgba(0, 122, 255, 0.16);
 }
+
+/* ============================================================================
+   Icons — see components/ui/Icon.tsx
+   ---------------------------------------------------------------------------
+   Icons inherit `currentColor`, so they need no per-theme rules. What they do
+   need is motion: the emoji they replaced were inert, and a control that
+   doesn't answer a touch feels dead on a phone. Everything below is a response
+   to press, kept short enough (<200ms) to read as feedback rather than
+   animation, and disabled wholesale under reduced-motion.
+   ========================================================================= */
+
+.sb-icon {
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex: none;
+  /* Slight overshoot on the way back — reads as springy rather than mechanical. */
+  transition: transform 180ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 140ms ease;
+}
+
+/* Press feedback: the icon compresses with the control it sits in. */
+button:active .sb-icon,
+a:active .sb-icon,
+.ripple:active .sb-icon {
+  transform: scale(0.86);
+}
+
+button:disabled .sb-icon {
+  opacity: 0.45;
+}
+
+/* Circular icon-only control with a 44px touch target (iOS HIG minimum). */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--label-secondary, inherit);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.icon-btn:hover {
+  background: var(--fill-quaternary, rgba(127, 127, 127, 0.12));
+  color: var(--label-primary, inherit);
+}
+
+.icon-btn:active {
+  background: var(--fill-quaternary, rgba(127, 127, 127, 0.2));
+}
+
+.icon-btn--danger:hover {
+  color: var(--danger, #c0392b);
+}
+
+/* Icon sitting beside a label inside a button. */
+.btn .sb-icon {
+  margin-right: 0.5em;
+}
+
+.btn .sb-icon:only-child {
+  margin-right: 0;
+}
+
+/* Continuous spin, for loading affordances. */
+.sb-icon--spin {
+  animation: sb-icon-spin 900ms linear infinite;
+}
+
+@keyframes sb-icon-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* A one-shot nudge — used to draw the eye to a state change. */
+.sb-icon--pop {
+  animation: sb-icon-pop 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sb-icon-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-icon,
+  .icon-btn {
+    transition: none;
+  }
+  .sb-icon--spin,
+  .sb-icon--pop {
+    animation: none;
+  }
+  button:active .sb-icon,
+  a:active .sb-icon,
+  .ripple:active .sb-icon {
+    transform: none;
+  }
+}

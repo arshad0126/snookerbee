@@ -12,6 +12,7 @@ import {
 import type { GameState } from '../engine/types';
 import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard } from '../lib/shareCard';
+import { Icon } from './ui';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -243,7 +244,7 @@ export default function MatchSummary() {
       <main className="summary-content">
         <div className="summary-card card winner-card">
           <div className="winner-banner">
-            <span className="trophy-large">🏆</span>
+            <span className="trophy-large"><Icon name="trophy" size={56} /></span>
             <div className="winner-banner-text">
               <span className="winner-label">Winner</span>
               <span className="winner-name-highlight">{winnerName}</span>
@@ -348,11 +349,11 @@ export default function MatchSummary() {
         <div className="summary-footer-actions">
           {saveStatus === 'saved' ? (
             <div className="save-status-msg success card">
-              ✓ Match record saved successfully!
+              <Icon name="check" size={16} /> Match record saved successfully!
             </div>
           ) : saveStatus === 'error' ? (
             <div className="save-status-msg error card">
-              ⚠ Error saving match record: {dbError || 'Unknown error'}
+              <Icon name="alert" size={16} /> Error saving match record: {dbError || 'Unknown error'}
             </div>
           ) : null}
 
@@ -364,7 +365,7 @@ export default function MatchSummary() {
                 className="btn btn-primary btn-lg"
                 style={{ flex: 1 }}
               >
-                {saveStatus === 'saving' ? 'Saving...' : 'Save Match 💾'}
+                {saveStatus === 'saving' ? 'Saving...' : <>Save Match <Icon name="save" size={18} /></>}
               </button>
             )}
             <button
@@ -372,7 +373,7 @@ export default function MatchSummary() {
               className="btn btn-secondary btn-lg"
               style={{ flex: 1 }}
             >
-              📤 Share Card
+              <Icon name="share" size={18} /> Share Card
             </button>
             <button
               onClick={() => navigate('/dashboard')}

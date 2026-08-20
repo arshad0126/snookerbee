@@ -1,5 +1,6 @@
 // Barrel export for the SnookerBee v2 UI component library.
 export { Ball, type BallProps } from './Ball';
+export { Icon, type IconProps, type IconName } from './Icon';
 export { Button, type ButtonProps } from './Button';
 export { Card, type CardProps } from './Card';
 export { SegmentedControl, type SegmentOption, type SegmentedControlProps } from './SegmentedControl';

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Icon } from './ui';
 
 export default function OrientationWarning() {
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
@@ -50,7 +51,7 @@ export default function OrientationWarning() {
   return (
     <div className="orientation-banner">
       <div className="orientation-banner-content">
-        <span className="orientation-banner-icon">📱</span>
+        <span className="orientation-banner-icon"><Icon name="rotate" size={20} /></span>
         <span className="orientation-banner-text">
           Rotate to landscape for the best scoring experience
         </span>

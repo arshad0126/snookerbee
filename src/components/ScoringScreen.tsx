@@ -14,6 +14,7 @@ import FoulDialog from './FoulDialog';
 import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
 import PreviousFramesModal from './PreviousFramesModal';
+import { Icon } from './ui';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -381,7 +382,7 @@ export default function ScoringScreen() {
 
             <div className="player-card-bottom">
               <span className="player-card-timer">
-                ⏱ {formatTimer(isActive ? activeTeamPlayer.timeSpentMs : 0)}
+                <Icon name="clock" size={13} /> {formatTimer(isActive ? activeTeamPlayer.timeSpentMs : 0)}
               </span>
               {isActive && (
                 <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
@@ -433,7 +434,7 @@ export default function ScoringScreen() {
           </div>
 
           <div className="player-card-bottom">
-            <span className="player-card-timer">⏱ {formatTimer(p.timeSpentMs)}</span>
+            <span className="player-card-timer"><Icon name="clock" size={13} /> {formatTimer(p.timeSpentMs)}</span>
             {isActive && (
               <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
             )}
@@ -460,7 +461,7 @@ export default function ScoringScreen() {
         </div>
 
         <div className="scoring-topbar-center">
-          <span className="match-timer-display" title="Current Frame Time">⏱ {formatTimer(state.currentFrameDurationMs)}</span>
+          <span className="match-timer-display" title="Current Frame Time"><Icon name="clock" size={14} /> {formatTimer(state.currentFrameDurationMs)}</span>
         </div>
 
         <div className="scoring-topbar-right">
@@ -637,7 +638,7 @@ export default function ScoringScreen() {
               FOUL
             </button>
             <button onClick={handleMiss} disabled={isPaused} className="btn-action-premium btn-action-pass">
-              PASS ➔
+              PASS <Icon name="pass" size={18} />
             </button>
           </div>
 
@@ -697,7 +698,9 @@ export default function ScoringScreen() {
                 }}
                 className={`btn btn-secondary ${state.isFreeBall ? 'active' : ''}`}
               >
-                {state.isFreeBall ? '✓ Disable Free Ball' : '⭐ Award Free Ball'}
+                {state.isFreeBall
+              ? <>&#10003; Disable Free Ball</>
+              : <><Icon name="star" size={16} /> Award Free Ball</>}
               </button>
               <button
                 onClick={() => {
@@ -706,7 +709,7 @@ export default function ScoringScreen() {
                 }}
                 className="btn btn-secondary"
               >
-                🏳 Concede Frame
+                <Icon name="flag" size={16} /> Concede Frame
               </button>
               <button
                 onClick={() => {
@@ -716,7 +719,7 @@ export default function ScoringScreen() {
                 }}
                 className="btn btn-danger"
               >
-                🚪 Abort Match
+                <Icon name="exit" size={16} /> Abort Match
               </button>
             </div>
             <button
@@ -788,7 +791,7 @@ export default function ScoringScreen() {
                               cursor: idx === 0 ? 'not-allowed' : 'pointer'
                             }}
                           >
-                            ▲
+                            <Icon name="chevron-up" size={16} />
                           </button>
                           <button
                             onClick={() => {
@@ -808,7 +811,7 @@ export default function ScoringScreen() {
                               cursor: idx === nextFramePlayersOrder.length - 1 ? 'not-allowed' : 'pointer'
                             }}
                           >
-                            ▼
+                            <Icon name="chevron-down" size={16} />
                           </button>
                         </div>
                       ) : null}
@@ -843,7 +846,7 @@ export default function ScoringScreen() {
                 onClick={handleConfirmNextFrameSetup}
                 style={{ width: '100%', marginTop: 'var(--space-md)', padding: '12px', fontWeight: 'bold' }}
               >
-                Start Frame 🎱
+                Start Frame <Icon name="ball" size={18} />
               </button>
             </div>
           </div>
