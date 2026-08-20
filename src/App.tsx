@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { GameProvider } from './engine/GameContext';
 import { ToastProvider, LayoutDebug } from './components/ui';
 import LandingPage from './components/LandingPage';
+import OrientationWarning from './components/OrientationWarning';
 import AuthCallback from './components/AuthCallback';
 import Dashboard from './components/Dashboard';
 import GameSetup from './components/GameSetup';
@@ -127,6 +128,7 @@ export default function App() {
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
+        <OrientationWarning />
         <LayoutDebug />
       </ToastProvider>
     </BrowserRouter>

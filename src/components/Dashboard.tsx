@@ -174,6 +174,8 @@ export default function Dashboard() {
       </header>
 
       <main className="dashboard-grid">
+        {/* Left column: fixed in landscape */}
+        <div className="dashboard-left">
         <div
           onClick={() => navigate('/setup')}
           className="dashboard-card-new-game card ripple"
@@ -200,6 +202,10 @@ export default function Dashboard() {
           </div>
         </div>
 
+        </div>
+
+        {/* Right column: the only scrolling region in landscape */}
+        <div className="dashboard-right">
         <section className="recent-matches-section">
           <h3 className="dashboard-section-title">Recent Matches</h3>
           {recentMatches.length === 0 ? (
@@ -246,6 +252,7 @@ export default function Dashboard() {
             </button>
           )}
         </section>
+        </div>
       </main>
 
       {selectedMatch && (

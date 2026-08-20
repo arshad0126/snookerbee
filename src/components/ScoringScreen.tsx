@@ -9,7 +9,6 @@ import {
   getPointsRemaining,
 } from '../engine';
 import { audio } from '../lib/audio';
-import OrientationWarning from './OrientationWarning';
 import FoulDialog from './FoulDialog';
 import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
@@ -420,7 +419,6 @@ export default function ScoringScreen() {
 
   return (
     <div className="scoring-screen felt-bg">
-      <OrientationWarning />
 
       {/* Top Bar */}
       <header className="scoring-topbar">

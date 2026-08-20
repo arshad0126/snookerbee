@@ -2081,3 +2081,221 @@ body.light-theme .summary-page {
   .ma-body { padding-left: var(--space-md); padding-right: var(--space-md); }
   .ma-stats { grid-template-columns: repeat(4, 1fr); }
 }
+
+
+/* ============================================================================
+   Landscape gate
+   ---------------------------------------------------------------------------
+   iOS cannot be forced into landscape (no Screen Orientation API, manifest
+   orientation ignored), so portrait is blocked rather than merely discouraged.
+   Full-screen and non-dismissible: the scoring UI is never rendered into a
+   layout it was not designed for.
+   ========================================================================= */
+.orientation-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--space-xl)) var(--space-xl)
+           calc(env(safe-area-inset-bottom, 0px) + var(--space-xl));
+  background: var(--bg-primary, var(--bg-base));
+  text-align: center;
+}
+
+.orientation-gate-inner {
+  max-width: 32ch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.orientation-gate-icon {
+  color: var(--accent-sage);
+  animation: orientation-tilt 2.4s ease-in-out infinite;
+}
+
+@keyframes orientation-tilt {
+  0%, 45%, 100% { transform: rotate(0deg); }
+  60%, 85%      { transform: rotate(-90deg); }
+}
+
+.orientation-gate-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.orientation-gate-text {
+  font-size: var(--text-base, 15px);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.orientation-gate-hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orientation-gate-icon { animation: none; }
+}
+
+
+/* ============================================================================
+   Match setup — one page, five panels, dragged sideways
+   ---------------------------------------------------------------------------
+   Previously each step replaced the last and the card grew tall enough to need
+   vertical scrolling. All five now sit in a horizontal snap track: drag or
+   flick between them. Scroll-snap is used rather than a JS drag handler so the
+   momentum and rubber-band come from the platform and feel native on iOS.
+   ========================================================================= */
+.setup-track {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.setup-track::-webkit-scrollbar {
+  display: none;
+}
+
+.setup-panel {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding: var(--space-lg) var(--space-md);
+  overflow-y: auto;             /* a tall panel scrolls itself, not the page */
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-track { scroll-behavior: auto; }
+}
+
+/* Progress dots double as direct navigation. */
+.setup-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-sm) 0;
+  flex: none;
+}
+
+.setup-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: width var(--transition-fast) ease, background var(--transition-fast) ease;
+}
+
+.setup-dot.active {
+  width: 22px;
+  border-radius: 999px;
+  background: var(--accent-sage);
+}
+
+/* The card is now a bounded column: header, track, dots, footer. */
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px
+  );
+}
+
+.setup-card-header,
+.setup-dots,
+.setup-card-footer {
+  flex: none;
+}
+
+
+/* ============================================================================
+   Dashboard — two columns in landscape
+   ---------------------------------------------------------------------------
+   The app is landscape-only, so the dashboard splits: New Game and the stat
+   tiles pin to the left, recent matches scroll on the right. Only the right
+   column scrolls, so the primary action is always reachable without hunting
+   back up the page.
+
+   Portrait keeps the stacked layout — the gate blocks portrait anyway, but the
+   rules stay correct for tablets and desktop widths.
+   ========================================================================= */
+@media (orientation: landscape) and (min-width: 700px) {
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 38%) 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+    /* Fill the viewport below the header so the right column can own the
+       scroll rather than the page doing it. */
+    height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 96px
+    );
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;          /* fixed — never scrolls */
+  }
+
+  .dashboard-right {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;          /* the only scrolling region */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-right: 4px;        /* keeps content clear of the scrollbar */
+  }
+
+  /* The hero takes the space the match list would have used. */
+  .dashboard-left .dashboard-card-new-game {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .dashboard-left .stats-row {
+    flex: none;
+  }
+
+  /* Section heading stays put while the list moves under it. */
+  .dashboard-right .dashboard-section-title {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0 0 var(--space-md);
+    padding: var(--space-xs) 0;
+    background: var(--bg-primary, var(--bg-base));
+  }
+}

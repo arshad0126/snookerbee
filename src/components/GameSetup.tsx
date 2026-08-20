@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
@@ -14,6 +14,31 @@ export default function GameSetup() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // The carousel is the source of truth for which step is showing: a drag has
+  // no discrete event, so read the settled scroll position back into state.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const width = track.clientWidth;
+        if (width === 0) return;
+        const step = Math.round(track.scrollLeft / width) + 1;
+        setCurrentStep((prev) => (prev === step ? prev : step));
+      });
+    };
+
+    track.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      track.removeEventListener('scroll', onScroll);
+    };
+  }, []);
   const [gameMode, setGameMode] = useState<GameMode>('1v1');
   const [teamSize, setTeamSize] = useState<2 | 3>(2); // for teams mode
   const [redsCount, setRedsCount] = useState<10 | 15>(15);
@@ -90,9 +115,18 @@ export default function GameSetup() {
     }
   };
 
+  /** Scroll the carousel to a panel; the scroll handler updates currentStep. */
+  const goToStep = (step: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const clamped = Math.min(5, Math.max(1, step));
+    track.scrollTo({ left: track.clientWidth * (clamped - 1), behavior: 'smooth' });
+    setCurrentStep(clamped);
+  };
+
   const nextStep = () => {
     if (currentStep < 5) {
-      setCurrentStep(prev => prev + 1);
+      goToStep(currentStep + 1);
     } else {
       // Finalize and start match
       const config: GameSetupConfig = {
@@ -123,14 +157,14 @@ export default function GameSetup() {
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
+      goToStep(currentStep - 1);
     } else {
       navigate('/dashboard');
     }
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
+  const renderStepContent = (step: number) => {
+    switch (step) {
       case 1:
         return (
           <div className="setup-step-container">
@@ -463,9 +497,31 @@ export default function GameSetup() {
           <span className="setup-step-badge">Step {currentStep} of 5</span>
         </header>
 
-        <main key={currentStep} className="setup-card-content fadeInUp">
-          {renderStepContent()}
-        </main>
+        <div className="setup-track" ref={trackRef}>
+          {[1, 2, 3, 4, 5].map((step) => (
+            <section
+              key={step}
+              className="setup-panel"
+              aria-label={`Step ${step} of 5`}
+              aria-hidden={currentStep !== step}
+            >
+              {renderStepContent(step)}
+            </section>
+          ))}
+        </div>
+
+        <div className="setup-dots" role="tablist" aria-label="Setup steps">
+          {[1, 2, 3, 4, 5].map((step) => (
+            <button
+              key={step}
+              role="tab"
+              aria-selected={currentStep === step}
+              aria-label={`Go to step ${step}`}
+              onClick={() => goToStep(step)}
+              className={`setup-dot ${currentStep === step ? 'active' : ''}`}
+            />
+          ))}
+        </div>
 
         <footer className="setup-card-footer">
           <button onClick={prevStep} className="btn btn-setup-back">
