@@ -1982,3 +1982,38 @@ body.light-theme .btn-topbar-icon.active-pause {
 .summary-stat--milestone .summary-stat-value {
   color: var(--accent-sage);
 }
+
+
+/* ============================================================================
+   Wall clock — top centre of the scoring screen
+   ---------------------------------------------------------------------------
+   Shows the phone's time and when the frame began. Display only: the recorded
+   duration comes from subtracting timestamps in the reducer, not from this.
+   Re-renders once a minute, not once a second.
+   ========================================================================= */
+.wall-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  user-select: none;
+}
+
+.wall-clock-now {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.wall-clock-since {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 1px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
