@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useState } from 'react';
+import { useReducer, useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { BallType } from '../engine/types';
 import {
@@ -16,10 +16,15 @@ import { audio } from '../lib/audio';
 import { Icon } from './ui';
 import WallClock from './WallClock';
 import {
-  saveCenturyGame,
+  saveCenturyGame as cacheCenturyGame,
   loadCenturyGame,
   clearCenturyGame,
 } from '../lib/matchStorage';
+import {
+  saveCenturyGame as persistCenturyGame,
+  saveCenturyGameLocally,
+} from '../lib/database';
+import { useAuth } from '../hooks/useAuth';
 
 const BALLS: BallType[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
@@ -38,6 +43,55 @@ export default function CenturyScreen() {
   );
 
   const [foulOpen, setFoulOpen] = useState(false);
+  const { isGuest } = useAuth();
+  const savedRef = useRef(false);
+
+  // Save the result once, the moment the game ends. Same lesson as matches:
+  // a result that needs a button press to survive is a result that gets lost.
+  useEffect(() => {
+    if (!state.finished || savedRef.current || state.players.length === 0) return;
+    savedRef.current = true;
+
+    const loser = state.players.find((p) => p.finishedAt === null);
+    const durationMs = Math.max(0, Date.now() - Date.parse(state.startedAt));
+
+    if (isGuest) {
+      saveCenturyGameLocally({
+        id: `century_${Date.now()}`,
+        target: state.target,
+        createdAt: state.startedAt,
+        durationMs,
+        loserName: loser?.name ?? null,
+        players: state.players.map((p) => ({
+          name: p.name,
+          score: p.score,
+          finishedAt: p.finishedAt,
+          potted: p.potted,
+          redsPotted: p.redsPotted,
+          redsMissed: p.redsMissed,
+          fouls: p.fouls,
+        })),
+      });
+      return;
+    }
+
+    void persistCenturyGame(
+      {
+        target: state.target,
+        duration_ms: durationMs,
+        loser_name: loser?.name ?? null,
+      },
+      state.players.map((p) => ({
+        player_name: p.name,
+        final_score: p.score,
+        finished_at: p.finishedAt,
+        balls_potted: p.potted,
+        reds_potted: p.redsPotted,
+        reds_missed: p.redsMissed,
+        fouls: p.fouls,
+      }))
+    );
+  }, [state, isGuest]);
 
   // Nothing to play — no setup and nothing stored.
   useEffect(() => {
@@ -48,7 +102,7 @@ export default function CenturyScreen() {
   useEffect(() => {
     if (state.players.length === 0) return;
     if (state.finished) clearCenturyGame();
-    else saveCenturyGame(state);
+    else cacheCenturyGame(state);
   }, [state]);
 
   const player = currentPlayer(state);

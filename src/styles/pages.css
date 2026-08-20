@@ -2772,3 +2772,11 @@ body.light-theme .summary-page {
   font-weight: 500;
   opacity: 0.85;
 }
+
+
+/* Milestone counts — the one tinted number in a row of neutral stats, since a
+   century is the thing worth spotting. */
+.ma-stat b.is-milestone,
+.player-stat-value.milestone {
+  color: var(--accent-sage);
+}

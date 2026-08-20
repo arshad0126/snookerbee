@@ -131,6 +131,8 @@ export default function MatchSummary() {
               framesWon,
               foulsCommitted: p.foulsCommitted,
               timeSpentMs: p.timeSpentMs,
+              centuries: p.centuries,
+              halfCenturies: p.halfCenturies,
             };
           }),
           frames: [
@@ -179,6 +181,8 @@ export default function MatchSummary() {
             frames_won: framesWon,
             fouls_committed: p.foulsCommitted,
             time_spent_ms: p.timeSpentMs,
+            centuries: p.centuries,
+            half_centuries: p.halfCenturies,
           };
         });
 
@@ -348,6 +352,18 @@ export default function MatchSummary() {
                       <span className="player-stat-label">Fouls</span>
                       <span className="player-stat-value">{p.foulsCommitted}</span>
                     </div>
+                    {p.centuries > 0 && (
+                      <div className="player-stat-item">
+                        <span className="player-stat-label">Centuries</span>
+                        <span className="player-stat-value milestone">{p.centuries}</span>
+                      </div>
+                    )}
+                    {p.halfCenturies > 0 && (
+                      <div className="player-stat-item">
+                        <span className="player-stat-label">50+ breaks</span>
+                        <span className="player-stat-value milestone">{p.halfCenturies}</span>
+                      </div>
+                    )}
                     <div className="player-stat-item">
                       <span className="player-stat-label">Time Spent</span>
                       <span className="player-stat-value">{formatPlayerTime(p.timeSpentMs)}</span>

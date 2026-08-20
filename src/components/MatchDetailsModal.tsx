@@ -13,6 +13,8 @@ interface PlayerDetail {
   framesWon: number;
   foulsCommitted: number;
   timeSpentMs: number;
+  centuries?: number;
+  halfCenturies?: number;
 }
 
 interface FrameDetail {
@@ -295,6 +297,16 @@ export default function MatchDetailsModal({
                       <div className="ma-stat">
                         <b>{formatTimeSimple(p.timeSpentMs)}</b><span>Time</span>
                       </div>
+                      {(p.centuries ?? 0) > 0 && (
+                        <div className="ma-stat">
+                          <b className="is-milestone">{p.centuries}</b><span>100+</span>
+                        </div>
+                      )}
+                      {(p.halfCenturies ?? 0) > 0 && (
+                        <div className="ma-stat">
+                          <b className="is-milestone">{p.halfCenturies}</b><span>50+</span>
+                        </div>
+                      )}
                     </div>
                   </article>
                 );

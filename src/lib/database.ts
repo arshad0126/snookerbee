@@ -21,6 +21,34 @@ export interface MatchPlayerRecord {
   frames_won: number;
   fouls_committed: number;
   time_spent_ms: number;
+  /** Breaks of 100+. Requires the milestone migration; see docs/schema.sql. */
+  centuries?: number;
+  /** Breaks of 50-99. Requires the milestone migration. */
+  half_centuries?: number;
+}
+
+/** Columns added after launch, which an un-migrated database will not have. */
+const OPTIONAL_PLAYER_COLUMNS = ['centuries', 'half_centuries'] as const;
+
+/** PostgREST reports an unknown column rather than ignoring it. */
+function isUnknownColumnError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === 'PGRST204') return true;
+  const message = e.message ?? '';
+  return OPTIONAL_PLAYER_COLUMNS.some(
+    (c) => message.includes(c) && /column|schema/i.test(message)
+  );
+}
+
+function withoutOptionalColumns(
+  rows: (MatchPlayerRecord & { match_id: string })[]
+) {
+  return rows.map((row) => {
+    const copy: Record<string, unknown> = { ...row };
+    for (const column of OPTIONAL_PLAYER_COLUMNS) delete copy[column];
+    return copy;
+  });
 }
 
 export interface MatchFrameRecord {
@@ -53,11 +81,24 @@ export async function saveMatch(
     if (matchError) throw matchError;
     const matchId = matchData.id;
 
-    // Insert players
+    // Insert players. Century and half-century counts were added after the
+    // original schema, so a database that has not run the migration rejects
+    // them. Losing the whole match over two optional stats would be worse than
+    // losing the stats, so fall back and save the rest.
     const playersWithMatchId = players.map(p => ({ ...p, match_id: matchId }));
-    const { error: playersError } = await supabase
+    let { error: playersError } = await supabase
       .from('match_players')
       .insert(playersWithMatchId);
+
+    if (playersError && isUnknownColumnError(playersError)) {
+      console.warn(
+        'match_players is missing the milestone columns — saving without them. ' +
+        'Run the migration in docs/schema.sql to record centuries.'
+      );
+      ({ error: playersError } = await supabase
+        .from('match_players')
+        .insert(withoutOptionalColumns(playersWithMatchId)));
+    }
 
     if (playersError) throw playersError;
 
@@ -197,6 +238,8 @@ export interface LocalMatchRecord {
     framesWon: number;
     foulsCommitted: number;
     timeSpentMs: number;
+    centuries?: number;
+    halfCenturies?: number;
   }[];
   frames: {
     frameNumber: number;
@@ -226,4 +269,107 @@ export function deleteLocalMatch(matchId: string): void {
   const existing = getLocalMatchHistory();
   const filtered = existing.filter(m => m.id !== matchId);
   localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(filtered));
+}
+
+
+/* ==========================================================================
+   Century games
+   --------------------------------------------------------------------------
+   A different game from snooker with a different shape of result — players
+   finish in an order and one is left short — so it gets its own tables rather
+   than being bent into `matches`.
+   ======================================================================== */
+
+export interface CenturyGameRecord {
+  id?: string;
+  user_id?: string;
+  target: number;
+  created_at?: string;
+  duration_ms: number;
+  loser_name: string | null;
+}
+
+export interface CenturyPlayerRecord {
+  id?: string;
+  game_id?: string;
+  player_name: string;
+  final_score: number;
+  /** Finishing position; null means they never reached the target. */
+  finished_at: number | null;
+  balls_potted: number;
+  reds_potted: number;
+  reds_missed: number;
+  fouls: number;
+}
+
+export async function saveCenturyGame(
+  game: CenturyGameRecord,
+  players: CenturyPlayerRecord[]
+): Promise<{ success: boolean; gameId?: string; error?: string }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'No authenticated user session found.' };
+
+    const { data, error } = await supabase
+      .from('century_games')
+      .insert({ ...game, user_id: user.id })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    const gameId = data.id;
+
+    const { error: playersError } = await supabase
+      .from('century_players')
+      .insert(players.map((p) => ({ ...p, game_id: gameId })));
+
+    if (playersError) throw playersError;
+
+    return { success: true, gameId };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error saving century game:', message);
+    return { success: false, error: message };
+  }
+}
+
+/* --------------------------------------------------- local century history */
+
+const LOCAL_CENTURY_KEY = 'snookerbee_century_history';
+
+export interface LocalCenturyRecord {
+  id: string;
+  target: number;
+  createdAt: string;
+  durationMs: number;
+  loserName: string | null;
+  players: {
+    name: string;
+    score: number;
+    finishedAt: number | null;
+    potted: number;
+    redsPotted: number;
+    redsMissed: number;
+    fouls: number;
+  }[];
+}
+
+export function saveCenturyGameLocally(game: LocalCenturyRecord): boolean {
+  try {
+    const existing = getLocalCenturyHistory();
+    existing.unshift(game);
+    localStorage.setItem(LOCAL_CENTURY_KEY, JSON.stringify(existing.slice(0, 50)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getLocalCenturyHistory(): LocalCenturyRecord[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_CENTURY_KEY);
+    return raw ? (JSON.parse(raw) as LocalCenturyRecord[]) : [];
+  } catch {
+    return [];
+  }
 }
