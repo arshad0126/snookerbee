@@ -10,6 +10,7 @@ import {
   type LocalMatchRecord,
 } from '../lib/database';
 import type { GameState } from '../engine/types';
+import { shareCanvasAsImage, cardFilename, CARD } from '../lib/shareImage';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -184,42 +185,34 @@ export default function MatchSummary() {
     }
   };
 
-  const handleDownloadCard = () => {
+  const handleShareCard = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw background gradient (Snooker Green Felt style)
-    const gradient = ctx.createLinearGradient(0, 0, 0, 600);
-    gradient.addColorStop(0, '#0F3C23');
-    gradient.addColorStop(1, '#071F11');
-    ctx.fillStyle = gradient;
+    // Draw at 2x for Retina sharpness while keeping the 800x600 coordinate space.
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, 800, 600);
+
+    // Background — flat Shadow Grey (matches app dark-mode tokens)
+    ctx.fillStyle = CARD.bg;
     ctx.fillRect(0, 0, 800, 600);
 
-    // Golden frame border
-    ctx.strokeStyle = '#D4AF37';
-    ctx.lineWidth = 14;
-    ctx.strokeRect(7, 7, 786, 586);
-
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(25, 25, 750, 550);
-
     // Title
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = CARD.ink;
     ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(' SNOOKERBEE', 400, 75);
+    ctx.fillText('SNOOKERBEE', 400, 75);
 
-    ctx.fillStyle = '#94D3A2';
+    ctx.fillStyle = CARD.accent;
     ctx.font = '18px system-ui, sans-serif';
     ctx.fillText(
       `Match Summary  •  ${mode.toUpperCase()} Mode  •  Best of ${bestOf}`,
       400,
       110
     );
-    ctx.fillStyle = '#789F82';
+    ctx.fillStyle = CARD.inkFaint;
     const dateStr = new Date().toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
@@ -230,22 +223,22 @@ export default function MatchSummary() {
     ctx.fillText(dateStr, 400, 138);
 
     // Winner Banner
-    ctx.fillStyle = 'rgba(212, 175, 55, 0.1)';
+    ctx.fillStyle = CARD.accentFill;
     ctx.fillRect(120, 170, 560, 110);
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+    ctx.strokeStyle = CARD.accentLine;
     ctx.lineWidth = 1;
     ctx.strokeRect(120, 170, 560, 110);
 
-    ctx.fillStyle = '#D4AF37';
+    ctx.fillStyle = CARD.accent;
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillText('WINNER', 400, 205);
 
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = CARD.ink;
     ctx.font = 'bold 34px system-ui, sans-serif';
     ctx.fillText(winnerName, 400, 255);
 
     // Scoreboard header
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.accent;
     ctx.font = 'bold 15px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('PLAYER', 120, 320);
@@ -256,7 +249,7 @@ export default function MatchSummary() {
     ctx.fillText('FOULS', 660, 320);
 
     // Divider
-    ctx.strokeStyle = 'rgba(138, 191, 151, 0.3)';
+    ctx.strokeStyle = CARD.rule;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(120, 335);
@@ -275,7 +268,7 @@ export default function MatchSummary() {
         : (gameState.frameScores[p.id] || 0);
 
       const isWinner = p.name === winnerName || (pTeam && pTeam.name === winnerName);
-      ctx.fillStyle = isWinner ? '#D4AF37' : '#FFFFFF';
+      ctx.fillStyle = isWinner ? CARD.accent : CARD.ink;
       ctx.font = isWinner
         ? 'bold 18px system-ui, sans-serif'
         : '18px system-ui, sans-serif';
@@ -294,7 +287,7 @@ export default function MatchSummary() {
     });
 
     // Duration Footer
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.inkFaint;
     ctx.font = '16px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(
@@ -303,14 +296,13 @@ export default function MatchSummary() {
       545
     );
 
-    // Trigger download
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `snookerbee_match_summary.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Share via Web Share API (with download / preview fallbacks)
+    const names = mode === 'team' ? teams.map(t => t.name) : players.map(p => p.name);
+    await shareCanvasAsImage(
+      canvas,
+      cardFilename(names.slice(0, 2)),
+      'SnookerBee match summary'
+    );
   };
 
   return (
@@ -447,7 +439,7 @@ export default function MatchSummary() {
               </button>
             )}
             <button
-              onClick={handleDownloadCard}
+              onClick={() => { void handleShareCard(); }}
               className="btn btn-secondary btn-lg"
               style={{ flex: 1 }}
             >
@@ -465,7 +457,7 @@ export default function MatchSummary() {
       </main>
       
       {/* Off-screen canvas for image generation */}
-      <canvas ref={canvasRef} width={800} height={600} style={{ display: 'none' }} />
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
     </div>
   );
 }
