@@ -192,17 +192,20 @@ export default function Dashboard() {
         </button>
 
         <div className="stats-row">
-          <div className="stat-card card">
-            <div className="stat-value">{stats.totalGames}</div>
-            <div className="stat-label">Total Games</div>
+          <div className="stat-card">
+            <span className="stat-glyph"><Icon name="chart" size={14} /></span>
+            <span className="stat-value">{stats.totalGames}</span>
+            <span className="stat-label">Games</span>
           </div>
-          <div className="stat-card card">
-            <div className="stat-value">{stats.highestBreak}</div>
-            <div className="stat-label">Highest Break</div>
+          <div className="stat-card">
+            <span className="stat-glyph stat-glyph--accent"><Icon name="ball" size={14} /></span>
+            <span className="stat-value stat-value--accent">{stats.highestBreak}</span>
+            <span className="stat-label">Top break</span>
           </div>
-          <div className="stat-card card">
-            <div className="stat-value">{stats.winRate}%</div>
-            <div className="stat-label">Win Rate</div>
+          <div className="stat-card">
+            <span className="stat-glyph"><Icon name="trophy" size={14} /></span>
+            <span className="stat-value">{stats.winRate}%</span>
+            <span className="stat-label">Win rate</span>
           </div>
         </div>
 
@@ -224,7 +227,7 @@ export default function Dashboard() {
                 <div
                   key={match.id}
                   onClick={() => setSelectedMatch(match)}
-                  className="history-card card"
+                  className="history-card"
                 >
                   <div className="history-card-header">
                     <span className="history-card-date">{match.date}</span>
