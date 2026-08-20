@@ -2399,6 +2399,12 @@ body.light-theme .summary-page {
   gap: 8px;
 }
 
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
 .tile-row--sub {
   margin-top: 8px;
 }

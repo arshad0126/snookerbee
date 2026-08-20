@@ -2017,3 +2017,301 @@ body.light-theme .btn-topbar-icon.active-pause {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
+
+/* ============================================================================
+   Century — the club game (see engine/century.ts)
+   ---------------------------------------------------------------------------
+   Land exactly on the target. Balls that would take you past it stay tappable
+   but are marked, because that shot happens at the table and the visit still
+   has to end. A ball already potted twice in a row is disabled outright — the
+   rule is enforced by removing the option rather than penalising it after.
+   ========================================================================= */
+.century-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  height: 100dvh;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px)
+           calc(env(safe-area-inset-right, 0px) + 12px)
+           calc(env(safe-area-inset-bottom, 0px) + 8px)
+           calc(env(safe-area-inset-left, 0px) + 12px);
+  background: var(--bg-primary, var(--bg-base));
+}
+
+.century-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex: none;
+}
+
+.century-topbar-side {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 96px;
+}
+
+.century-topbar-right {
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.century-target {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-sage);
+}
+
+.century-target-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* --- standings --- */
+.century-players {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  flex: none;
+}
+
+.century-player {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color-dim);
+  background: var(--bg-elevated);
+}
+
+.century-player.active {
+  border-color: var(--accent-sage);
+  background: var(--accent-tint);
+}
+
+.century-player.done {
+  opacity: 0.6;
+}
+
+.century-player-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.century-player-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.century-done-badge {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-sage);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.century-player-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+
+.century-player-need {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* --- balls --- */
+.century-balls {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.century-ball {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 0;
+  padding: 8px 4px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease, opacity 140ms ease, border-color 140ms ease;
+}
+
+.century-ball:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.century-ball-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ball-colour, #888);
+  box-shadow: inset -3px -3px 6px rgba(0, 0, 0, 0.4),
+              inset 2px 2px 4px rgba(255, 255, 255, 0.25);
+}
+
+.century-ball.ball-red    { --ball-colour: var(--ball-red); }
+.century-ball.ball-yellow { --ball-colour: var(--ball-yellow); }
+.century-ball.ball-green  { --ball-colour: var(--ball-green); }
+.century-ball.ball-brown  { --ball-colour: var(--ball-brown); }
+.century-ball.ball-blue   { --ball-colour: var(--ball-blue); }
+.century-ball.ball-pink   { --ball-colour: var(--ball-pink); }
+.century-ball.ball-black  { --ball-colour: var(--ball-black); }
+
+.century-ball-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.century-ball-flag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-sage);
+}
+
+/* Exactly finishes the player — the checkout. */
+.century-ball.checkout {
+  border-color: var(--accent-sage);
+  background: var(--accent-tint);
+}
+
+/* Would go past the target: still tappable, because it happens at the table. */
+.century-ball.busts {
+  opacity: 0.34;
+}
+
+/* Potted twice in a row already — the option is removed, not penalised. */
+.century-ball.blocked {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.century-ball.blocked .century-ball-flag {
+  color: var(--danger);
+}
+
+/* --- outcomes --- */
+.century-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex: none;
+}
+
+.century-miss-red {
+  background: var(--danger-tint, rgba(192, 57, 43, 0.12));
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  font-weight: 700;
+}
+
+.century-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex: none;
+}
+
+/* --- foul picker + result --- */
+.century-foul-card,
+.century-result-card {
+  position: relative;
+  width: min(92vw, 460px);
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card-solid, var(--bg-elevated));
+  border: 1px solid var(--border-color-dim);
+  z-index: var(--z-modal, 1000);
+}
+
+.century-foul-title,
+.century-result-title {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.century-foul-balls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: var(--space-md);
+}
+
+.century-result-list {
+  list-style: none;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.century-result-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.century-result-row.loser {
+  background: var(--danger-tint, rgba(192, 57, 43, 0.12));
+  color: var(--danger);
+}
+
+.century-result-pos {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.century-result-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

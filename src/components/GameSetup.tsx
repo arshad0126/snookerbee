@@ -16,6 +16,9 @@ const MODES: { id: GameMode; label: string; icon: IconName }[] = [
   { id: 'freeForAll', label: 'Free for All', icon: 'target' },
 ];
 
+/** Century is a different game, not a snooker mode — see engine/century.ts. */
+type Format = 'snooker' | 'century';
+
 /** Reds shown as balls rather than a number — read at a glance, no label. */
 function RedCluster({ count }: { count: 10 | 15 }) {
   const dots = count === 10 ? 2 : 3;
@@ -32,6 +35,8 @@ export default function GameSetup() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
+  const [format, setFormat] = useState<Format>('snooker');
+  const [centuryTarget, setCenturyTarget] = useState<number>(100);
   const [gameMode, setGameMode] = useState<GameMode>('1v1');
   const [teamSize, setTeamSize] = useState<2 | 3>(2);
   const [redsCount, setRedsCount] = useState<10 | 15>(15);
@@ -112,6 +117,20 @@ export default function GameSetup() {
   };
 
   const startMatch = () => {
+    if (format === 'century') {
+      navigate('/century', {
+        state: {
+          setup: {
+            target: centuryTarget,
+            players: playerNames.map((name, i) => ({
+              name: name.trim() || `Player ${i + 1}`,
+            })),
+          },
+        },
+      });
+      return;
+    }
+
     const config: GameSetupConfig = {
       mode: gameMode,
       redsCount,
@@ -156,19 +175,34 @@ export default function GameSetup() {
 
           <fieldset className="setup-field">
             <legend className="setup-legend">Mode</legend>
-            <div className="tile-row">
+            <div className="tile-grid">
               {MODES.map((m) => (
                 <button
                   key={m.id}
                   type="button"
-                  aria-pressed={gameMode === m.id}
-                  onClick={() => changeMode(m.id)}
-                  className={`tile ${gameMode === m.id ? 'tile--on' : ''}`}
+                  aria-pressed={format === 'snooker' && gameMode === m.id}
+                  onClick={() => { setFormat('snooker'); changeMode(m.id); }}
+                  className={`tile ${
+                    format === 'snooker' && gameMode === m.id ? 'tile--on' : ''
+                  }`}
                 >
                   <Icon name={m.icon} size={20} />
                   <span className="tile-label">{m.label}</span>
                 </button>
               ))}
+              <button
+                type="button"
+                aria-pressed={format === 'century'}
+                onClick={() => {
+                  setFormat('century');
+                  setGameMode('freeForAll');
+                  setPlayerNames((n) => (n.length >= 2 ? n : ['', '', '']));
+                }}
+                className={`tile ${format === 'century' ? 'tile--on' : ''}`}
+              >
+                <Icon name="chart" size={20} />
+                <span className="tile-label">Century</span>
+              </button>
             </div>
             {gameMode === 'team' && (
               <div className="tile-row tile-row--sub">
@@ -187,6 +221,29 @@ export default function GameSetup() {
             )}
           </fieldset>
 
+          {format === 'century' ? (
+            <fieldset className="setup-field">
+              <legend className="setup-legend">Target</legend>
+              <div className="tile-row">
+                {[50, 100].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={centuryTarget === t}
+                    onClick={() => setCenturyTarget(t)}
+                    className={`tile ${centuryTarget === t ? 'tile--on' : ''}`}
+                  >
+                    <span className="tile-value">{t}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="setup-hint">
+                Land exactly on {centuryTarget}. Red is 10 — pot it or lose 10.
+                Last player short is the loser.
+              </p>
+            </fieldset>
+          ) : (
+          <>
           <fieldset className="setup-field">
             <legend className="setup-legend">Reds</legend>
             <div className="tile-row">
@@ -228,6 +285,8 @@ export default function GameSetup() {
                 : `First to ${Math.ceil(bestOf / 2)} wins`}
             </p>
           </fieldset>
+          </>
+          )}
 
         </aside>
 
