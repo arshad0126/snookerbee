@@ -10,7 +10,8 @@ import {
   type LocalMatchRecord,
 } from '../lib/database';
 import type { GameState } from '../engine/types';
-import { shareCanvasAsImage, cardFilename, CARD } from '../lib/shareImage';
+import { presentShareCard, cardFilename } from '../lib/shareImage';
+import { drawMatchCard } from '../lib/shareCard';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -188,77 +189,8 @@ export default function MatchSummary() {
   const handleShareCard = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
 
-    // Draw at 2x for Retina sharpness while keeping the 800x600 coordinate space.
-    ctx.setTransform(2, 0, 0, 2, 0, 0);
-    ctx.clearRect(0, 0, 800, 600);
-
-    // Background — flat Shadow Grey (matches app dark-mode tokens)
-    ctx.fillStyle = CARD.bg;
-    ctx.fillRect(0, 0, 800, 600);
-
-    // Title
-    ctx.fillStyle = CARD.ink;
-    ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('SNOOKERBEE', 400, 75);
-
-    ctx.fillStyle = CARD.accent;
-    ctx.font = '18px system-ui, sans-serif';
-    ctx.fillText(
-      `Match Summary  •  ${mode.toUpperCase()} Mode  •  Best of ${bestOf}`,
-      400,
-      110
-    );
-    ctx.fillStyle = CARD.inkFaint;
-    const dateStr = new Date().toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    ctx.fillText(dateStr, 400, 138);
-
-    // Winner Banner
-    ctx.fillStyle = CARD.accentFill;
-    ctx.fillRect(120, 170, 560, 110);
-    ctx.strokeStyle = CARD.accentLine;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(120, 170, 560, 110);
-
-    ctx.fillStyle = CARD.accent;
-    ctx.font = 'bold 18px system-ui, sans-serif';
-    ctx.fillText('WINNER', 400, 205);
-
-    ctx.fillStyle = CARD.ink;
-    ctx.font = 'bold 34px system-ui, sans-serif';
-    ctx.fillText(winnerName, 400, 255);
-
-    // Scoreboard header
-    ctx.fillStyle = CARD.accent;
-    ctx.font = 'bold 15px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('PLAYER', 120, 320);
-    ctx.textAlign = 'center';
-    ctx.fillText('SCORE', 380, 320);
-    ctx.fillText('FRAMES', 480, 320);
-    ctx.fillText('MAX BREAK', 580, 320);
-    ctx.fillText('FOULS', 660, 320);
-
-    // Divider
-    ctx.strokeStyle = CARD.rule;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(120, 335);
-    ctx.lineTo(680, 335);
-    ctx.stroke();
-
-    // Players listing
-    let y = 370;
-    players.forEach((p) => {
+    const rows = players.map((p) => {
       const pTeam = mode === 'team'
         ? teams.find(t => t.playerIds.includes(p.id))
         : undefined;
@@ -267,38 +199,35 @@ export default function MatchSummary() {
         ? (gameState.frameScores[pTeam.id] || 0)
         : (gameState.frameScores[p.id] || 0);
 
-      const isWinner = p.name === winnerName || (pTeam && pTeam.name === winnerName);
-      ctx.fillStyle = isWinner ? CARD.accent : CARD.ink;
-      ctx.font = isWinner
-        ? 'bold 18px system-ui, sans-serif'
-        : '18px system-ui, sans-serif';
-
-      ctx.textAlign = 'left';
-      const nameText = pTeam ? `[${pTeam.name}] ${p.name}` : p.name;
-      ctx.fillText(nameText, 120, y);
-
-      ctx.textAlign = 'center';
-      ctx.fillText(String(p.score), 380, y);
-      ctx.fillText(String(framesWon), 480, y);
-      ctx.fillText(String(p.highestBreak), 580, y);
-      ctx.fillText(String(p.foulsCommitted), 660, y);
-
-      y += 40;
+      return {
+        name: p.name,
+        teamName: pTeam?.name,
+        score: p.score,
+        framesWon,
+        highestBreak: p.highestBreak,
+        fouls: p.foulsCommitted,
+        isWinner: p.name === winnerName || (!!pTeam && pTeam.name === winnerName),
+      };
     });
 
-    // Duration Footer
-    ctx.fillStyle = CARD.inkFaint;
-    ctx.font = '16px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(
-      `Match Duration: ${formatTime(matchTimerMs)}  •  Reds: ${gameState.redsTotal}`,
-      400,
-      545
-    );
+    drawMatchCard(canvas, {
+      winnerName,
+      mode,
+      bestOf,
+      dateLabel: new Date().toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      durationLabel: formatTime(matchTimerMs),
+      redsCount: gameState.redsTotal,
+      players: rows,
+    });
 
-    // Share via Web Share API (with download / preview fallbacks)
     const names = mode === 'team' ? teams.map(t => t.name) : players.map(p => p.name);
-    await shareCanvasAsImage(
+    await presentShareCard(
       canvas,
       cardFilename(names.slice(0, 2)),
       'SnookerBee match summary'
