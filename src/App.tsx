@@ -8,6 +8,7 @@ import AuthCallback from './components/AuthCallback';
 import Dashboard from './components/Dashboard';
 import GameSetup from './components/GameSetup';
 import ScoringScreen from './components/ScoringScreen';
+import CenturyScreen from './components/CenturyScreen';
 import MatchSummary from './components/MatchSummary';
 import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
@@ -95,6 +96,14 @@ function AppRoutes() {
             <GameProvider>
               <ScoringScreen />
             </GameProvider>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/century"
+        element={
+          <ProtectedRoute>
+            <CenturyScreen />
           </ProtectedRoute>
         }
       />

@@ -21,9 +21,11 @@
  */
 
 import type { GameState } from '../engine/types';
+import type { CenturyState } from '../engine/century';
 
 const ACTIVE_KEY = 'snookerbee:activeMatch';
 const PENDING_KEY = 'snookerbee:pendingMatch';
+const CENTURY_KEY = 'snookerbee:centuryGame';
 
 /** Frame-by-frame scores carried alongside the engine state. */
 export interface FrameHistoryItem {
@@ -130,4 +132,23 @@ export function loadPendingMatch(): PendingMatch | null {
 
 export function clearPendingMatch(): void {
   remove(PENDING_KEY);
+}
+
+
+/* --------------------------------------------------------- century game */
+
+/** Century games persist for the same reason matches do: iOS ends the app. */
+export function saveCenturyGame(state: CenturyState): void {
+  if (state.players.length === 0) return;
+  write(CENTURY_KEY, { ...state, undoStack: [] });
+}
+
+export function loadCenturyGame(): CenturyState | null {
+  const saved = read<CenturyState>(CENTURY_KEY);
+  if (!saved?.players?.length || saved.finished) return null;
+  return { ...saved, undoStack: [] };
+}
+
+export function clearCenturyGame(): void {
+  remove(CENTURY_KEY);
 }
