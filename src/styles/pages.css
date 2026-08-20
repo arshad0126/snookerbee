@@ -2254,6 +2254,11 @@ body.light-theme .summary-page {
     display: flex;
     flex-direction: column;
   }
+  .setup-config {
+    max-height: 100%;
+    overflow-y: auto;          /* safety valve; should not be needed */
+    -webkit-overflow-scrolling: touch;
+  }
   .roster-list {
     flex: 1 1 auto;
     min-height: 0;
@@ -2385,9 +2390,16 @@ body.light-theme .summary-page {
 }
 
 .setup-cta {
+  /* Lives at the foot of the roster column, not the config column. The left
+     column's budget was tighter than estimated and pushed these below the
+     fold; the roster side has the slack, and never scrolls past them because
+     only .roster-list scrolls. */
   display: flex;
   gap: 8px;
+  flex: none;
   margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-color-dim);
 }
 
 .setup-start {
