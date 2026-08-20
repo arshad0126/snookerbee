@@ -88,6 +88,30 @@ function pushUndo(currentState: GameState): GameState[] {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: Frame rotation
+// ---------------------------------------------------------------------------
+//
+// Each frame a different player breaks, and the rest follow in the order the
+// match was set up with. For a setup of 1,2,3 that gives:
+//
+//   frame 1 -> 1, 2, 3
+//   frame 2 -> 2, 1, 3
+//   frame 3 -> 3, 1, 2
+//
+// Note this is NOT a cyclic rotation, which would give 2,3,1 for frame 2. The
+// breaker moves to the front; everyone else keeps their configured sequence.
+//
+// The previous implementation rotated `currentPlayerIndex` instead of the
+// order itself, so the order never actually changed — only the entry point
+// into it did.
+
+function rotationForFrame(baseTurnOrder: number[], frameNumber: number): number[] {
+  if (baseTurnOrder.length === 0) return baseTurnOrder;
+  const breaker = baseTurnOrder[(frameNumber - 1) % baseTurnOrder.length];
+  return [breaker, ...baseTurnOrder.filter((i) => i !== breaker)];
+}
+
+// ---------------------------------------------------------------------------
 // Helper: Break milestones
 // ---------------------------------------------------------------------------
 //
@@ -372,6 +396,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     players,
     teams,
     turnOrder,
+    baseTurnOrder: turnOrder,
     expectedBall: 'red',
     currentColorTarget: null,
     frameNumber: 1,
@@ -781,22 +806,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         totalScore: 0,
       }));
 
-      // Rotate who breaks: custom selection from payload or fallback automatic rotation
-      let newTurnOrder = [...state.turnOrder];
+      // Rotate who breaks. An explicit payload (the user reordering in setup)
+      // wins; otherwise derive the frame's order from the configured base.
+      let newBase = [...state.baseTurnOrder];
+      let newTurnOrder: number[];
       let newStartIndex = 0;
 
       if (action.payload) {
         const { breakingPlayerId, turnOrderIds } = action.payload;
         if (turnOrderIds) {
-          newTurnOrder = turnOrderIds.map(id => state.players.findIndex(p => p.id === id));
+          newBase = turnOrderIds.map((id) => state.players.findIndex((p) => p.id === id));
         }
+        newTurnOrder = [...newBase];
         if (breakingPlayerId) {
-          const breakerIndex = state.players.findIndex(p => p.id === breakingPlayerId);
-          newStartIndex = newTurnOrder.indexOf(breakerIndex);
-          if (newStartIndex === -1) newStartIndex = 0;
+          const breakerIndex = state.players.findIndex((p) => p.id === breakingPlayerId);
+          newTurnOrder = [
+            breakerIndex,
+            ...newBase.filter((i) => i !== breakerIndex),
+          ];
         }
       } else {
-        newStartIndex = (state.frameNumber) % state.turnOrder.length;
+        newTurnOrder = rotationForFrame(newBase, state.frameNumber + 1);
       }
 
       const logEntry = createLogEntry({
@@ -838,6 +868,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'reds',
         redsRemaining: state.redsTotal,
         currentPlayerIndex: newStartIndex,
+        turnOrder: newTurnOrder,
+        baseTurnOrder: newBase,
         players: resetPlayers,
         teams: resetTeams,
         expectedBall: 'red',
@@ -851,12 +883,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
-        turnOrder: newTurnOrder,
       };
     }
 
     // -----------------------------------------------------------------------
-    // UPDATE_TIMER — Tick the match timer
+    // COMMIT_TURN_TIME — Bank the active player's elapsed turn time
     // -----------------------------------------------------------------------
     case 'COMMIT_TURN_TIME': {
       if (state.phase === 'finished' || state.players.length === 0) return state;

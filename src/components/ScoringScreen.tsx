@@ -365,11 +365,17 @@ export default function ScoringScreen() {
       });
     }
 
-    // 1v1 and Free For All
-    return state.players.map((p, pIdx) => {
+    // 1v1 and Free For All.
+    // Walk turnOrder, not state.players: the cards must sit left-to-right in
+    // the order people actually play this frame. Mapping the players array
+    // pinned them to their setup positions, so the rotation was invisible
+    // here even once the engine was rotating correctly.
+    return state.turnOrder.map((pIdx, seat) => {
+      const p = state.players[pIdx];
+      if (!p) return null;
       const isActive = activePlayer.id === p.id;
       const isPopping = poppingPlayerId === p.id;
-      const isBreaker = state.turnOrder[0] === pIdx;
+      const isBreaker = seat === 0;
       const frameWins = state.frameScores[p.id] || 0;
 
       return (
