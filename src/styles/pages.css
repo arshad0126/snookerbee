@@ -280,34 +280,61 @@
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xl);
+  gap: 8px;
+  margin-bottom: var(--space-lg);
 }
 
+/* Unfilled surface, hairline border, icon in a soft well, and the number
+   carrying the colour — the same discipline as the pills. Dropped the
+   backdrop-filter: it cost a blur pass per tile and bought nothing on a
+   solid background. */
 .stat-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: var(--radius-md);
-  padding: var(--space-md) var(--space-sm);
-  text-align: center;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color-dim);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.stat-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 6px;
+  border-radius: 9px;
+  background: var(--fill-quaternary);
+  color: var(--text-muted);
+}
+
+.stat-glyph--accent {
+  background: var(--accent-tint);
+  color: var(--accent-sage);
 }
 
 .stat-value {
   font-family: var(--font-mono);
-  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  font-size: 21px;
   font-weight: 700;
+  line-height: 1.1;
   color: var(--text-primary);
 }
 
+.stat-value--accent {
+  color: var(--accent-sage);
+}
+
 .stat-label {
-  font-size: var(--text-xs);
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
-  margin-top: var(--space-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 /* --- Setup Page --- */
@@ -789,45 +816,61 @@
 }
 
 .history-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all var(--transition-normal);
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color-dim);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   cursor: pointer;
+  transition: border-color var(--transition-fast) ease, transform 140ms ease;
 }
 
 .history-card:hover {
-  box-shadow: var(--shadow-md);
+  border-color: var(--text-muted);
+}
+
+.history-card:active {
+  transform: scale(0.995);
 }
 
 .history-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+  margin-bottom: 8px;
 }
 
 .history-card-date {
-  font-size: var(--text-xs);
+  font-size: 12px;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
+/* A quiet outline, not a filled badge — the mode is metadata, not a signal. */
 .history-card-mode {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--accent-sage);
+  padding: 3px 9px;
+  border: 1px solid var(--border-color-dim);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .history-card-players {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
+
 
 .history-card-score {
   font-family: var(--font-mono);
@@ -841,7 +884,10 @@
 }
 
 .history-card-winner {
+  /* The winner is the one piece of colour in the row — same idea as an
+     amount rendered in green while its pill stays neutral. */
   color: var(--accent-sage);
+  font-weight: 700;
 }
 
 .history-card-details {
