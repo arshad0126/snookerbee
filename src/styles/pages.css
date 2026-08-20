@@ -1488,6 +1488,12 @@ body.light-theme .landing-divider::after {
 
 /* Dashboard */
 body.light-theme .dashboard-card-new-game {
+  /* `body.light-theme .card` (0,2,0) outranks `.dashboard-card-new-game`
+     (0,1,0) and was repainting this white, leaving white-on-white text.
+     Re-assert the gradient at matching specificity. */
+  background: linear-gradient(135deg, var(--accent-sage-light) 0%, var(--accent-sage-dark) 100%);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.16);
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
 }
 
