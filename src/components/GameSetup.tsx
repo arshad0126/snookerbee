@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
-import { Icon } from './ui';
+import { Icon, type IconName } from './ui';
 
 /** Frames per match. Odd only — an even best-of can end level (issue #10). */
 const MATCH_LENGTHS = [1, 3, 5];
@@ -10,71 +10,57 @@ const MATCH_LENGTHS = [1, 3, 5];
 /** Regulars, offered as one-tap fills. Nothing is selected until tapped. */
 const PRESET_PLAYERS = ['Awais', 'Suraj', 'Arshad'];
 
+const MODES: { id: GameMode; label: string; icon: IconName }[] = [
+  { id: '1v1', label: '1 v 1', icon: 'duo' },
+  { id: 'team', label: 'Teams', icon: 'users' },
+  { id: 'freeForAll', label: 'Free for All', icon: 'target' },
+];
+
+/** Reds shown as balls rather than a number — read at a glance, no label. */
+function RedCluster({ count }: { count: 10 | 15 }) {
+  const dots = count === 10 ? 2 : 3;
+  return (
+    <span className="red-cluster" aria-hidden="true">
+      {Array.from({ length: dots }).map((_, i) => (
+        <span key={i} className="red-ball" />
+      ))}
+    </span>
+  );
+}
+
 export default function GameSetup() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const [currentStep, setCurrentStep] = useState(1);
-  const trackRef = useRef<HTMLDivElement>(null);
 
-  // The carousel is the source of truth for which step is showing: a drag has
-  // no discrete event, so read the settled scroll position back into state.
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const width = track.clientWidth;
-        if (width === 0) return;
-        const step = Math.round(track.scrollLeft / width) + 1;
-        setCurrentStep((prev) => (prev === step ? prev : step));
-      });
-    };
-
-    track.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      track.removeEventListener('scroll', onScroll);
-    };
-  }, []);
   const [gameMode, setGameMode] = useState<GameMode>('1v1');
-  const [teamSize, setTeamSize] = useState<2 | 3>(2); // for teams mode
+  const [teamSize, setTeamSize] = useState<2 | 3>(2);
   const [redsCount, setRedsCount] = useState<10 | 15>(15);
   const [bestOf, setBestOf] = useState<number>(3);
   const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
-  const [breakingPlayerIndex, setBreakingPlayerIndex] = useState<number>(0);
+  const [breakingPlayerIndex, setBreakingPlayerIndex] = useState(0);
 
-  // Helper to sync player names array size when mode/teamSize changes
-  const handleModeChange = (mode: GameMode, size: 2 | 3 = 2) => {
+  const slotsFor = (mode: GameMode, size: 2 | 3) =>
+    mode === 'team' ? size * 2 : mode === 'freeForAll' ? 3 : 2;
+
+  const changeMode = (mode: GameMode) => {
     setGameMode(mode);
-    setTeamSize(size);
-    let count = 2;
-    if (mode === 'team') {
-      count = size * 2;
-    } else if (mode === 'freeForAll') {
-      count = 3; // default for freeForAll
-    }
-    setPlayerNames(Array.from({ length: count }, () => ''));
+    setPlayerNames(Array.from({ length: slotsFor(mode, teamSize) }, () => ''));
     setBreakingPlayerIndex(0);
   };
 
-  const handleTeamSizeChange = (size: 2 | 3) => {
+  const changeTeamSize = (size: 2 | 3) => {
     setTeamSize(size);
     setPlayerNames(Array.from({ length: size * 2 }, () => ''));
     setBreakingPlayerIndex(0);
   };
 
   /**
-   * A slot counts as free if it is blank or still holds an untouched
-   * "Player N" default, so tapping a regular never silently overwrites a name
-   * somebody actually typed.
+   * A slot is free when blank or still holding an untouched "Player N"
+   * default, so seating a regular never overwrites a typed name.
    */
   const isFreeSlot = (name: string) =>
     !name.trim() || /^player\s*\d+$/i.test(name.trim());
 
-  /** Tap a regular to seat them; tap again to remove. */
   const togglePreset = (preset: string) => {
     const seated = playerNames.findIndex((n) => n.trim() === preset);
     const next = [...playerNames];
@@ -89,454 +75,267 @@ export default function GameSetup() {
     if (free !== -1) {
       next[free] = preset;
     } else if (gameMode === 'freeForAll' && next.length < 8) {
-      next.push(preset);            // no room, but free-for-all can grow
+      next.push(preset);
     } else {
       return;
     }
     setPlayerNames(next);
   };
 
-  const handleNameChange = (index: number, val: string) => {
-    const updated = [...playerNames];
-    updated[index] = val;
-    setPlayerNames(updated);
+  const setName = (index: number, value: string) => {
+    const next = [...playerNames];
+    next[index] = value;
+    setPlayerNames(next);
   };
 
-  const addFfaPlayer = () => {
-    if (playerNames.length >= 8) return;
+  const addPlayer = () => {
+    if (gameMode !== 'freeForAll' || playerNames.length >= 8) return;
     setPlayerNames([...playerNames, '']);
   };
 
-  const removeFfaPlayer = () => {
-    if (playerNames.length <= 2) return;
-    setPlayerNames(playerNames.slice(0, -1));
-    if (breakingPlayerIndex >= playerNames.length - 1) {
-      setBreakingPlayerIndex(0);
-    }
-  };
-
-  /** Scroll the carousel to a panel; the scroll handler updates currentStep. */
-  const goToStep = (step: number) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const clamped = Math.min(5, Math.max(1, step));
-    track.scrollTo({ left: track.clientWidth * (clamped - 1), behavior: 'smooth' });
-    setCurrentStep(clamped);
-  };
-
-  const nextStep = () => {
-    if (currentStep < 5) {
-      goToStep(currentStep + 1);
-    } else {
-      // Finalize and start match
-      const config: GameSetupConfig = {
-        mode: gameMode,
-        redsCount,
-        bestOf,
-        players: playerNames.map((name, i) => ({ name: name.trim() || `Player ${i + 1}` })),
-        breakingPlayerIndex,
-      };
-
-      if (gameMode === 'team') {
-        if (teamSize === 2) {
-          config.teamAssignments = {
-            0: [0, 2], // Team A
-            1: [1, 3], // Team B
-          };
-        } else {
-          config.teamAssignments = {
-            0: [0, 2, 4], // Team A
-            1: [1, 3, 5], // Team B
-          };
-        }
-      }
-
-      navigate('/play', { state: { config } });
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      goToStep(currentStep - 1);
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
-  const renderStepContent = (step: number) => {
-    switch (step) {
-      case 1:
-        return (
-          <div className="setup-step-container">
-            <h3 className="setup-step-title">Select Game Mode</h3>
-            <p className="setup-step-subtitle">How do you want to play?</p>
-            <div className="setup-options">
-              <div
-                onClick={() => handleModeChange('1v1')}
-                className={`setup-option ${gameMode === '1v1' ? 'selected' : ''}`}
-              >
-                <div className="setup-option-icon"><Icon name="duo" size={32} /></div>
-                <div>
-                  <div className="setup-option-title">1 v 1</div>
-                  <div className="setup-option-desc">Classic head-to-head match</div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => handleModeChange('team', 2)}
-                className={`setup-option ${gameMode === 'team' ? 'selected' : ''}`}
-              >
-                <div className="setup-option-icon"><Icon name="users" size={32} /></div>
-                <div>
-                  <div className="setup-option-title">Teams</div>
-                  <div className="setup-option-desc">2v2 or 3v3 team play</div>
-                </div>
-              </div>
-
-              {gameMode === 'team' && (
-                <div className="toggle-group" style={{ marginTop: 'var(--space-xs)' }}>
-                  <div
-                    onClick={() => handleTeamSizeChange(2)}
-                    className={`toggle-option ${teamSize === 2 ? 'active' : ''}`}
-                  >
-                    2 vs 2
-                  </div>
-                  <div
-                    onClick={() => handleTeamSizeChange(3)}
-                    className={`toggle-option ${teamSize === 3 ? 'active' : ''}`}
-                  >
-                    3 vs 3
-                  </div>
-                </div>
-              )}
-
-              <div
-                onClick={() => handleModeChange('freeForAll')}
-                className={`setup-option ${gameMode === 'freeForAll' ? 'selected' : ''}`}
-              >
-                <div className="setup-option-icon"><Icon name="target" size={32} /></div>
-                <div>
-                  <div className="setup-option-title">Free for All</div>
-                  <div className="setup-option-desc">2-8 players, solo scoring</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="setup-step-container">
-            <h3 className="setup-step-title">Choose Reds</h3>
-            <p className="setup-step-subtitle">Select the number of red balls on the table.</p>
-            <div className="toggle-group-large">
-              <div
-                onClick={() => setRedsCount(10)}
-                className={`toggle-option-large ${redsCount === 10 ? 'active' : ''}`}
-              >
-                <div className="toggle-value">10 Reds</div>
-                <div className="toggle-subtitle">Max break: 107</div>
-              </div>
-              <div
-                onClick={() => setRedsCount(15)}
-                className={`toggle-option-large ${redsCount === 15 ? 'active' : ''}`}
-              >
-                <div className="toggle-value">15 Reds</div>
-                <div className="toggle-subtitle">Max break: 147 (Standard)</div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="setup-step-container">
-            <h3 className="setup-step-title">Match Length</h3>
-            <p className="setup-step-subtitle">Best-of frames to determine the winner.</p>
-            <div className="setup-options-row">
-              {MATCH_LENGTHS.map(num => (
-                <div
-                  key={num}
-                  onClick={() => setBestOf(num)}
-                  className={`setup-option-card ${bestOf === num ? 'selected' : ''}`}
-                >
-                  <span className="option-card-number">{num}</span>
-                  <span className="option-card-label">{num === 1 ? 'Frame' : 'Frames'}</span>
-                </div>
-              ))}
-            </div>
-            <div className="setup-first-to-label">
-              First to {Math.ceil((bestOf + 1) / 2)} wins the match
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="setup-step-container">
-            <h3 className="setup-step-title">Player Names</h3>
-            <p className="setup-step-subtitle">Enter names for the players.</p>
-
-            <div className="setup-players-grid">
-              {gameMode === 'team' ? (
-                <>
-                  <div className="team-group">
-                    <h4 className="team-group-title">Team A</h4>
-                    {Array.from({ length: teamSize }).map((_, idx) => {
-                      const pIdx = idx * 2; // 0, 2, 4
-                      return (
-                        <div key={pIdx} className="setup-player-input-wrapper">
-                          <span className="setup-player-number">A{idx + 1}</span>
-                          <input
-                            type="text"
-                            value={playerNames[pIdx] || ''}
-                            onChange={(e) => handleNameChange(pIdx, e.target.value)}
-                            maxLength={20}
-                            className="input"
-                            placeholder={`Team A Player ${idx + 1}`}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="team-group">
-                    <h4 className="team-group-title">Team B</h4>
-                    {Array.from({ length: teamSize }).map((_, idx) => {
-                      const pIdx = idx * 2 + 1; // 1, 3, 5
-                      return (
-                        <div key={pIdx} className="setup-player-input-wrapper">
-                          <span className="setup-player-number text-lavender">B{idx + 1}</span>
-                          <input
-                            type="text"
-                            value={playerNames[pIdx] || ''}
-                            onChange={(e) => handleNameChange(pIdx, e.target.value)}
-                            maxLength={20}
-                            className="input"
-                            placeholder={`Team B Player ${idx + 1}`}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="preset-roster">
-                    <span className="preset-roster-label">Regulars</span>
-                    <div className="preset-chip-row">
-                      {PRESET_PLAYERS.map((preset) => {
-                        const picked = playerNames.some((n) => n.trim() === preset);
-                        const canGrow = gameMode === 'freeForAll' && playerNames.length < 8;
-                        const full =
-                          !picked && !playerNames.some(isFreeSlot) && !canGrow;
-                        return (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => togglePreset(preset)}
-                            disabled={full}
-                            aria-pressed={picked}
-                            className={`preset-chip ${picked ? 'picked' : ''}`}
-                          >
-                            {picked && <Icon name="check" size={14} />}
-                            {preset}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {playerNames.map((name, idx) => (
-                    <div key={idx} className="setup-player-input-wrapper">
-                      <span className="setup-player-number">{idx + 1}</span>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => handleNameChange(idx, e.target.value)}
-                        maxLength={20}
-                        className="input"
-                        placeholder={`Player ${idx + 1}`}
-                      />
-                    </div>
-                  ))}
-
-                  {gameMode === 'freeForAll' && (
-                    <div className="setup-ffa-actions" style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
-                      <button
-                        onClick={removeFfaPlayer}
-                        disabled={playerNames.length <= 2}
-                        className="btn btn-secondary"
-                        style={{ flex: 1 }}
-                      >
-                        <Icon name="minus" size={16} /> Remove Player
-                      </button>
-                      <button
-                        onClick={addFfaPlayer}
-                        disabled={playerNames.length >= 8}
-                        className="btn btn-secondary"
-                        style={{ flex: 1 }}
-                      >
-                        + Add Player
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="setup-step-container">
-            <h3 className="setup-step-title">Set Rotation Order</h3>
-            <p className="setup-step-subtitle">Tap a player to give them the break. Use the arrows to reorder.</p>
-            <div className="breaking-order-grid" role="radiogroup" aria-label="Rotation order">
-              {playerNames.map((name, idx) => (
-                <div
-                  key={idx}
-                  role="radio"
-                  aria-checked={breakingPlayerIndex === idx}
-                  tabIndex={0}
-                  onClick={() => setBreakingPlayerIndex(idx)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setBreakingPlayerIndex(idx);
-                    }
-                  }}
-                  className={`breaking-option-row ${breakingPlayerIndex === idx ? 'selected' : ''}`}
-                >
-                  <span className="order-seat">{idx + 1}</span>
-
-                  <span className="breaking-option-name">
-                    <span className="order-name">
-                      {name.trim() || `Player ${idx + 1}`}
-                    </span>
-                    {gameMode === 'team' && (
-                      <span className="order-team">Team {idx % 2 === 0 ? 'A' : 'B'}</span>
-                    )}
-                  </span>
-
-                  {breakingPlayerIndex === idx && (
-                    <span className="breaks-off-chip">
-                      <Icon name="ball" size={13} /> Breaks off
-                    </span>
-                  )}
-
-                  {/* Turn order in team mode is fixed by team interleaving, so
-                      reordering is only offered for 1v1 / free-for-all. */}
-                  {gameMode !== 'team' && (
-                    <div
-                      className="rotation-controls"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        onClick={() => movePlayer(idx, 'up')}
-                        disabled={idx === 0}
-                        className="rotation-arrow-btn"
-                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} up`}
-                      >
-                        <Icon name="chevron-up" size={15} />
-                      </button>
-                      <button
-                        onClick={() => movePlayer(idx, 'down')}
-                        disabled={idx === playerNames.length - 1}
-                        className="rotation-arrow-btn"
-                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} down`}
-                      >
-                        <Icon name="chevron-down" size={15} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
+  const removePlayer = (index: number) => {
+    if (gameMode !== 'freeForAll' || playerNames.length <= 2) return;
+    setPlayerNames(playerNames.filter((_, i) => i !== index));
+    setBreakingPlayerIndex((b) => (b >= playerNames.length - 1 ? 0 : b));
   };
 
   const movePlayer = (index: number, direction: 'up' | 'down') => {
-    const newNames = [...playerNames];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newNames.length) return;
-    
-    // Swap names
-    const temp = newNames[index];
-    newNames[index] = newNames[targetIndex];
-    newNames[targetIndex] = temp;
-    setPlayerNames(newNames);
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= playerNames.length) return;
 
-    // Sync breaking player index
-    if (breakingPlayerIndex === index) {
-      setBreakingPlayerIndex(targetIndex);
-    } else if (breakingPlayerIndex === targetIndex) {
-      setBreakingPlayerIndex(index);
-    }
+    const next = [...playerNames];
+    [next[index], next[target]] = [next[target], next[index]];
+    setPlayerNames(next);
+
+    if (breakingPlayerIndex === index) setBreakingPlayerIndex(target);
+    else if (breakingPlayerIndex === target) setBreakingPlayerIndex(index);
   };
 
-  const isNextDisabled = () => {
-    if (currentStep === 4) {
-      return false;   // blank names fall back to "Player N" on submit
+  const startMatch = () => {
+    const config: GameSetupConfig = {
+      mode: gameMode,
+      redsCount,
+      bestOf,
+      players: playerNames.map((name, i) => ({
+        name: name.trim() || `Player ${i + 1}`,
+      })),
+      breakingPlayerIndex,
+    };
+
+    if (gameMode === 'team') {
+      config.teamAssignments =
+        teamSize === 2 ? { 0: [0, 2], 1: [1, 3] } : { 0: [0, 2, 4], 1: [1, 3, 5] };
     }
-    return false;
+
+    navigate('/play', { state: { config } });
   };
+
+  const canGrow = gameMode === 'freeForAll' && playerNames.length < 8;
 
   return (
-    <div className="setup-page page page-centered">
-      <button onClick={toggleTheme} className="theme-toggle-floating" aria-label="Toggle theme">
+    <div className="setup-page">
+      <button
+        onClick={toggleTheme}
+        className="theme-toggle-floating"
+        aria-label="Toggle theme"
+      >
         <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
       </button>
-      <div className="setup-card">
-        <header className="setup-card-header">
-          <h2 className="setup-card-title">Match Configuration</h2>
-          <span className="setup-step-badge">Step {currentStep} of 5</span>
-        </header>
 
-        <div className="setup-track" ref={trackRef}>
-          {[1, 2, 3, 4, 5].map((step) => (
-            <section
-              key={step}
-              className="setup-panel"
-              aria-label={`Step ${step} of 5`}
-              aria-hidden={currentStep !== step}
-            >
-              {renderStepContent(step)}
-            </section>
-          ))}
-        </div>
+      <div className="setup-layout">
+        {/* ---------------- Left: match configuration ---------------- */}
+        <aside className="setup-config">
+          <h1 className="setup-heading">New Match</h1>
 
-        <div className="setup-dots" role="tablist" aria-label="Setup steps">
-          {[1, 2, 3, 4, 5].map((step) => (
-            <button
-              key={step}
-              role="tab"
-              aria-selected={currentStep === step}
-              aria-label={`Go to step ${step}`}
-              onClick={() => goToStep(step)}
-              className={`setup-dot ${currentStep === step ? 'active' : ''}`}
-            />
-          ))}
-        </div>
+          <fieldset className="setup-field">
+            <legend className="setup-legend">Mode</legend>
+            <div className="tile-row">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-pressed={gameMode === m.id}
+                  onClick={() => changeMode(m.id)}
+                  className={`tile ${gameMode === m.id ? 'tile--on' : ''}`}
+                >
+                  <Icon name={m.icon} size={20} />
+                  <span className="tile-label">{m.label}</span>
+                </button>
+              ))}
+            </div>
+            {gameMode === 'team' && (
+              <div className="tile-row tile-row--sub">
+                {([2, 3] as const).map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    aria-pressed={teamSize === size}
+                    onClick={() => changeTeamSize(size)}
+                    className={`tile tile--slim ${teamSize === size ? 'tile--on' : ''}`}
+                  >
+                    <span className="tile-label">{size}v{size}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </fieldset>
 
-        <footer className="setup-card-footer">
-          <button onClick={prevStep} className="btn btn-setup-back">
-            {currentStep === 1 ? 'Cancel' : 'Back'}
-          </button>
-          <button
-            onClick={nextStep}
-            disabled={isNextDisabled()}
-            className="btn btn-setup-next"
-          >
-            {currentStep === 5 ? 'Start Match' : 'Next Step'}
-          </button>
-        </footer>
+          <fieldset className="setup-field">
+            <legend className="setup-legend">Reds</legend>
+            <div className="tile-row">
+              {([10, 15] as const).map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  aria-pressed={redsCount === count}
+                  aria-label={`${count} reds`}
+                  onClick={() => setRedsCount(count)}
+                  className={`tile tile--reds ${redsCount === count ? 'tile--on' : ''}`}
+                >
+                  <RedCluster count={count} />
+                  <span className="tile-value">{count}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="setup-field">
+            <legend className="setup-legend">Length</legend>
+            <div className="tile-row">
+              {MATCH_LENGTHS.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={bestOf === n}
+                  aria-label={n === 1 ? '1 frame' : `Best of ${n} frames`}
+                  onClick={() => setBestOf(n)}
+                  className={`tile tile--slim ${bestOf === n ? 'tile--on' : ''}`}
+                >
+                  <span className="tile-value">{n}</span>
+                </button>
+              ))}
+            </div>
+            <p className="setup-hint">
+              {bestOf === 1
+                ? 'Single frame'
+                : `First to ${Math.ceil(bestOf / 2)} wins`}
+            </p>
+          </fieldset>
+
+          <div className="setup-cta">
+            <button onClick={() => navigate('/dashboard')} className="btn btn-ghost">
+              Cancel
+            </button>
+            <button onClick={startMatch} className="btn btn-primary btn-lg setup-start">
+              Start Match
+            </button>
+          </div>
+        </aside>
+
+        {/* ---------------- Right: who's playing ---------------- */}
+        <section className="setup-roster">
+          <div className="roster-head">
+            <h2 className="setup-legend">Players</h2>
+            {canGrow && (
+              <button type="button" onClick={addPlayer} className="roster-add">
+                <Icon name="plus" size={14} /> Add
+              </button>
+            )}
+          </div>
+
+          <div className="preset-chip-row">
+            {PRESET_PLAYERS.map((preset) => {
+              const picked = playerNames.some((n) => n.trim() === preset);
+              const full = !picked && !playerNames.some(isFreeSlot) && !canGrow;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => togglePreset(preset)}
+                  disabled={full}
+                  aria-pressed={picked}
+                  className={`preset-chip ${picked ? 'picked' : ''}`}
+                >
+                  {picked && <Icon name="check" size={13} />}
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="roster-list" role="radiogroup" aria-label="Who breaks first">
+            {playerNames.map((name, idx) => {
+              const breaking = breakingPlayerIndex === idx;
+              const team = gameMode === 'team' ? (idx % 2 === 0 ? 'A' : 'B') : null;
+              return (
+                <div
+                  key={idx}
+                  className={`roster-row ${breaking ? 'breaking' : ''}`}
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={breaking}
+                    onClick={() => setBreakingPlayerIndex(idx)}
+                    className="roster-seat"
+                    aria-label={`${name.trim() || `Player ${idx + 1}`} breaks first`}
+                    title="Break first"
+                  >
+                    {breaking ? <Icon name="ball" size={15} /> : idx + 1}
+                  </button>
+
+                  {team && <span className="roster-team">{team}</span>}
+
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(idx, e.target.value)}
+                    maxLength={20}
+                    className="roster-input"
+                    placeholder={`Player ${idx + 1}`}
+                  />
+
+                  <div className="roster-controls">
+                    <button
+                      type="button"
+                      onClick={() => movePlayer(idx, 'up')}
+                      disabled={idx === 0}
+                      className="rotation-arrow-btn"
+                      aria-label="Move up"
+                    >
+                      <Icon name="chevron-up" size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => movePlayer(idx, 'down')}
+                      disabled={idx === playerNames.length - 1}
+                      className="rotation-arrow-btn"
+                      aria-label="Move down"
+                    >
+                      <Icon name="chevron-down" size={14} />
+                    </button>
+                  </div>
+
+                  {gameMode === 'freeForAll' && playerNames.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removePlayer(idx)}
+                      className="roster-remove"
+                      aria-label={`Remove ${name.trim() || `Player ${idx + 1}`}`}
+                    >
+                      <Icon name="close" size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="setup-hint roster-hint">
+            Tap the number to choose who breaks. Blank names become “Player N”.
+          </p>
+        </section>
       </div>
     </div>
   );
 }
-

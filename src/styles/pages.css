@@ -2149,89 +2149,6 @@ body.light-theme .summary-page {
 
 
 /* ============================================================================
-   Match setup — one page, five panels, dragged sideways
-   ---------------------------------------------------------------------------
-   Previously each step replaced the last and the card grew tall enough to need
-   vertical scrolling. All five now sit in a horizontal snap track: drag or
-   flick between them. Scroll-snap is used rather than a JS drag handler so the
-   momentum and rubber-band come from the platform and feel native on iOS.
-   ========================================================================= */
-.setup-track {
-  display: flex;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.setup-track::-webkit-scrollbar {
-  display: none;
-}
-
-.setup-panel {
-  flex: 0 0 100%;
-  width: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  padding: var(--space-lg) var(--space-md);
-  overflow-y: auto;             /* a tall panel scrolls itself, not the page */
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .setup-track { scroll-behavior: auto; }
-}
-
-/* Progress dots double as direct navigation. */
-.setup-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  padding: var(--space-sm) 0;
-  flex: none;
-}
-
-.setup-dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--border-color);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: width var(--transition-fast) ease, background var(--transition-fast) ease;
-}
-
-.setup-dot.active {
-  width: 22px;
-  border-radius: 999px;
-  background: var(--accent-sage);
-}
-
-/* The card is now a bounded column: header, track, dots, footer. */
-.setup-card {
-  display: flex;
-  flex-direction: column;
-  max-height: calc(
-    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px
-  );
-}
-
-.setup-card-header,
-.setup-dots,
-.setup-card-footer {
-  flex: none;
-}
-
-
-/* ============================================================================
    Dashboard — two columns in landscape
    ---------------------------------------------------------------------------
    The app is landscape-only, so the dashboard splits: New Game and the stat
@@ -2276,12 +2193,8 @@ body.light-theme .summary-page {
   }
 
   /* The hero takes the space the match list would have used. */
-  .dashboard-left .dashboard-card-new-game {
+  .dashboard-left .new-game-cta {
     flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     min-height: 0;
   }
 
@@ -2298,4 +2211,397 @@ body.light-theme .summary-page {
     padding: var(--space-xs) 0;
     background: var(--bg-primary, var(--bg-base));
   }
+}
+
+
+/* ============================================================================
+   Match setup — everything on one screen
+   ---------------------------------------------------------------------------
+   Was five steps, then a five-panel drag. Now a single landscape view: the
+   match options pin left, the roster sits right. Nothing scrolls until there
+   are more than about five players.
+
+   Height budget on a 393pt-tall landscape iPhone (≈372 usable):
+   heading 32 + mode 80 + reds 76 + length 68 + gaps 24 + CTA 48 ≈ 328.
+   ========================================================================= */
+.setup-page {
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top, 0px) + var(--space-md))
+           calc(env(safe-area-inset-right, 0px) + var(--space-md))
+           calc(env(safe-area-inset-bottom, 0px) + var(--space-md))
+           calc(env(safe-area-inset-left, 0px) + var(--space-md));
+  background: var(--bg-primary, var(--bg-base));
+}
+
+.setup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (orientation: landscape) and (min-width: 700px) {
+  .setup-layout {
+    grid-template-columns: minmax(300px, 42%) minmax(0, 1fr);
+    align-items: start;
+    height: calc(100dvh - env(safe-area-inset-top, 0px)
+                        - env(safe-area-inset-bottom, 0px) - var(--space-md) * 2);
+  }
+  .setup-roster {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .roster-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;         /* only place that ever scrolls */
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+.setup-config,
+.setup-roster {
+  background: var(--bg-card-solid, var(--bg-elevated));
+  border: 1px solid var(--border-color-dim);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+}
+
+.setup-heading {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-md);
+}
+
+.setup-field {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-md);
+}
+
+.setup-legend {
+  padding: 0;
+  margin: 0 0 8px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.setup-hint {
+  margin: 8px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* --- Soft tap tiles ------------------------------------------------------ */
+.tile-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.tile-row--sub {
+  margin-top: 8px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 62px;
+  padding: 10px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--fill-quaternary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease,
+              border-color var(--transition-fast) ease, transform 140ms ease;
+}
+
+.tile--slim {
+  min-height: 46px;
+}
+
+.tile:active {
+  transform: scale(0.96);
+}
+
+.tile:hover:not(.tile--on) {
+  background: var(--border-color);
+}
+
+.tile--on {
+  background: var(--accent-tint);
+  border-color: var(--accent-sage);
+  color: var(--accent-sage);
+}
+
+.tile-label {
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.tile-value {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.tile--on .tile-value {
+  color: var(--accent-sage);
+}
+
+/* Reds drawn as balls — read at a glance, no label needed. */
+.tile--reds {
+  flex-direction: row;
+  gap: 9px;
+}
+
+.red-cluster {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.red-ball {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--ball-red, #D6252B);
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.setup-cta {
+  display: flex;
+  gap: 8px;
+  margin-top: var(--space-md);
+}
+
+.setup-start {
+  flex: 1;
+}
+
+/* --- Roster -------------------------------------------------------------- */
+.roster-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.roster-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--accent-sage);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-sm);
+}
+
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 5px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.roster-row.breaking {
+  border-color: var(--accent-sage);
+  background: var(--accent-tint);
+}
+
+.roster-seat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
+}
+
+.roster-row.breaking .roster-seat {
+  background: var(--accent-sage);
+  color: var(--on-accent);
+}
+
+.roster-team {
+  flex: none;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  width: 12px;
+  text-align: center;
+}
+
+.roster-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 6px 2px;
+}
+
+.roster-input:focus {
+  outline: none;
+}
+
+.roster-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.roster-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+
+.roster-controls .rotation-arrow-btn {
+  width: 28px;
+  height: 20px;
+}
+
+.roster-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.roster-remove:hover {
+  color: var(--danger);
+  background: var(--fill-quaternary);
+}
+
+.roster-hint {
+  flex: none;
+}
+
+
+/* ============================================================================
+   New Game — the dashboard's primary action
+   ---------------------------------------------------------------------------
+   Was a div with an onClick (keyboard-inaccessible, issue #15) styled as a big
+   gradient slab with an oversized emoji-era icon. Now a real button: the glyph
+   sits in a translucent well, the copy carries the hierarchy, and a chevron
+   signals that it goes somewhere.
+   ========================================================================= */
+.new-game-cta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 20px;
+  background: var(--gradient-primary);
+  color: var(--on-accent);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 10px 26px -10px rgba(47, 110, 158, 0.55);
+  transition: transform 160ms cubic-bezier(0.34, 1.3, 0.64, 1), box-shadow 160ms ease;
+}
+
+.new-game-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px -10px rgba(47, 110, 158, 0.65);
+}
+
+.new-game-cta:active {
+  transform: scale(0.985);
+  box-shadow: 0 6px 16px -8px rgba(47, 110, 158, 0.5);
+}
+
+.new-game-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+}
+
+.new-game-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.new-game-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.new-game-sub {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.82;
+}
+
+.new-game-arrow {
+  flex: none;
+  opacity: 0.7;
+}
+
+.new-game-cta:hover .new-game-arrow {
+  opacity: 1;
 }

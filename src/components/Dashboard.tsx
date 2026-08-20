@@ -176,16 +176,20 @@ export default function Dashboard() {
       <main className="dashboard-grid">
         {/* Left column: fixed in landscape */}
         <div className="dashboard-left">
-        <div
+        <button
+          type="button"
           onClick={() => navigate('/setup')}
-          className="dashboard-card-new-game card ripple"
+          className="new-game-cta"
         >
-          <div className="new-game-icon"><Icon name="ball" size={40} /></div>
-          <div>
-            <h3>New Game</h3>
-            <p>Start a new frame</p>
-          </div>
-        </div>
+          <span className="new-game-glyph">
+            <Icon name="ball" size={26} />
+          </span>
+          <span className="new-game-copy">
+            <span className="new-game-title">New Game</span>
+            <span className="new-game-sub">Start a new frame</span>
+          </span>
+          <Icon name="arrow-right" size={18} className="new-game-arrow" />
+        </button>
 
         <div className="stats-row">
           <div className="stat-card card">
