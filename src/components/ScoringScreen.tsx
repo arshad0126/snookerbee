@@ -15,6 +15,7 @@ import FrameSummary from './FrameSummary';
 import PreviousFramesModal from './PreviousFramesModal';
 import { Icon } from './ui';
 import { CENTURY_THRESHOLD, HALF_CENTURY_THRESHOLD } from '../engine/constants';
+import WallClock from './WallClock';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -432,7 +433,9 @@ export default function ScoringScreen() {
           </div>
         </div>
 
-        <div className="scoring-topbar-center" />
+        <div className="scoring-topbar-center">
+          <WallClock frameStartTime={state.frameStartTime} />
+        </div>
 
         <div className="scoring-topbar-right">
           <button onClick={toggleTheme} className="btn-topbar-icon" title="Toggle Theme">
