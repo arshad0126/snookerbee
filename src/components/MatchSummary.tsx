@@ -13,6 +13,7 @@ import type { GameState } from '../engine/types';
 import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard } from '../lib/shareCard';
 import { Icon } from './ui';
+import { loadPendingMatch, clearPendingMatch } from '../lib/matchStorage';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -27,17 +28,40 @@ export default function MatchSummary() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [dbError, setDbError] = useState<string | null>(null);
 
-  // Retrieve match state passed from ScoringScreen
-  const stateData = location.state as {
+  // Router state does not survive a reload, and on iOS a backgrounded PWA can
+  // be evicted between finishing a match and saving it. ScoringScreen writes a
+  // pending copy on the way here, so fall back to that rather than bouncing to
+  // the dashboard with the match gone.
+  const routed = location.state as {
     gameState: GameState;
     frameHistory: FrameHistoryItem[];
   } | null;
+
+  const [recovered] = useState(() => (routed ? null : loadPendingMatch()));
+  const stateData = routed ?? recovered;
+
+  // handleSave is defined after the early return, so the auto-save effect
+  // reaches it through a ref rather than closing over it directly.
+  const handleSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!stateData) {
       navigate('/dashboard');
     }
   }, [stateData, navigate]);
+
+  // Saving used to be entirely manual, so leaving this screen without tapping
+  // the button discarded a fully played match. Save on arrival; the button is
+  // now a retry for when that fails.
+  //
+  // Declared above the early return: hooks must run in the same order on every
+  // render, so this cannot sit below `if (!stateData) return null`.
+  const autoSaveStarted = useRef(false);
+  useEffect(() => {
+    if (!stateData || autoSaveStarted.current) return;
+    autoSaveStarted.current = true;
+    void handleSaveRef.current?.();
+  }, [stateData]);
 
   if (!stateData) return null;
 
@@ -123,6 +147,7 @@ export default function MatchSummary() {
           ],
         };
         saveMatchLocally(localRecord);
+        clearPendingMatch();
         setSaveStatus('saved');
       } else {
         // Save to Supabase
@@ -173,6 +198,7 @@ export default function MatchSummary() {
 
         const result = await saveMatch(matchRec, playerRecs, frameRecs);
         if (result.success) {
+          clearPendingMatch();
           setSaveStatus('saved');
           setDbError(null);
         } else {
@@ -186,6 +212,8 @@ export default function MatchSummary() {
       setDbError(error?.message || String(error));
     }
   };
+
+  handleSaveRef.current = handleSave;
 
   const handleShareCard = async () => {
     const canvas = canvasRef.current;
