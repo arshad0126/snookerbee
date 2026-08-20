@@ -167,6 +167,12 @@ export interface GameState {
    */
   turnOrder: number[];
 
+  /**
+   * The rotation as configured at match setup. `turnOrder` is rebuilt from
+   * this at each frame, so it must survive the rebuild unchanged.
+   */
+  baseTurnOrder: number[];
+
   // --- Ball Expectation ---
   /**
    * In the 'reds' phase: whether a 'red' or 'color' is expected next.

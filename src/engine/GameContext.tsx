@@ -52,6 +52,7 @@ const PLACEHOLDER_STATE: GameState = {
   players: [],
   teams: [],
   turnOrder: [],
+  baseTurnOrder: [],
   expectedBall: null,
   currentColorTarget: null,
   frameNumber: 0,
