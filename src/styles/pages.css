@@ -682,9 +682,15 @@
   cursor: not-allowed;
 }
 
-/* --- Preset roster (one-tap regulars) --- */
+/* --- Regulars ------------------------------------------------------------
+   Modelled on the CRED "money matters" pills: the pill itself is never
+   filled. It stays on the card surface with a hairline border and a soft
+   icon well, and the selected state is carried by colour on the icon and
+   text rather than a solid slab behind them. The earlier version filled
+   solid with the accent, which made three names the heaviest thing on a
+   page where every other selected control is a light tint. */
 .preset-roster {
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
 .preset-roster-label {
@@ -700,36 +706,61 @@
 .preset-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
+  gap: 8px;
+  margin-top: var(--space-sm);
 }
 
 .preset-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 16px;
-  min-height: 40px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color-dim);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--transition-fast), color var(--transition-fast),
-              border-color var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color var(--transition-fast) ease, color var(--transition-fast) ease,
+              transform 140ms ease;
+}
+
+.preset-chip:active {
+  transform: scale(0.96);
+}
+
+.preset-chip-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+  background: var(--fill-quaternary);
+  color: var(--text-muted);
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
 }
 
 .preset-chip:hover:not(:disabled):not(.picked) {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* Seated: colour the content, never the pill. */
+.preset-chip.picked {
   border-color: var(--accent-sage);
   color: var(--accent-sage);
 }
 
-.preset-chip.picked {
-  background: var(--accent-sage);
-  border-color: var(--accent-sage);
-  color: var(--on-accent);
+.preset-chip.picked .preset-chip-glyph {
+  background: var(--accent-tint);
+  color: var(--accent-sage);
 }
 
 .preset-chip:disabled {
@@ -2418,15 +2449,22 @@ body.light-theme .summary-page {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-full);
-  background: transparent;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color-dim);
+  border-radius: 17px;
+  background: var(--bg-elevated);
   color: var(--accent-sage);
-  font-size: var(--text-xs);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition-fast) ease, transform 140ms ease;
+}
+
+.roster-add:active {
+  transform: scale(0.95);
 }
 
 .roster-list {
@@ -2512,8 +2550,15 @@ body.light-theme .summary-page {
 }
 
 .roster-controls .rotation-arrow-btn {
-  width: 28px;
-  height: 20px;
+  width: 26px;
+  height: 19px;
+  border-radius: 6px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.roster-controls .rotation-arrow-btn:hover:not(:disabled) {
+  background: var(--fill-quaternary);
 }
 
 .roster-remove {

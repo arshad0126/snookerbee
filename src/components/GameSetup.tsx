@@ -248,8 +248,10 @@ export default function GameSetup() {
                   aria-pressed={picked}
                   className={`preset-chip ${picked ? 'picked' : ''}`}
                 >
-                  {picked && <Icon name="check" size={13} />}
-                  {preset}
+                  <span className="preset-chip-glyph">
+                    <Icon name={picked ? 'check' : 'plus'} size={13} />
+                  </span>
+                  <span className="preset-chip-name">{preset}</span>
                 </button>
               );
             })}
