@@ -342,53 +342,65 @@ export default function GameSetup() {
         return (
           <div className="setup-step-container">
             <h3 className="setup-step-title">Set Rotation Order</h3>
-            <p className="setup-step-subtitle">Order of turns from first shot to last.</p>
-            <div className="breaking-order-grid">
+            <p className="setup-step-subtitle">Tap a player to give them the break. Use the arrows to reorder.</p>
+            <div className="breaking-order-grid" role="radiogroup" aria-label="Rotation order">
               {playerNames.map((name, idx) => (
                 <div
                   key={idx}
+                  role="radio"
+                  aria-checked={breakingPlayerIndex === idx}
+                  tabIndex={0}
+                  onClick={() => setBreakingPlayerIndex(idx)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setBreakingPlayerIndex(idx);
+                    }
+                  }}
                   className={`breaking-option-row ${breakingPlayerIndex === idx ? 'selected' : ''}`}
                 >
+                  <span className="order-seat">{idx + 1}</span>
+
+                  <span className="breaking-option-name">
+                    <span className="order-name">
+                      {name.trim() || `Player ${idx + 1}`}
+                    </span>
+                    {gameMode === 'team' && (
+                      <span className="order-team">Team {idx % 2 === 0 ? 'A' : 'B'}</span>
+                    )}
+                  </span>
+
+                  {breakingPlayerIndex === idx && (
+                    <span className="breaks-off-chip">
+                      <Icon name="ball" size={13} /> Breaks off
+                    </span>
+                  )}
+
                   {/* Turn order in team mode is fixed by team interleaving, so
                       reordering is only offered for 1v1 / free-for-all. */}
                   {gameMode !== 'team' && (
-                    <div className="rotation-controls">
+                    <div
+                      className="rotation-controls"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         onClick={() => movePlayer(idx, 'up')}
                         disabled={idx === 0}
                         className="rotation-arrow-btn"
-                        title="Move Up"
+                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} up`}
                       >
-                        <Icon name="chevron-up" size={16} />
+                        <Icon name="chevron-up" size={15} />
                       </button>
                       <button
                         onClick={() => movePlayer(idx, 'down')}
                         disabled={idx === playerNames.length - 1}
                         className="rotation-arrow-btn"
-                        title="Move Down"
+                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} down`}
                       >
-                        <Icon name="chevron-down" size={16} />
+                        <Icon name="chevron-down" size={15} />
                       </button>
                     </div>
                   )}
-                  <span className="breaking-option-name">
-                    <span className="order-index">{idx + 1}</span>
-                    <span className="order-name">
-                      {name.trim() || `Player ${idx + 1}`}
-                      {gameMode === 'team' && ` · Team ${idx % 2 === 0 ? 'A' : 'B'}`}
-                    </span>
-                  </span>
-                  <button
-                    onClick={() => setBreakingPlayerIndex(idx)}
-                    aria-pressed={breakingPlayerIndex === idx}
-                    className={`btn-breaker ${breakingPlayerIndex === idx ? 'active' : ''}`}
-                  >
-                    {breakingPlayerIndex === idx ? (
-                      <><Icon name="check" size={14} /> Breaks off</>
-                    ) : (
-                      'Set breaker'
-                    )}
-                  </button>
                 </div>
               ))}
             </div>
