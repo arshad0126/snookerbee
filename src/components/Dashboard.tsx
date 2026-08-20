@@ -79,6 +79,8 @@ export default function Dashboard() {
               framesWon: p.framesWon,
               foulsCommitted: p.foulsCommitted,
               timeSpentMs: p.timeSpentMs,
+              centuries: p.centuries ?? 0,
+              halfCenturies: p.halfCenturies ?? 0,
             })),
             frames: m.frames,
           }));
@@ -127,6 +129,8 @@ export default function Dashboard() {
               framesWon: p.frames_won,
               foulsCommitted: p.fouls_committed,
               timeSpentMs: p.time_spent_ms,
+              centuries: p.centuries ?? 0,
+              halfCenturies: p.half_centuries ?? 0,
             })),
           }));
           setRecentMatches(mapped);

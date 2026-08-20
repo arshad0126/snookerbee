@@ -132,7 +132,13 @@ Vite inlines these at **build** time, so a deployment missing them produces a bu
 
 ## Database schema
 
-Create a Supabase project, open the **SQL Editor**, and run:
+Create a Supabase project, open the **SQL Editor**, and run [`docs/schema.sql`](docs/schema.sql).
+
+It is additive and safe to run against a database that already holds matches. If you set the project up before Century mode existed, running it again adds the two new tables and the milestone columns without touching anything else.
+
+<details>
+<summary>The original three tables, for reference</summary>
+
 
 ```sql
 -- Matches
@@ -186,7 +192,9 @@ create policy "Users can CRUD their own match frames" on match_frames
   );
 ```
 
-Row Level Security is on for all three tables — a signed-in user can only reach their own rows.
+</details>
+
+Row Level Security is on for every table — a signed-in user can only reach their own rows.
 
 ---
 
