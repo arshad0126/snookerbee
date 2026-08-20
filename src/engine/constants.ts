@@ -95,3 +95,7 @@ export const BALL_COLORS: Readonly<Record<BallType, string>> = {
 export function maxBreak(redsCount: number): number {
   return redsCount * 8 + 27;
 }
+
+/** Break milestones. A break counts once, at its highest tier reached. */
+export const CENTURY_THRESHOLD = 100;
+export const HALF_CENTURY_THRESHOLD = 50;

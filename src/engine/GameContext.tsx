@@ -61,6 +61,7 @@ const PLACEHOLDER_STATE: GameState = {
   undoStack: [],
   matchStartTime: '',
   frameStartTime: '',
+  turnStartedAt: '',
   matchTimerMs: 0,
   currentFrameDurationMs: 0,
   completedFrames: [],

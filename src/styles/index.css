@@ -169,6 +169,12 @@ body.light-theme {
   --on-accent: #FFFFFF;   /* white on deep blue */
   --accent-sage-light: #A4D8FF;
   --accent-sage-dark: #24567B;
+
+  /* Primary buttons carry white text, so the gradient must stay dark enough
+     for it across BOTH stops. Built from --accent-sage-light (#A4D8FF) it
+     started at 1.5:1 — the pale "Next Step" / "Start Match" buttons. These
+     stops are 4.8:1 and 8.9:1 against white. */
+  --gradient-primary: linear-gradient(135deg, #3B7FB5 0%, #24567B 100%);
   --accent-lavender: #7C3AED;
   --accent-lavender-light: #A78BFA;
   --accent-peach: #EA580C;
