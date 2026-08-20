@@ -59,8 +59,14 @@ export interface Player {
   score: number;
   /** Points scored in the current unbroken sequence of pots. */
   currentBreak: number;
-  /** Highest break achieved in this frame. */
+  /** Highest break achieved in this frame. Reset each frame. */
   highestBreak: number;
+  /** Highest break across the whole match. Never reset between frames. */
+  matchHighestBreak: number;
+  /** Breaks of 100+ made this match. */
+  centuries: number;
+  /** Breaks of 50-99 made this match. */
+  halfCenturies: number;
   /** Total fouls committed in this frame. */
   foulsCommitted: number;
   /** Cumulative time spent at the table (milliseconds). */
@@ -161,6 +167,12 @@ export interface GameState {
    */
   turnOrder: number[];
 
+  /**
+   * The rotation as configured at match setup. `turnOrder` is rebuilt from
+   * this at each frame, so it must survive the rebuild unchanged.
+   */
+  baseTurnOrder: number[];
+
   // --- Ball Expectation ---
   /**
    * In the 'reds' phase: whether a 'red' or 'color' is expected next.
@@ -198,7 +210,10 @@ export interface GameState {
   matchStartTime: string;
   /** ISO-8601 timestamp of when the current frame started. */
   frameStartTime: string;
-  /** Total elapsed match time in milliseconds (updated via UPDATE_TIMER). */
+  /** ISO timestamp of when the active player's turn began. */
+  turnStartedAt: string;
+
+  /** Total elapsed match time in milliseconds (derived from matchStartTime). */
   matchTimerMs: number;
   /** Duration of the current frame in milliseconds. */
   currentFrameDurationMs: number;
@@ -291,7 +306,7 @@ export interface StartNextFrameAction {
 
 /** Tick the match timer. */
 export interface UpdateTimerAction {
-  readonly type: 'UPDATE_TIMER';
+  readonly type: 'COMMIT_TURN_TIME';
 }
 
 /** Replace the entire state (for hydration / debugging). */

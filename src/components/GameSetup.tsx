@@ -4,6 +4,12 @@ import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
 import { Icon } from './ui';
 
+/** Frames per match. Odd only — an even best-of can end level (issue #10). */
+const MATCH_LENGTHS = [1, 3, 5];
+
+/** Regulars, offered as one-tap fills. Nothing is selected until tapped. */
+const PRESET_PLAYERS = ['Awais', 'Suraj', 'Arshad'];
+
 export default function GameSetup() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -12,7 +18,7 @@ export default function GameSetup() {
   const [teamSize, setTeamSize] = useState<2 | 3>(2); // for teams mode
   const [redsCount, setRedsCount] = useState<10 | 15>(15);
   const [bestOf, setBestOf] = useState<number>(3);
-  const [playerNames, setPlayerNames] = useState<string[]>(['Player 1', 'Player 2']);
+  const [playerNames, setPlayerNames] = useState<string[]>(['', '']);
   const [breakingPlayerIndex, setBreakingPlayerIndex] = useState<number>(0);
 
   // Helper to sync player names array size when mode/teamSize changes
@@ -36,6 +42,20 @@ export default function GameSetup() {
     const newNames = Array.from({ length: count }, (_, i) => `Player ${i + 1}`);
     setPlayerNames(newNames);
     setBreakingPlayerIndex(0);
+  };
+
+  /** Tap a regular to drop them into the first free slot; tap again to remove. */
+  const togglePreset = (preset: string) => {
+    const at = playerNames.findIndex((n) => n.trim() === preset);
+    const next = [...playerNames];
+    if (at !== -1) {
+      next[at] = '';
+    } else {
+      const free = next.findIndex((n) => !n.trim());
+      if (free === -1) return;   // every slot taken — Add Player first
+      next[free] = preset;
+    }
+    setPlayerNames(next);
   };
 
   const handleNameChange = (index: number, val: string) => {
@@ -67,7 +87,7 @@ export default function GameSetup() {
         mode: gameMode,
         redsCount,
         bestOf,
-        players: playerNames.map(name => ({ name: name.trim() || 'Unnamed Player' })),
+        players: playerNames.map((name, i) => ({ name: name.trim() || `Player ${i + 1}` })),
         breakingPlayerIndex,
       };
 
@@ -188,7 +208,7 @@ export default function GameSetup() {
             <h3 className="setup-step-title">Match Length</h3>
             <p className="setup-step-subtitle">Best-of frames to determine the winner.</p>
             <div className="setup-options-row">
-              {[1, 3, 5, 7].map(num => (
+              {MATCH_LENGTHS.map(num => (
                 <div
                   key={num}
                   onClick={() => setBestOf(num)}
@@ -255,6 +275,29 @@ export default function GameSetup() {
                 </>
               ) : (
                 <>
+                  <div className="preset-roster">
+                    <span className="preset-roster-label">Regulars</span>
+                    <div className="preset-chip-row">
+                      {PRESET_PLAYERS.map((preset) => {
+                        const picked = playerNames.some((n) => n.trim() === preset);
+                        const full = !picked && playerNames.every((n) => n.trim());
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => togglePreset(preset)}
+                            disabled={full}
+                            aria-pressed={picked}
+                            className={`preset-chip ${picked ? 'picked' : ''}`}
+                          >
+                            {picked && <Icon name="check" size={14} />}
+                            {preset}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {playerNames.map((name, idx) => (
                     <div key={idx} className="setup-player-input-wrapper">
                       <span className="setup-player-number">{idx + 1}</span>
@@ -299,50 +342,65 @@ export default function GameSetup() {
         return (
           <div className="setup-step-container">
             <h3 className="setup-step-title">Set Rotation Order</h3>
-            <p className="setup-step-subtitle">Order of turns from first shot to last.</p>
-            <div className="breaking-order-grid">
+            <p className="setup-step-subtitle">Tap a player to give them the break. Use the arrows to reorder.</p>
+            <div className="breaking-order-grid" role="radiogroup" aria-label="Rotation order">
               {playerNames.map((name, idx) => (
                 <div
                   key={idx}
+                  role="radio"
+                  aria-checked={breakingPlayerIndex === idx}
+                  tabIndex={0}
+                  onClick={() => setBreakingPlayerIndex(idx)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setBreakingPlayerIndex(idx);
+                    }
+                  }}
                   className={`breaking-option-row ${breakingPlayerIndex === idx ? 'selected' : ''}`}
                 >
+                  <span className="order-seat">{idx + 1}</span>
+
+                  <span className="breaking-option-name">
+                    <span className="order-name">
+                      {name.trim() || `Player ${idx + 1}`}
+                    </span>
+                    {gameMode === 'team' && (
+                      <span className="order-team">Team {idx % 2 === 0 ? 'A' : 'B'}</span>
+                    )}
+                  </span>
+
+                  {breakingPlayerIndex === idx && (
+                    <span className="breaks-off-chip">
+                      <Icon name="ball" size={13} /> Breaks off
+                    </span>
+                  )}
+
                   {/* Turn order in team mode is fixed by team interleaving, so
                       reordering is only offered for 1v1 / free-for-all. */}
                   {gameMode !== 'team' && (
-                    <div className="rotation-controls">
+                    <div
+                      className="rotation-controls"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         onClick={() => movePlayer(idx, 'up')}
                         disabled={idx === 0}
                         className="rotation-arrow-btn"
-                        title="Move Up"
+                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} up`}
                       >
-                        <Icon name="chevron-up" size={16} />
+                        <Icon name="chevron-up" size={15} />
                       </button>
                       <button
                         onClick={() => movePlayer(idx, 'down')}
                         disabled={idx === playerNames.length - 1}
                         className="rotation-arrow-btn"
-                        title="Move Down"
+                        aria-label={`Move ${name.trim() || `Player ${idx + 1}`} down`}
                       >
-                        <Icon name="chevron-down" size={16} />
+                        <Icon name="chevron-down" size={15} />
                       </button>
                     </div>
                   )}
-                  <span className="breaking-option-name">
-                    {idx + 1}. {name}
-                    {gameMode === 'team' && (
-                      <span style={{ color: 'var(--text-muted)' }}> · Team {idx % 2 === 0 ? 'A' : 'B'}</span>
-                    )}
-                  </span>
-                  {breakingPlayerIndex === idx && (
-                    <span className="breaking-option-badge">Breaks Off</span>
-                  )}
-                  <button
-                    onClick={() => setBreakingPlayerIndex(idx)}
-                    className={`btn-breaker ${breakingPlayerIndex === idx ? 'active' : ''}`}
-                  >
-                    {breakingPlayerIndex === idx ? 'Breaker' : 'Breaker'}
-                  </button>
                 </div>
               ))}
             </div>
@@ -375,7 +433,7 @@ export default function GameSetup() {
 
   const isNextDisabled = () => {
     if (currentStep === 4) {
-      return playerNames.some(name => !name.trim());
+      return false;   // blank names fall back to "Player N" on submit
     }
     return false;
   };

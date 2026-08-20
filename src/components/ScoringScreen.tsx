@@ -15,6 +15,7 @@ import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
 import PreviousFramesModal from './PreviousFramesModal';
 import { Icon } from './ui';
+import { CENTURY_THRESHOLD, HALF_CENTURY_THRESHOLD } from '../engine/constants';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -46,11 +47,9 @@ export default function ScoringScreen() {
   const [frameHistory, setFrameHistory] = useState<FrameHistoryItem[]>([]);
 
   // Visit timer state
-  const [visitTimeMs, setVisitTimeMs] = useState(0);
 
   // Reset visit timer on turn change or frame reset
   useEffect(() => {
-    setVisitTimeMs(0);
   }, [state.currentPlayerIndex, state.frameNumber]);
 
   // Initialize game setup from navigation state if available
@@ -78,17 +77,9 @@ export default function ScoringScreen() {
     };
   }, []);
 
-  // Timer Tick and player timing
-  useEffect(() => {
-    if (state.phase === 'finished' || state.players.length === 0 || isPaused) return;
-
-    const interval = setInterval(() => {
-      setVisitTimeMs(prev => prev + 1000);
-      dispatch({ type: 'UPDATE_TIMER' });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [state.phase, state.players.length, isPaused, dispatch]);
+  // No ticking timer. Durations come from timestamps in the reducer, so there
+  // is nothing to poll — the old 1Hz interval re-rendered this whole screen 60
+  // times a minute for the length of a match, purely to repaint a clock.
 
   // Handle score pop animation when scores increase
   useEffect(() => {
@@ -121,22 +112,6 @@ export default function ScoringScreen() {
   // Active Player Lookup
   const activePlayer = state.players[state.turnOrder[state.currentPlayerIndex]];
 
-  // Format Timer
-  const formatTimer = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-    const ss = String(totalSeconds % 60).padStart(2, '0');
-    return `${mm}:${ss}`;
-  };
-
-  // Format Visit Timer
-  const formatVisitTimer = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-    const ss = String(totalSeconds % 60).padStart(2, '0');
-    return `V: ${mm}:${ss} (${totalSeconds}s)`;
-  };
-
   // Ball Selection Eligibility Helper
   const isBallEnabled = (ball: BallType): boolean => {
     if (isPaused) return false;
@@ -157,9 +132,13 @@ export default function ScoringScreen() {
     audio.playPot();
     dispatch({ type: 'POT_BALL', ball });
 
-    // Check for break milestones
-    const nextBreak = activePlayer.currentBreak + BALL_VALUES[ball];
-    if ([25, 50, 100].includes(nextBreak)) {
+    // Milestone chime. This used to test `[25, 50, 100].includes(next)`, which
+    // only fired when a break landed exactly on the number — a break going
+    // 48 -> 51 on a blue skipped the fifty entirely. Test the crossing instead.
+    const before = activePlayer.currentBreak;
+    const after = before + BALL_VALUES[ball];
+    const crossed = (threshold: number) => before < threshold && after >= threshold;
+    if (crossed(HALF_CENTURY_THRESHOLD) || crossed(CENTURY_THRESHOLD)) {
       setTimeout(() => audio.playBreakMilestone(), 300);
     }
   };
@@ -380,24 +359,23 @@ export default function ScoringScreen() {
               )}
             </div>
 
-            <div className="player-card-bottom">
-              <span className="player-card-timer">
-                <Icon name="clock" size={13} /> {formatTimer(isActive ? activeTeamPlayer.timeSpentMs : 0)}
-              </span>
-              {isActive && (
-                <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
-              )}
-            </div>
+
           </div>
         );
       });
     }
 
-    // 1v1 and Free For All
-    return state.players.map((p, pIdx) => {
+    // 1v1 and Free For All.
+    // Walk turnOrder, not state.players: the cards must sit left-to-right in
+    // the order people actually play this frame. Mapping the players array
+    // pinned them to their setup positions, so the rotation was invisible
+    // here even once the engine was rotating correctly.
+    return state.turnOrder.map((pIdx, seat) => {
+      const p = state.players[pIdx];
+      if (!p) return null;
       const isActive = activePlayer.id === p.id;
       const isPopping = poppingPlayerId === p.id;
-      const isBreaker = state.turnOrder[0] === pIdx;
+      const isBreaker = seat === 0;
       const frameWins = state.frameScores[p.id] || 0;
 
       return (
@@ -434,10 +412,6 @@ export default function ScoringScreen() {
           </div>
 
           <div className="player-card-bottom">
-            <span className="player-card-timer"><Icon name="clock" size={13} /> {formatTimer(p.timeSpentMs)}</span>
-            {isActive && (
-              <span className="player-card-visit">{formatVisitTimer(visitTimeMs)}</span>
-            )}
           </div>
         </div>
       );
@@ -460,9 +434,7 @@ export default function ScoringScreen() {
           </div>
         </div>
 
-        <div className="scoring-topbar-center">
-          <span className="match-timer-display" title="Current Frame Time"><Icon name="clock" size={14} /> {formatTimer(state.currentFrameDurationMs)}</span>
-        </div>
+        <div className="scoring-topbar-center" />
 
         <div className="scoring-topbar-right">
           <button onClick={toggleTheme} className="btn-topbar-icon" title="Toggle Theme">

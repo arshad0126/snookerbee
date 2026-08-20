@@ -103,7 +103,7 @@ export default function MatchSummary() {
               name: p.name,
               teamName: playerTeam?.name,
               totalScore: p.score, // accumulated score
-              highestBreak: p.highestBreak,
+              highestBreak: p.matchHighestBreak,
               framesWon,
               foulsCommitted: p.foulsCommitted,
               timeSpentMs: p.timeSpentMs,
@@ -150,7 +150,7 @@ export default function MatchSummary() {
             player_name: p.name,
             team_name: playerTeam?.name ?? undefined,
             total_score: p.score,
-            highest_break: p.highestBreak,
+            highest_break: p.matchHighestBreak,
             frames_won: framesWon,
             fouls_committed: p.foulsCommitted,
             time_spent_ms: p.timeSpentMs,
@@ -205,7 +205,7 @@ export default function MatchSummary() {
         teamName: pTeam?.name,
         score: p.score,
         framesWon,
-        highestBreak: p.highestBreak,
+        highestBreak: p.matchHighestBreak,
         fouls: p.foulsCommitted,
         isWinner: p.name === winnerName || (!!pTeam && pTeam.name === winnerName),
       };

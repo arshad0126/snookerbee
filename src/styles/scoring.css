@@ -443,9 +443,9 @@
 .status-bar-value.highlight-white { color: #FFFFFF; font-family: var(--font-ui); }
 
 .active-match-pill {
-  background: rgba(5, 176, 100, 0.1);
+  background: rgba(47, 110, 158, 0.1);
   color: #39D38D;
-  border: 1px solid rgba(5, 176, 100, 0.15);
+  border: 1px solid rgba(47, 110, 158, 0.15);
   font-size: 9px;
   font-weight: 700;
   padding: 2px 8px;
@@ -759,7 +759,7 @@
 
 .btn-action-pass:hover:not(:disabled) {
   filter: brightness(1.08);
-  box-shadow: 0 0 20px rgba(5, 176, 100, 0.35);
+  box-shadow: 0 0 20px rgba(47, 110, 158, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1944,3 +1944,41 @@ body.light-theme .btn-topbar-icon.active-pause {
 }
 
 
+
+
+/* ============================================================================
+   Frame summary — actions stay reachable
+   ---------------------------------------------------------------------------
+   The card grew with its content, so on a phone in landscape the End Match /
+   Next Frame buttons sat below the fold and needed a scroll to reach. The card
+   is now a bounded flex column: the stats scroll, the actions never do.
+   ========================================================================= */
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 640px);
+  overflow: hidden;
+}
+
+.summary-scroll {
+  flex: 1 1 auto;
+  min-height: 0;                 /* required for a flex child to scroll */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.summary-actions {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  padding-top: var(--space-md);
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--border-color-dim);
+  background: var(--bg-card, var(--bg-elevated));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.summary-stat--milestone .summary-stat-value {
+  color: var(--accent-sage);
+}

@@ -32,6 +32,8 @@ import {
   BALL_VALUES,
   COLORS_IN_ORDER,
   MAX_UNDO_STACK,
+  CENTURY_THRESHOLD,
+  HALF_CENTURY_THRESHOLD,
 } from './constants';
 
 import {
@@ -83,6 +85,95 @@ function pushUndo(currentState: GameState): GameState[] {
     return newStack.slice(newStack.length - MAX_UNDO_STACK);
   }
   return newStack;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Frame rotation
+// ---------------------------------------------------------------------------
+//
+// Each frame a different player breaks, and the rest follow in the order the
+// match was set up with. For a setup of 1,2,3 that gives:
+//
+//   frame 1 -> 1, 2, 3
+//   frame 2 -> 2, 1, 3
+//   frame 3 -> 3, 1, 2
+//
+// Note this is NOT a cyclic rotation, which would give 2,3,1 for frame 2. The
+// breaker moves to the front; everyone else keeps their configured sequence.
+//
+// The previous implementation rotated `currentPlayerIndex` instead of the
+// order itself, so the order never actually changed — only the entry point
+// into it did.
+
+function rotationForFrame(baseTurnOrder: number[], frameNumber: number): number[] {
+  if (baseTurnOrder.length === 0) return baseTurnOrder;
+  const breaker = baseTurnOrder[(frameNumber - 1) % baseTurnOrder.length];
+  return [breaker, ...baseTurnOrder.filter((i) => i !== breaker)];
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Break milestones
+// ---------------------------------------------------------------------------
+//
+// A break is only "made" once it ends — a run sitting on 48 may yet become a
+// century, so milestones are counted when the break is finalised (a miss, a
+// foul, a concede, or the frame ending), never as the score crosses a
+// threshold. A break counts once, at its highest tier: a 104 is one century,
+// not a century and a fifty, which is how snooker records them.
+//
+// matchHighestBreak is tracked separately from highestBreak because the latter
+// is reset every frame; saving it as the match figure was discarding any break
+// made before the final frame.
+
+function finaliseBreak(p: Player): Player {
+  const brk = p.currentBreak;
+  if (brk === 0) return p;
+  return {
+    ...p,
+    currentBreak: 0,
+    highestBreak: Math.max(p.highestBreak, brk),
+    matchHighestBreak: Math.max(p.matchHighestBreak, brk),
+    centuries: p.centuries + (brk >= CENTURY_THRESHOLD ? 1 : 0),
+    halfCenturies:
+      p.halfCenturies +
+      (brk >= HALF_CENTURY_THRESHOLD && brk < CENTURY_THRESHOLD ? 1 : 0),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Timing
+// ---------------------------------------------------------------------------
+//
+// Durations are derived from timestamps, never accumulated by a ticking
+// interval. The old approach dispatched UPDATE_TIMER once a second, which
+// re-ran this reducer and re-rendered the scoring screen 60 times a minute for
+// the whole match, stopped counting whenever iOS suspended the backgrounded
+// tab, and — because undo restores a whole state snapshot — rewound every
+// clock to the moment of the undone action.
+//
+// Reading the wall clock instead makes all three problems disappear: nothing
+// polls, backgrounding is irrelevant, and undo cannot rewind a value that is
+// computed rather than stored.
+
+function elapsedSince(iso: string): number {
+  const started = Date.parse(iso);
+  return Number.isFinite(started) ? Math.max(0, Date.now() - started) : 0;
+}
+
+/**
+ * Bank the active player's turn time and restart their clock. Called whenever
+ * the turn passes, the frame ends, or the match ends — the only moments at
+ * which a player's elapsed time actually changes.
+ */
+function commitTurnTime(state: GameState): Pick<GameState, 'players' | 'turnStartedAt'> {
+  const elapsed = elapsedSince(state.turnStartedAt);
+  const activeIndex = state.turnOrder[state.currentPlayerIndex];
+  return {
+    players: state.players.map((p, i) =>
+      i === activeIndex ? { ...p, timeSpentMs: p.timeSpentMs + elapsed } : p
+    ),
+    turnStartedAt: new Date().toISOString(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -242,6 +333,9 @@ export function createInitialState(config: GameSetupConfig): GameState {
     score: 0,
     currentBreak: 0,
     highestBreak: 0,
+    matchHighestBreak: 0,
+    centuries: 0,
+    halfCenturies: 0,
     foulsCommitted: 0,
     timeSpentMs: 0,
   }));
@@ -302,6 +396,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     players,
     teams,
     turnOrder,
+    baseTurnOrder: turnOrder,
     expectedBall: 'red',
     currentColorTarget: null,
     frameNumber: 1,
@@ -311,6 +406,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     undoStack: [],
     matchStartTime: now,
     frameStartTime: now,
+    turnStartedAt: now,
     matchTimerMs: 0,
     currentFrameDurationMs: 0,
     completedFrames: [],
@@ -544,11 +640,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const currentPlayer = getCurrentPlayer(state);
       const playerIndex = state.turnOrder[state.currentPlayerIndex];
 
-      // Finalise the current break (reset to 0)
+      // Finalise the current break — banks highest break and any milestone.
       const updatedPlayers = state.players.map((p, i) =>
-        i === playerIndex
-          ? { ...p, currentBreak: 0 }
-          : p,
+        i === playerIndex ? finaliseBreak(p) : p,
       );
 
       let newExpectedBall = state.expectedBall;
@@ -573,11 +667,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         description: `${currentPlayer.name} missed — turn passes`,
       });
 
+      const missTiming = commitTurnTime({ ...state, players: updatedPlayers });
+
       return {
         ...state,
         phase: newPhase,
         currentPlayerIndex: advanceTurn(state),
-        players: updatedPlayers,
+        players: missTiming.players,
+        turnStartedAt: missTiming.turnStartedAt,
         expectedBall: newExpectedBall,
         currentColorTarget: newColorTarget,
         actionLog: [...state.actionLog, logEntry],
@@ -643,9 +740,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const currentPlayer = getCurrentPlayer(state);
       const playerIndex = state.turnOrder[state.currentPlayerIndex];
 
-      // Reset current player's break
+      // Finalise current player's break
       const updatedPlayers = state.players.map((p, i) =>
-        i === playerIndex ? { ...p, currentBreak: 0 } : p,
+        i === playerIndex ? finaliseBreak(p) : p,
       );
 
       const logEntry = createLogEntry({
@@ -697,6 +794,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...p,
         score: 0,
         currentBreak: 0,
+        // Frame-scoped only. matchHighestBreak, centuries and halfCenturies
+        // deliberately survive the frame reset — they describe the match.
         highestBreak: 0,
         foulsCommitted: 0,
       }));
@@ -707,22 +806,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         totalScore: 0,
       }));
 
-      // Rotate who breaks: custom selection from payload or fallback automatic rotation
-      let newTurnOrder = [...state.turnOrder];
+      // Rotate who breaks. An explicit payload (the user reordering in setup)
+      // wins; otherwise derive the frame's order from the configured base.
+      let newBase = [...state.baseTurnOrder];
+      let newTurnOrder: number[];
       let newStartIndex = 0;
 
       if (action.payload) {
         const { breakingPlayerId, turnOrderIds } = action.payload;
         if (turnOrderIds) {
-          newTurnOrder = turnOrderIds.map(id => state.players.findIndex(p => p.id === id));
+          newBase = turnOrderIds.map((id) => state.players.findIndex((p) => p.id === id));
         }
+        newTurnOrder = [...newBase];
         if (breakingPlayerId) {
-          const breakerIndex = state.players.findIndex(p => p.id === breakingPlayerId);
-          newStartIndex = newTurnOrder.indexOf(breakerIndex);
-          if (newStartIndex === -1) newStartIndex = 0;
+          const breakerIndex = state.players.findIndex((p) => p.id === breakingPlayerId);
+          newTurnOrder = [
+            breakerIndex,
+            ...newBase.filter((i) => i !== breakerIndex),
+          ];
         }
       } else {
-        newStartIndex = (state.frameNumber) % state.turnOrder.length;
+        newTurnOrder = rotationForFrame(newBase, state.frameNumber + 1);
       }
 
       const logEntry = createLogEntry({
@@ -764,6 +868,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         phase: 'reds',
         redsRemaining: state.redsTotal,
         currentPlayerIndex: newStartIndex,
+        turnOrder: newTurnOrder,
+        baseTurnOrder: newBase,
         players: resetPlayers,
         teams: resetTeams,
         expectedBall: 'red',
@@ -772,34 +878,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         actionLog: [logEntry],
         undoStack: [],
         frameStartTime: now,
+        turnStartedAt: now,
         currentFrameDurationMs: 0,
         completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
-        turnOrder: newTurnOrder,
       };
     }
 
     // -----------------------------------------------------------------------
-    // UPDATE_TIMER — Tick the match timer
+    // COMMIT_TURN_TIME — Bank the active player's elapsed turn time
     // -----------------------------------------------------------------------
-    case 'UPDATE_TIMER': {
-      if (state.phase === 'finished' || state.players.length === 0) {
-        return state;
-      }
-      const activePlayerIndex = state.turnOrder[state.currentPlayerIndex];
-      const updatedPlayers = state.players.map((p, idx) => {
-        if (idx === activePlayerIndex) {
-          return { ...p, timeSpentMs: p.timeSpentMs + 1000 };
-        }
-        return p;
-      });
-      return {
-        ...state,
-        matchTimerMs: state.matchTimerMs + 1000,
-        currentFrameDurationMs: state.currentFrameDurationMs + 1000,
-        players: updatedPlayers,
-      };
+    case 'COMMIT_TURN_TIME': {
+      if (state.phase === 'finished' || state.players.length === 0) return state;
+      return { ...state, ...commitTurnTime(state) };
     }
 
     // -----------------------------------------------------------------------
@@ -847,8 +939,7 @@ function handleFoul(
       // Foul-committing player: reset break, increment foul count
       // NO points scored for any balls potted during a foul
       return {
-        ...p,
-        currentBreak: 0,
+        ...finaliseBreak(p),
         foulsCommitted: p.foulsCommitted + 1,
       };
     }
@@ -931,11 +1022,14 @@ function handleFoul(
         : `${currentPlayer.name} fouled on ${ballInvolved}. ${penalty} pts to ${opponentNames.join(', ')}`,
   });
 
+  const foulTiming = commitTurnTime({ ...state, players: updatedPlayers });
+
   const newState: GameState = {
     ...state,
     phase: newPhase,
     currentPlayerIndex: advanceTurn(state),
-    players: updatedPlayers,
+    players: foulTiming.players,
+    turnStartedAt: foulTiming.turnStartedAt,
     teams: updatedTeams,
     redsRemaining: newRedsRemaining,
     expectedBall: newExpectedBall,
@@ -977,9 +1071,17 @@ function handleFrameEnd(state: GameState): GameState {
   const matchWinner =
     updatedFrameScores[winnerId] >= framesToWin ? winnerId : null;
 
+  const timing = commitTurnTime({
+    ...state,
+    players: state.players.map(finaliseBreak),
+  });
+
   return {
     ...state,
+    ...timing,
     frameScores: updatedFrameScores,
     winner: matchWinner,
+    currentFrameDurationMs: elapsedSince(state.frameStartTime),
+    matchTimerMs: elapsedSince(state.matchStartTime),
   };
 }
