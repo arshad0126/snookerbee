@@ -16,6 +16,7 @@ import PreviousFramesModal from './PreviousFramesModal';
 import { Icon } from './ui';
 import { CENTURY_THRESHOLD, HALF_CENTURY_THRESHOLD } from '../engine/constants';
 import WallClock from './WallClock';
+import { saveActiveMatch, loadActiveMatch, clearActiveMatch, savePendingMatch } from '../lib/matchStorage';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -46,21 +47,33 @@ export default function ScoringScreen() {
   // Frame score history tracking
   const [frameHistory, setFrameHistory] = useState<FrameHistoryItem[]>([]);
 
-  // Visit timer state
-
-  // Reset visit timer on turn change or frame reset
-  useEffect(() => {
-  }, [state.currentPlayerIndex, state.frameNumber]);
-
-  // Initialize game setup from navigation state if available
+  // Initialize from navigation state, or recover a match the app lost.
   useEffect(() => {
     if (location.state?.config) {
+      clearActiveMatch();          // a new match supersedes any stored one
       setupGame(location.state.config);
-    } else if (state.players.length === 0) {
-      // If no game is configured, redirect to setup
-      navigate('/setup');
+      return;
     }
-  }, [location.state, state.players.length, setupGame, navigate]);
+    if (state.players.length > 0) return;
+
+    // Arriving at /play with nothing in memory means the app was relaunched —
+    // on iOS, usually because the PWA was evicted while backgrounded. Restore
+    // rather than dumping the user at setup with the match gone.
+    const saved = loadActiveMatch();
+    if (saved) {
+      dispatch({ type: 'SET_STATE', state: saved.state });
+      setFrameHistory(saved.frameHistory);
+      return;
+    }
+    navigate('/setup');
+  }, [location.state, state.players.length, setupGame, navigate, dispatch]);
+
+  // Persist as the match is played. Writing on every dispatch is cheap next to
+  // a re-render, and means the most that can ever be lost is the last action.
+  useEffect(() => {
+    if (state.players.length === 0 || state.winner !== null) return;
+    saveActiveMatch(state, frameHistory);
+  }, [state, frameHistory]);
 
   // Audio initialization on first click
   useEffect(() => {
@@ -226,6 +239,11 @@ export default function ScoringScreen() {
       ...frameHistory,
       { frameNumber: state.frameNumber, scores: currentScores },
     ];
+
+    // Hand over to the summary: no longer resumable, but held as pending so
+    // leaving that screen before it saves cannot discard it.
+    clearActiveMatch();
+    savePendingMatch(state, finalFrameHistory);
 
     navigate('/summary', {
       state: {
@@ -686,7 +704,8 @@ export default function ScoringScreen() {
               </button>
               <button
                 onClick={() => {
-                  if (window.confirm('End this match now? It will not be saved.')) {
+                  if (window.confirm('Abandon this match? It will not be saved and cannot be resumed.')) {
+                    clearActiveMatch();   // deliberate discard, so drop the resume point
                     navigate('/dashboard');
                   }
                 }}

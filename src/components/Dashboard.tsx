@@ -10,6 +10,7 @@ import {
 } from '../lib/database';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 import { Icon } from './ui';
+import { loadActiveMatch } from '../lib/matchStorage';
 
 export default function Dashboard() {
   const { user, isGuest, signOut } = useAuth();
@@ -19,6 +20,12 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totalGames: 0, highestBreak: 0, winRate: 0 });
   const [recentMatches, setRecentMatches] = useState<MatchDetailsData[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
+
+  // An unfinished match left behind by an evicted or closed session.
+  const [resumable] = useState(() => {
+    const saved = loadActiveMatch();
+    return saved && saved.state.winner === null ? saved : null;
+  });
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest';
   const avatarUrl = user?.user_metadata?.avatar_url;
@@ -176,6 +183,25 @@ export default function Dashboard() {
       <main className="dashboard-grid">
         {/* Left column: fixed in landscape */}
         <div className="dashboard-left">
+        {resumable && (
+          <button
+            type="button"
+            onClick={() => navigate('/play')}
+            className="resume-cta"
+          >
+            <span className="resume-glyph">
+              <Icon name="pass" size={18} />
+            </span>
+            <span className="new-game-copy">
+              <span className="resume-title">Resume match</span>
+              <span className="resume-sub">
+                Frame {resumable.state.frameNumber} · {resumable.state.players.length} players
+              </span>
+            </span>
+            <Icon name="arrow-right" size={16} className="new-game-arrow" />
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => navigate('/setup')}
