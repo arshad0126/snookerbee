@@ -37,13 +37,13 @@
 
 .btn-primary {
   background: var(--gradient-primary);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  color: var(--on-accent);
+  box-shadow: 0 4px 14px rgba(164, 216, 255, 0.25);
 }
 
 .btn-primary:hover {
   filter: brightness(1.06);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 20px rgba(164, 216, 255, 0.4);
   transform: translateY(-1px);
 }
 
@@ -618,7 +618,7 @@ body.light-theme .card:hover {
 body.light-theme .card-selected {
   border-color: var(--accent-sage);
   box-shadow: var(--shadow-glow);
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(47, 110, 158, 0.04);
 }
 
 /* Inputs */

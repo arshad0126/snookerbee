@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
+import { Icon } from './ui';
 
 export default function GameSetup() {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export default function GameSetup() {
                 onClick={() => handleModeChange('1v1')}
                 className={`setup-option ${gameMode === '1v1' ? 'selected' : ''}`}
               >
-                <div className="setup-option-icon">🏓</div>
+                <div className="setup-option-icon"><Icon name="duo" size={32} /></div>
                 <div>
                   <div className="setup-option-title">1 v 1</div>
                   <div className="setup-option-desc">Classic head-to-head match</div>
@@ -119,7 +120,7 @@ export default function GameSetup() {
                 onClick={() => handleModeChange('team', 2)}
                 className={`setup-option ${gameMode === 'team' ? 'selected' : ''}`}
               >
-                <div className="setup-option-icon">👥</div>
+                <div className="setup-option-icon"><Icon name="users" size={32} /></div>
                 <div>
                   <div className="setup-option-title">Teams</div>
                   <div className="setup-option-desc">2v2 or 3v3 team play</div>
@@ -147,7 +148,7 @@ export default function GameSetup() {
                 onClick={() => handleModeChange('freeForAll')}
                 className={`setup-option ${gameMode === 'freeForAll' ? 'selected' : ''}`}
               >
-                <div className="setup-option-icon">🎯</div>
+                <div className="setup-option-icon"><Icon name="target" size={32} /></div>
                 <div>
                   <div className="setup-option-title">Free for All</div>
                   <div className="setup-option-desc">2-8 players, solo scoring</div>
@@ -276,7 +277,7 @@ export default function GameSetup() {
                         className="btn btn-secondary"
                         style={{ flex: 1 }}
                       >
-                        − Remove Player
+                        <Icon name="minus" size={16} /> Remove Player
                       </button>
                       <button
                         onClick={addFfaPlayer}
@@ -315,7 +316,7 @@ export default function GameSetup() {
                         className="rotation-arrow-btn"
                         title="Move Up"
                       >
-                        ▲
+                        <Icon name="chevron-up" size={16} />
                       </button>
                       <button
                         onClick={() => movePlayer(idx, 'down')}
@@ -323,7 +324,7 @@ export default function GameSetup() {
                         className="rotation-arrow-btn"
                         title="Move Down"
                       >
-                        ▼
+                        <Icon name="chevron-down" size={16} />
                       </button>
                     </div>
                   )}
@@ -382,23 +383,7 @@ export default function GameSetup() {
   return (
     <div className="setup-page page page-centered">
       <button onClick={toggleTheme} className="theme-toggle-floating" aria-label="Toggle theme">
-        {theme === 'dark' ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        )}
+        <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
       </button>
       <div className="setup-card">
         <header className="setup-card-header">

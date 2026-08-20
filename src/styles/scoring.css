@@ -57,13 +57,13 @@
 }
 
 .frame-pill {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(164, 216, 255, 0.15);
   color: var(--accent-sage-light);
   font-weight: 700;
   font-size: 0.75rem;
   padding: 4px 12px;
   border-radius: 100px;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(164, 216, 255, 0.25);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -202,7 +202,7 @@
   background: var(--gradient-active-card);
   box-shadow:
     0 16px 44px rgba(0, 0, 0, 0.65),
-    0 0 24px rgba(16, 185, 129, 0.18);
+    0 0 24px rgba(164, 216, 255, 0.18);
   transform: scale(1.02);
 }
 
@@ -238,9 +238,9 @@
 
 .player-panel-horizontal.active .player-avatar-circle {
   background: var(--accent-sage);
-  color: #FFFFFF;
+  color: var(--on-accent);
   border-color: var(--accent-sage-light);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(164, 216, 255, 0.35);
 }
 
 .player-avatar-circle.team-avatar {
@@ -251,7 +251,7 @@
 
 .player-panel-horizontal.active .player-avatar-circle.team-avatar {
   background: var(--accent-sage);
-  color: #FFFFFF;
+  color: var(--on-accent);
   border-color: var(--accent-sage-light);
 }
 
@@ -313,8 +313,8 @@
 .player-panel-horizontal.active .breaker-badge {
   background: var(--accent-sage);
   border-color: var(--accent-sage-light);
-  color: #FFFFFF;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+  color: var(--on-accent);
+  box-shadow: 0 0 8px rgba(164, 216, 255, 0.35);
 }
 
 .player-card-wins {
@@ -359,7 +359,7 @@
   background: rgba(0, 0, 0, 0.55);
   box-shadow: 
     inset 0 3px 8px rgba(0, 0, 0, 0.7),
-    0 0 12px rgba(16, 185, 129, 0.25);
+    0 0 12px rgba(164, 216, 255, 0.25);
 }
 
 .player-break-badge {
@@ -374,9 +374,9 @@
 }
 
 .player-panel-horizontal.active .player-break-badge {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(164, 216, 255, 0.3);
   color: var(--accent-sage-light);
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(164, 216, 255, 0.08);
 }
 
 .player-card-bottom {
@@ -677,7 +677,7 @@
 .scoring-ball-card.ball-yellow.expected { border-color: #0f172a !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(234, 179, 8, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
 .scoring-ball-card.ball-green.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(34, 197, 94, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
 .scoring-ball-card.ball-brown.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(161, 98, 7, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
-.scoring-ball-card.ball-blue.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(59, 130, 246, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
+.scoring-ball-card.ball-blue.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(124, 193, 240, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
 .scoring-ball-card.ball-pink.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(236, 72, 153, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
 .scoring-ball-card.ball-black.expected { border-color: #ffffff !important; border-width: 2.5px !important; box-shadow: 0 0 24px rgba(255, 255, 255, 0.85), 0 8px 20px rgba(0,0,0,0.5) !important; }
 
@@ -1344,16 +1344,16 @@
   font-size: 10px;
   font-weight: 700;
   color: var(--accent-sage);
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(164, 216, 255, 0.08);
   padding: 2px 8px;
   border-radius: 100px;
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(164, 216, 255, 0.15);
 }
 
 body.light-theme .prev-frame-winner-badge {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(47, 110, 158, 0.08);
   color: var(--accent-sage);
-  border-color: rgba(37, 99, 235, 0.15);
+  border-color: rgba(47, 110, 158, 0.15);
 }
 
 .prev-frame-players {
@@ -1373,11 +1373,11 @@ body.light-theme .prev-frame-winner-badge {
 }
 
 .prev-frame-player-row.winner {
-  background: rgba(16, 185, 129, 0.06);
+  background: rgba(164, 216, 255, 0.06);
 }
 
 body.light-theme .prev-frame-player-row.winner {
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 110, 158, 0.05);
 }
 
 .prev-frame-player-name-area {
@@ -1634,9 +1634,9 @@ body.light-theme .scoring-topbar {
 }
 
 body.light-theme .frame-pill {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(47, 110, 158, 0.08);
   color: var(--accent-sage);
-  border-color: rgba(37, 99, 235, 0.18);
+  border-color: rgba(47, 110, 158, 0.18);
 }
 
 /* Player cards — visible elevation */
@@ -1648,9 +1648,9 @@ body.light-theme .player-panel-horizontal {
 
 body.light-theme .player-panel-horizontal.active {
   border-color: var(--accent-sage);
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(47, 110, 158, 0.04);
   box-shadow:
-    0 4px 16px rgba(37, 99, 235, 0.12),
+    0 4px 16px rgba(47, 110, 158, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
@@ -1663,7 +1663,7 @@ body.light-theme .player-avatar-circle {
 body.light-theme .player-panel-horizontal.active .player-avatar-circle {
   background: var(--accent-sage);
   border-color: var(--accent-sage-light);
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 8px rgba(47, 110, 158, 0.25);
 }
 
 body.light-theme .breaker-badge {
@@ -1675,7 +1675,7 @@ body.light-theme .breaker-badge {
 body.light-theme .player-panel-horizontal.active .breaker-badge {
   background: var(--accent-sage);
   border-color: var(--accent-sage-light);
-  box-shadow: 0 0 6px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 6px rgba(47, 110, 158, 0.25);
 }
 
 body.light-theme .player-card-wins {
@@ -1695,10 +1695,10 @@ body.light-theme .player-score-pill {
 body.light-theme .player-panel-horizontal.active .player-score-pill {
   border-color: var(--accent-sage);
   color: var(--accent-sage);
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(47, 110, 158, 0.04);
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.05),
-    0 0 8px rgba(37, 99, 235, 0.12);
+    0 0 8px rgba(47, 110, 158, 0.12);
 }
 
 body.light-theme .player-break-badge {
@@ -1708,9 +1708,9 @@ body.light-theme .player-break-badge {
 }
 
 body.light-theme .player-panel-horizontal.active .player-break-badge {
-  border-color: rgba(37, 99, 235, 0.2);
+  border-color: rgba(47, 110, 158, 0.2);
   color: var(--accent-sage);
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 110, 158, 0.05);
 }
 
 body.light-theme .player-card-bottom {
@@ -1739,9 +1739,9 @@ body.light-theme .status-bar-value.highlight-white {
 }
 
 body.light-theme .active-match-pill {
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(47, 110, 158, 0.06);
   color: var(--accent-sage);
-  border-color: rgba(37, 99, 235, 0.12);
+  border-color: rgba(47, 110, 158, 0.12);
 }
 
 body.light-theme .on-ball-text-label.color-any {
@@ -1765,7 +1765,7 @@ body.light-theme .btn-action-undo {
 
 body.light-theme .btn-action-undo:hover:not(:disabled) {
   border-color: var(--accent-sage);
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(47, 110, 158, 0.04);
   color: var(--accent-sage);
 }
 

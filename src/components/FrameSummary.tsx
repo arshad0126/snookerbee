@@ -2,6 +2,7 @@ import { useEffect, Fragment } from 'react';
 import type { GameState } from '../engine/types';
 import { isMatchOver } from '../engine/validators';
 import { audio } from '../lib/audio';
+import { Icon } from './ui';
 
 interface FrameSummaryProps {
   gameState: GameState;
@@ -92,7 +93,7 @@ export default function FrameSummary({
             <span className="summary-winner-name">Frame Tied!</span>
           ) : (
             <>
-              🏆 <span className="summary-winner-name">{winnerName}</span> wins the frame!
+              <Icon name="trophy" size={22} /> <span className="summary-winner-name">{winnerName}</span> wins the frame!
             </>
           )}
         </h2>
@@ -146,7 +147,7 @@ export default function FrameSummary({
         <div className="summary-actions">
           {matchEnded ? (
             <button onClick={onEndMatch} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-              View Match Summary 🏆
+              View Match Summary <Icon name="trophy" size={18} />
             </button>
           ) : (
             <div style={{ display: 'flex', gap: 'var(--space-md)', width: '100%' }}>
@@ -154,7 +155,7 @@ export default function FrameSummary({
                 End Match
               </button>
               <button onClick={onNextFrame} className="btn btn-primary btn-lg" style={{ flex: 1 }}>
-                Next Frame 🎱
+                Next Frame <Icon name="ball" size={18} />
               </button>
             </div>
           )}

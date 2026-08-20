@@ -5,18 +5,18 @@
  * share handlers used to carry ~80 lines of near-identical canvas drawing
  * each; the layout now lives here so the design has a single source.
  *
- * Design: Icy Blue on Gunmetal. Editorial and left-aligned rather than
+ * Design: Icy Blue on Shadow Grey. Editorial and left-aligned rather than
  * centred, hairline rules instead of boxes, tabular figures so the number
  * columns line up, and a lot of deliberate whitespace.
  */
 
 /** Card palette. Canvas can't read CSS variables, so it lives here. */
 export const CARD = {
-  bg:       '#35393C',                      /* Gunmetal */
+  bg:       '#272727',                      /* Shadow Grey — same as the app */
   ink:      '#EEF3F7',
   inkSoft:  'rgba(238, 243, 247, 0.62)',
   inkFaint: 'rgba(238, 243, 247, 0.38)',
-  accent:   '#A4D8FF',                      /* Icy Blue — 7.7:1 on Gunmetal */
+  accent:   '#A4D8FF',                      /* Icy Blue — 9.8:1 on Shadow Grey */
   rule:     'rgba(238, 243, 247, 0.14)',
   ruleFaint:'rgba(238, 243, 247, 0.07)',
 } as const;

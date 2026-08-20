@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ActionLogEntry } from '../engine/types';
+import { Icon } from './ui';
 
 interface ActionLogDrawerProps {
   isOpen: boolean;
@@ -52,17 +53,17 @@ export default function ActionLogDrawer({
   const getLogIcon = (type: string) => {
     switch (type) {
       case 'pot':
-        return '🟢';
+        return <Icon name="dot" className="log-icon log-icon--pot" />;
       case 'foul':
       case 'in_off':
-        return '🔴';
+        return <Icon name="alert" className="log-icon log-icon--foul" />;
       case 'undo':
-        return '🔵';
+        return <Icon name="arrow-left" className="log-icon log-icon--undo" />;
       case 'frame_end':
       case 'concede':
-        return '🍑';
+        return <Icon name="flag" className="log-icon log-icon--frame" />;
       default:
-        return '⚪';
+        return <Icon name="dot" className="log-icon" />;
     }
   };
 
@@ -72,7 +73,7 @@ export default function ActionLogDrawer({
         <div className="action-log-header">
           <h3 className="action-log-title">TIMELINE & LOG</h3>
           <button onClick={onClose} className="btn-close" aria-label="Close action log">
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </div>
 

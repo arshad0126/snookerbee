@@ -4,8 +4,7 @@ import type { BallColor } from '../../styles/tokens';
 import {
   Ball, Button, Card, SegmentedControl, Stepper,
   GroupedList, ListRow, Avatar, StatTile, EmptyState,
-  Sheet, useToast, Screen, BackButton,
-} from '../ui';
+  Sheet, useToast, Screen, BackButton, Icon } from '../ui';
 
 const BALLS: BallColor[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
@@ -133,7 +132,7 @@ export default function UIDemo() {
         <Section title="Empty state">
           <Card style={{ padding: 0 }}>
             <EmptyState
-              icon="🎱"
+              icon={<Icon name="ball" size={32} />}
               title="No matches yet"
               message="Start your first frame and it'll show up here."
               actionLabel="New match"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { BallType, GameState } from '../engine/types';
 import { calculateFoulPenalty } from '../engine/validators';
+import { Icon } from './ui';
 
 interface FoulDialogProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export default function FoulDialog({
         <header className="foul-dialog-header">
           <h3 className="foul-dialog-title">Record Foul Shot</h3>
           <button className="foul-dialog-close-btn" onClick={onCancel}>
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </header>
 
@@ -129,7 +130,7 @@ export default function FoulDialog({
             onClick={() => onConfirm(selectedBall, customPenalty, redPottedOnFoul)}
             className="btn-foul-confirm"
           >
-            ⚠️ Confirm Foul
+            <Icon name="alert" size={16} /> Confirm Foul
           </button>
         </footer>
       </div>
