@@ -73,7 +73,7 @@ export default function FrameSummary({
   const confettiPieces = Array.from({ length: 30 }).map((_, idx) => {
     const style = {
       left: `${Math.random() * 100}%`,
-      backgroundColor: ['#D32F2F', '#FBC02D', '#388E3C', '#1565C0', '#E91E63', '#7BA68A'][
+      backgroundColor: ['#D32F2F', '#FBC02D', '#388E3C', '#1565C0', '#E91E63', '#D4AA7D'][
         Math.floor(Math.random() * 6)
       ],
       animationDelay: `${Math.random() * 3}s`,

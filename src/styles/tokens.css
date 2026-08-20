@@ -7,26 +7,27 @@
 
 :root {
   /* --- Surfaces (light mode, primary) --- */
-  --bg-base:         #F2F2F7;   /* app background — iOS systemGroupedBackground */
+  --bg-base:         #F5F1EA;   /* warm paper */
   --bg-elevated:     #FFFFFF;   /* cards, sheets, list rows */
   --bg-secondary:    #FFFFFF;
-  --bg-tertiary:     #F9F9FB;
-  --fill-quaternary: #E5E5EA;   /* inactive segment, track backgrounds */
+  --bg-tertiary:     #FAF7F1;
+  --fill-quaternary: #E9E2D6;   /* inactive segment, track backgrounds */
 
   /* --- Labels --- */
-  --label-primary:   #1C1C1E;
-  --label-secondary: rgba(60, 60, 67, 0.60);
-  --label-tertiary:  rgba(60, 60, 67, 0.30);
-  --separator:       rgba(60, 60, 67, 0.18);
-  --separator-opaque:#C6C6C8;
+  --label-primary:   #272727;   /* Shadow Grey */
+  --label-secondary: rgba(39, 39, 39, 0.60);
+  --label-tertiary:  rgba(39, 39, 39, 0.32);
+  --separator:       rgba(39, 39, 39, 0.14);
+  --separator-opaque:#D8D0C2;
 
   /* --- Interactive / semantic --- */
-  --accent:  #007AFF;   /* the single interactive blue */
-  --accent-tint: rgba(0, 122, 255, 0.10);
-  --success: #34C759;
-  --warning: #FF9F0A;
-  --danger:  #FF3B30;
-  --danger-tint: rgba(255, 59, 48, 0.10);
+  --accent:      #8A6437;   /* deep clay — interactive text & icons (contrast-safe) */
+  --accent-soft: #D4AA7D;   /* Sandy Clay — fills, chips, rings; never text on light */
+  --accent-tint: rgba(212, 170, 125, 0.16);
+  --success: #3E7C4F;
+  --warning: #C77B1E;
+  --danger:  #C0392B;
+  --danger-tint: rgba(192, 57, 43, 0.10);
 
   /* --- Ball palette (the only saturated colour in the app) --- */
   --ball-red:    #D6252B;
@@ -161,24 +162,25 @@
    ============================================================================ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-base:         #000000;
-    --bg-elevated:     #1C1C1E;
-    --bg-secondary:    #1C1C1E;
-    --bg-tertiary:     #2C2C2E;
-    --fill-quaternary: #2C2C2E;
+    --bg-base:         #1D1C1A;
+    --bg-elevated:     #272727;   /* Shadow Grey */
+    --bg-secondary:    #272727;
+    --bg-tertiary:     #31302D;
+    --fill-quaternary: #3A3835;
 
-    --label-primary:   #FFFFFF;
-    --label-secondary: rgba(235, 235, 245, 0.60);
-    --label-tertiary:  rgba(235, 235, 245, 0.30);
-    --separator:       rgba(84, 84, 88, 0.60);
-    --separator-opaque:#38383A;
+    --label-primary:   #F3EDE3;
+    --label-secondary: rgba(243, 237, 227, 0.62);
+    --label-tertiary:  rgba(243, 237, 227, 0.34);
+    --separator:       rgba(243, 237, 227, 0.14);
+    --separator-opaque:#45423D;
 
-    --accent:  #0A84FF;
-    --accent-tint: rgba(10, 132, 255, 0.18);
-    --success: #30D158;
-    --warning: #FFD60A;
-    --danger:  #FF453A;
-    --danger-tint: rgba(255, 69, 58, 0.18);
+    --accent:      #D4AA7D;   /* Sandy Clay pops correctly on dark (~7:1) */
+    --accent-soft: #D4AA7D;
+    --accent-tint: rgba(212, 170, 125, 0.14);
+    --success: #6FBF85;
+    --warning: #E8A44C;
+    --danger:  #E06A5C;
+    --danger-tint: rgba(224, 106, 92, 0.16);
 
     /* Ball colours brightened ~8% for dark surfaces */
     --ball-red:    #E63B41;

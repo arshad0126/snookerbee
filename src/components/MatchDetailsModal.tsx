@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ActionLogEntry } from '../engine/types';
 import { getMatchFrames } from '../lib/database';
+import { shareCanvasAsImage, cardFilename, CARD } from '../lib/shareImage';
 
 interface PlayerDetail {
   name: string;
@@ -161,61 +162,53 @@ export default function MatchDetailsModal({
     return analysis;
   };
 
-  const handleDownloadCard = () => {
+  const handleShareCard = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw background gradient (Snooker Green Felt style)
-    const gradient = ctx.createLinearGradient(0, 0, 0, 600);
-    gradient.addColorStop(0, '#0F3C23');
-    gradient.addColorStop(1, '#071F11');
-    ctx.fillStyle = gradient;
+    // Draw at 2x for Retina sharpness while keeping the 800x600 coordinate space.
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, 800, 600);
+
+    // Background — flat Shadow Grey (matches app dark-mode tokens)
+    ctx.fillStyle = CARD.bg;
     ctx.fillRect(0, 0, 800, 600);
 
-    // Golden frame border
-    ctx.strokeStyle = '#D4AF37';
-    ctx.lineWidth = 14;
-    ctx.strokeRect(7, 7, 786, 586);
-
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(25, 25, 750, 550);
-
     // Title
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = CARD.ink;
     ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(' SNOOKERBEE', 400, 75);
+    ctx.fillText('SNOOKERBEE', 400, 75);
 
-    ctx.fillStyle = '#94D3A2';
+    ctx.fillStyle = CARD.accent;
     ctx.font = '18px system-ui, sans-serif';
     ctx.fillText(
       `Match Summary  •  ${matchData.mode.toUpperCase()} Mode  •  Best of ${matchData.bestOf}`,
       400,
       110
     );
-    ctx.fillStyle = '#789F82';
+    ctx.fillStyle = CARD.inkFaint;
     ctx.fillText(matchData.date, 400, 138);
 
     // Winner Banner
-    ctx.fillStyle = 'rgba(212, 175, 55, 0.1)';
+    ctx.fillStyle = CARD.accentFill;
     ctx.fillRect(120, 170, 560, 110);
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+    ctx.strokeStyle = CARD.accentLine;
     ctx.lineWidth = 1;
     ctx.strokeRect(120, 170, 560, 110);
 
-    ctx.fillStyle = '#D4AF37';
+    ctx.fillStyle = CARD.accent;
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillText('WINNER', 400, 205);
 
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = CARD.ink;
     ctx.font = 'bold 34px system-ui, sans-serif';
     ctx.fillText(matchData.winnerName, 400, 255);
 
     // Scoreboard header
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.accent;
     ctx.font = 'bold 15px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('PLAYER', 120, 320);
@@ -226,7 +219,7 @@ export default function MatchDetailsModal({
     ctx.fillText('FOULS', 660, 320);
 
     // Divider
-    ctx.strokeStyle = 'rgba(138, 191, 151, 0.3)';
+    ctx.strokeStyle = CARD.rule;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(120, 335);
@@ -237,7 +230,7 @@ export default function MatchDetailsModal({
     let y = 370;
     matchData.players.forEach((p) => {
       const isWinner = p.name === matchData.winnerName || p.teamName === matchData.winnerName;
-      ctx.fillStyle = isWinner ? '#D4AF37' : '#FFFFFF';
+      ctx.fillStyle = isWinner ? CARD.accent : CARD.ink;
       ctx.font = isWinner
         ? 'bold 18px system-ui, sans-serif'
         : '18px system-ui, sans-serif';
@@ -256,7 +249,7 @@ export default function MatchDetailsModal({
     });
 
     // Duration Footer
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.inkFaint;
     ctx.font = '16px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(
@@ -265,59 +258,49 @@ export default function MatchDetailsModal({
       545
     );
 
-    // Trigger download
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `snookerbee_match_${matchData.id.slice(-6)}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Share via Web Share API (with download / preview fallbacks)
+    await shareCanvasAsImage(
+      canvas,
+      cardFilename(matchData.players.slice(0, 2).map(p => p.name)),
+      'SnookerBee match summary'
+    );
   };
 
-  const handleDownloadFrameCard = (frame: FrameDetail) => {
+  const handleShareFrameCard = async (frame: FrameDetail) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw background gradient (Snooker Green Felt style)
-    const gradient = ctx.createLinearGradient(0, 0, 0, 600);
-    gradient.addColorStop(0, '#0F3C23');
-    gradient.addColorStop(1, '#071F11');
-    ctx.fillStyle = gradient;
+    // Draw at 2x for Retina sharpness while keeping the 800x600 coordinate space.
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, 800, 600);
+
+    // Background — flat Shadow Grey (matches app dark-mode tokens)
+    ctx.fillStyle = CARD.bg;
     ctx.fillRect(0, 0, 800, 600);
 
-    // Golden frame border
-    ctx.strokeStyle = '#D4AF37';
-    ctx.lineWidth = 14;
-    ctx.strokeRect(7, 7, 786, 586);
-
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(25, 25, 750, 550);
-
     // Title
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = CARD.ink;
     ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(' SNOOKERBEE', 400, 75);
+    ctx.fillText('SNOOKERBEE', 400, 75);
 
-    ctx.fillStyle = '#94D3A2';
+    ctx.fillStyle = CARD.accent;
     ctx.font = '18px system-ui, sans-serif';
     ctx.fillText(
       `Frame ${frame.frameNumber} Breakdown  •  ${matchData.mode.toUpperCase()} Mode`,
       400,
       110
     );
-    ctx.fillStyle = '#789F82';
+    ctx.fillStyle = CARD.inkFaint;
     ctx.fillText(matchData.date, 400, 138);
 
     // Frame Stats computation
     const frameAnalysis = analyzeFrameLog(frame.actionLog);
 
     // Scoreboard header
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.accent;
     ctx.font = 'bold 16px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('STATISTIC', 120, 200);
@@ -333,7 +316,7 @@ export default function MatchDetailsModal({
     });
 
     // Divider
-    ctx.strokeStyle = 'rgba(138, 191, 151, 0.3)';
+    ctx.strokeStyle = CARD.rule;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(120, 215);
@@ -342,15 +325,15 @@ export default function MatchDetailsModal({
 
     // Row definitions
     const statRows = [
-      { label: 'Reds Potted', key: 'redsPotted', color: '#10b981' },
-      { label: 'Colors Potted', key: 'colorsPotted', color: '#a78bfa' },
-      { label: 'Fouls Committed', key: 'foulsCommitted', color: '#ef4444' },
-      { label: 'Highest Break', key: 'highestBreak', color: '#ffffff' }
+      { label: 'Reds Potted', key: 'redsPotted', color: CARD.accent },
+      { label: 'Colors Potted', key: 'colorsPotted', color: CARD.accent },
+      { label: 'Fouls Committed', key: 'foulsCommitted', color: CARD.inkFaint },
+      { label: 'Highest Break', key: 'highestBreak', color: CARD.ink }
     ];
 
     let y = 260;
     statRows.forEach(row => {
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = CARD.ink;
       ctx.font = '18px system-ui, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(row.label, 120, y);
@@ -369,14 +352,14 @@ export default function MatchDetailsModal({
     });
 
     // Divider
-    ctx.strokeStyle = 'rgba(138, 191, 151, 0.2)';
+    ctx.strokeStyle = CARD.rule;
     ctx.beginPath();
     ctx.moveTo(120, 480);
     ctx.lineTo(680, 480);
     ctx.stroke();
 
     // Duration Footer
-    ctx.fillStyle = '#8ABF97';
+    ctx.fillStyle = CARD.inkFaint;
     ctx.font = '16px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(
@@ -385,14 +368,12 @@ export default function MatchDetailsModal({
       525
     );
 
-    // Trigger download
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `snookerbee_match_${matchData.id.slice(-6)}_frame_${frame.frameNumber}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Share via Web Share API (with download / preview fallbacks)
+    await shareCanvasAsImage(
+      canvas,
+      cardFilename(matchData.players.slice(0, 2).map(p => p.name), `frame-${frame.frameNumber}`),
+      `SnookerBee frame ${frame.frameNumber}`
+    );
   };
 
   const activeFrame = activeFrameIndex !== null ? frames[activeFrameIndex] : null;
@@ -401,7 +382,7 @@ export default function MatchDetailsModal({
   return (
     <div className="modal-backdrop modal-centered" onClick={onClose}>
       {/* Off-screen canvas for image generation */}
-      <canvas ref={canvasRef} width={800} height={600} style={{ display: 'none' }} />
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
 
       <div className="match-details-card" onClick={(e) => e.stopPropagation()}>
         <header className="match-details-header">
@@ -429,7 +410,7 @@ export default function MatchDetailsModal({
               <span className="strip-label">MODE</span>
               <span className="strip-val">{matchData.mode.toUpperCase()}</span>
             </div>
-            <button className="btn btn-primary share-card-btn" onClick={handleDownloadCard}>
+            <button className="btn btn-primary share-card-btn" onClick={() => { void handleShareCard(); }}>
               📤 Share Summary Card
             </button>
           </div>
@@ -495,7 +476,7 @@ export default function MatchDetailsModal({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDownloadFrameCard(f);
+                          void handleShareFrameCard(f);
                         }}
                         className="frame-share-icon-btn"
                         title={`Share Frame ${f.frameNumber} Summary Card`}
