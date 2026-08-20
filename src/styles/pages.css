@@ -1181,14 +1181,27 @@
 }
 
 .actions-button-row {
-  display: flex;
+  /* Three btn-lg in a flex row overflowed a phone viewport — "Save Match" was
+     clipped off the left edge. Auto-fit wraps them to two rows, then one,
+     instead of forcing everything onto a single line. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: var(--space-md);
+}
+
+.actions-button-row > .btn {
+  min-width: 0;              /* let a button shrink rather than overflow */
+  white-space: nowrap;
 }
 
 /* --- Match Details Modal --- */
 .match-details-card {
   position: fixed;
-  top: 50%;
+  /* Centring on 50% ignores the notch: on an installed iPhone PWA the top of
+     the card landed under the status bar and the close button was unreachable.
+     Nudge the centre by half the difference between the insets, and bound the
+     height by the safe area rather than raw vh. */
+  top: calc(50% + (env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 2);
   left: 50%;
   transform: translate(-50%, -50%);
   background: var(--bg-card-solid);
@@ -1196,7 +1209,9 @@
   border-radius: var(--radius-xl);
   width: 90vw;
   max-width: 780px;
-  max-height: 88vh;
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px
+  );
   display: flex;
   flex-direction: column;
   z-index: var(--z-modal);
@@ -1207,6 +1222,10 @@
 
 .match-details-header {
   padding: var(--space-lg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  gap: var(--space-md);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
@@ -1227,16 +1246,26 @@
 }
 
 .match-details-close-btn {
-  background: none;
+  /* Was a bare glyph with --space-xs padding: a target well under the 44px
+     iOS minimum, and hard to hit at the top edge of the screen. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
   border: none;
-  color: var(--text-muted);
-  font-size: var(--text-xl);
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: var(--space-xs);
-  transition: color var(--transition-fast) ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition-fast) ease, color var(--transition-fast) ease;
 }
 
-.match-details-close-btn:hover {
+.match-details-close-btn:hover,
+.match-details-close-btn:active {
+  background: var(--border-color);
   color: var(--text-primary);
 }
 
