@@ -170,7 +170,13 @@ function commitTurnTime(state: GameState): Pick<GameState, 'players' | 'turnStar
   const activeIndex = state.turnOrder[state.currentPlayerIndex];
   return {
     players: state.players.map((p, i) =>
-      i === activeIndex ? { ...p, timeSpentMs: p.timeSpentMs + elapsed } : p
+      i === activeIndex
+        ? {
+            ...p,
+            timeSpentMs: p.timeSpentMs + elapsed,   // match total
+            frameTimeMs: p.frameTimeMs + elapsed,   // this frame only
+          }
+        : p
     ),
     turnStartedAt: new Date().toISOString(),
   };
@@ -338,6 +344,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     halfCenturies: 0,
     foulsCommitted: 0,
     timeSpentMs: 0,
+    frameTimeMs: 0,
   }));
 
   // --- Create teams (if team mode) ---
@@ -789,8 +796,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_NEXT_FRAME': {
       const now = new Date().toISOString();
 
+      // Bank the visit in progress before anything is archived or reset.
+      // Without this the last visit of every frame was dropped from both the
+      // match total and the frame's own split.
+      const playersAtFrameEnd = commitTurnTime(state).players;
+
       // Reset all player scores and breaks for the new frame
-      const resetPlayers = state.players.map((p) => ({
+      const resetPlayers = playersAtFrameEnd.map((p) => ({
         ...p,
         score: 0,
         currentBreak: 0,
@@ -798,6 +810,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         // deliberately survive the frame reset — they describe the match.
         highestBreak: 0,
         foulsCommitted: 0,
+        frameTimeMs: 0,
       }));
 
       // Reset team scores
@@ -854,12 +867,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         actionLog: state.actionLog,
         winnerId: frameWinnerId,
         winnerName: frameWinnerName,
-        playerStats: state.players.map(p => ({
+        playerStats: playersAtFrameEnd.map(p => ({
           playerId: p.id,
           playerName: p.name,
           score: p.score,
           highestBreak: p.highestBreak,
           foulsCommitted: p.foulsCommitted,
+          timeSpentMs: p.frameTimeMs,
         })),
       };
 

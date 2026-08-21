@@ -148,7 +148,11 @@ export default function MatchSummary() {
             }
           ],
         };
-        saveMatchLocally(localRecord);
+        if (!saveMatchLocally(localRecord)) {
+          setSaveStatus('error');
+          setDbError('Device storage is full — delete some saved matches and try again.');
+          return;
+        }
         clearPendingMatch();
         setSaveStatus('saved');
       } else {

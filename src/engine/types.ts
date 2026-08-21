@@ -71,6 +71,12 @@ export interface Player {
   foulsCommitted: number;
   /** Cumulative time spent at the table (milliseconds). */
   timeSpentMs: number;
+
+  /**
+   * Time spent at the table in the CURRENT frame. Reset by START_NEXT_FRAME,
+   * while `timeSpentMs` keeps running as the match total.
+   */
+  frameTimeMs: number;
 }
 
 export interface Team {
@@ -123,6 +129,8 @@ export interface CompletedFramePlayerStats {
   score: number;
   highestBreak: number;
   foulsCommitted: number;
+  /** Time this player spent at the table during this frame. */
+  timeSpentMs: number;
 }
 
 export interface CompletedFrame {

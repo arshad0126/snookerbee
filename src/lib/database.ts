@@ -248,12 +248,33 @@ export interface LocalMatchRecord {
   }[];
 }
 
-export function saveMatchLocally(match: LocalMatchRecord): void {
+/**
+ * Store a match on the device.
+ *
+ * Every record embeds the full action log of every frame, so a long best-of-7
+ * can be tens of KB and 100 of them can pass the ~5MB origin quota. setItem
+ * then throws, and Safari private mode can throw on the very first write. A
+ * guest losing every future save — with no explanation — is a worse outcome
+ * than losing the oldest matches, so on quota we shed history and retry.
+ *
+ * Returns false when the match could not be stored at all.
+ */
+export function saveMatchLocally(match: LocalMatchRecord): boolean {
   const existing = getLocalMatchHistory();
   existing.unshift(match);
-  // Keep last 100 matches
-  const trimmed = existing.slice(0, 100);
-  localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(trimmed));
+
+  // Halve the retained history on each attempt rather than guessing a size.
+  for (const keep of [100, 50, 20, 5, 1]) {
+    try {
+      localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(existing.slice(0, keep)));
+      return true;
+    } catch {
+      /* quota — try again with less */
+    }
+  }
+
+  console.error('Could not save match locally: storage is full.');
+  return false;
 }
 
 export function getLocalMatchHistory(): LocalMatchRecord[] {
@@ -266,9 +287,15 @@ export function getLocalMatchHistory(): LocalMatchRecord[] {
 }
 
 export function deleteLocalMatch(matchId: string): void {
-  const existing = getLocalMatchHistory();
-  const filtered = existing.filter(m => m.id !== matchId);
-  localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(filtered));
+  try {
+    const existing = getLocalMatchHistory();
+    localStorage.setItem(
+      LOCAL_HISTORY_KEY,
+      JSON.stringify(existing.filter(m => m.id !== matchId))
+    );
+  } catch {
+    /* a delete that cannot be written is not worth crashing over */
+  }
 }
 
 

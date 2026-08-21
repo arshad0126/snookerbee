@@ -225,44 +225,11 @@
   margin-bottom: var(--space-xl);
 }
 
-.dashboard-card-new-game {
-  background: linear-gradient(135deg, var(--accent-sage-light) 0%, var(--accent-sage-dark) 100%);
-  color: var(--on-accent);
-  padding: var(--space-xl);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 8px 24px rgba(164, 216, 255, 0.2);
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.dashboard-card-new-game:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(164, 216, 255, 0.4);
-}
 
-.dashboard-card-new-game:active {
-  transform: translateY(0);
-}
 
-.dashboard-card-new-game .card-icon {
-  font-size: 44px;
-  margin-bottom: var(--space-sm);
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
-}
 
-.dashboard-card-new-game .card-title {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
 
-.dashboard-card-new-game .card-subtitle {
-  font-size: var(--text-sm);
-  opacity: 0.9;
-  margin-top: var(--space-xs);
-}
 
 .dashboard-section-title {
   font-size: var(--text-sm);
@@ -1686,20 +1653,7 @@ body.light-theme .landing-divider::after {
   background: var(--border-color);
 }
 
-/* Dashboard */
-body.light-theme .dashboard-card-new-game {
-  /* `body.light-theme .card` (0,2,0) outranks `.dashboard-card-new-game`
-     (0,1,0) and was repainting this white, leaving white-on-white text.
-     Re-assert the gradient at matching specificity. */
-  background: linear-gradient(135deg, var(--accent-sage-light) 0%, var(--accent-sage-dark) 100%);
-  color: var(--on-accent);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 24px rgba(47, 110, 158, 0.15);
-}
 
-body.light-theme .dashboard-card-new-game:hover {
-  box-shadow: 0 12px 32px rgba(47, 110, 158, 0.25);
-}
 
 body.light-theme .stat-card {
   background: #FFFFFF;
