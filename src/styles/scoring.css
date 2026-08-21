@@ -2287,3 +2287,76 @@ body.light-theme .btn-topbar-icon.active-pause {
   .century-players .player-score-pill { font-size: 24px; }
   .century-hint { display: none; }
 }
+
+
+/* Each player's time in the frame just played, under their score. It sits here
+   rather than in its own section because a landscape card has no room for
+   another heading — and the number means more next to the score it produced.
+   Resets with the frame; the match totals on the summary keep running. */
+.summary-score-time {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+
+/* ----------------------------------------------------------------------------
+   Frame summary on a landscape phone
+   ----------------------------------------------------------------------------
+   Stacked vertically the card is taller than the viewport, so the stats sat
+   below the fold inside .summary-scroll and had to be scrolled to — the
+   buttons were reachable but the numbers they follow from were not.
+
+   Landscape has width to spare and no height, so the body becomes two
+   columns: scores beside stats, headline across the top. The "Frame Stats"
+   heading goes — the tiles label themselves.
+   -------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .summary-scroll {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-areas:
+      "winner winner"
+      "scores stats";
+    column-gap: 18px;
+    row-gap: 8px;
+    align-items: center;
+  }
+
+  .summary-winner {
+    grid-area: winner;
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .summary-scores {
+    grid-area: scores;
+    margin: 0;
+  }
+
+  .summary-score-val {
+    font-size: 34px;
+  }
+
+  .summary-stats-title {
+    display: none;
+  }
+
+  .summary-stats {
+    grid-area: stats;
+    margin: 0;
+  }
+
+  .summary-stat {
+    padding: 7px 6px;
+  }
+
+  .summary-stat-value {
+    font-size: 18px;
+  }
+}

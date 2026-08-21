@@ -62,6 +62,14 @@ export default function FrameSummary({
 
   const matchEnded = isMatchOver(gameState);
 
+  /** Per-player time within this frame; resets when the next frame starts. */
+  const formatFrameTime = (ms: number) => {
+    const total = Math.floor(ms / 1000);
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
   const formatDuration = (start: string) => {
     const elapsed = Date.now() - new Date(start).getTime();
     const totalSeconds = Math.floor(elapsed / 1000);
@@ -118,6 +126,9 @@ export default function FrameSummary({
                 <div className="summary-player-score">
                   <span className="summary-score-name">{p.name}</span>
                   <span className="summary-score-val">{p.score}</span>
+                  <span className="summary-score-time">
+                    {formatFrameTime(p.frameTimeMs)}
+                  </span>
                 </div>
                 {i < players.length - 1 && <span className="summary-vs">vs</span>}
               </Fragment>
