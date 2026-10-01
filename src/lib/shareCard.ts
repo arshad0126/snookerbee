@@ -57,8 +57,17 @@ export interface FrameCardRow {
   higherIsBetter: boolean;
 }
 
+export interface FrameCardScore {
+  name: string;
+  score: number;
+}
+
 export interface FrameCardData {
   frameNumber: number;
+  /** Highest score first. */
+  ranked: FrameCardScore[];
+  /** Null for a shared top score or a frame with no points. */
+  winnerName: string | null;
   mode: string;
   dateLabel: string;
   durationLabel: string;
@@ -239,13 +248,74 @@ export function drawMatchCard(canvas: HTMLCanvasElement, d: MatchCardData): void
   drawFooter(ctx, `${d.durationLabel}  ·  ${d.redsCount} reds`, d.dateLabel);
 }
 
+/**
+ * The result block: who won and the score.
+ *   Two sides: "78 – 42", winner's number tinted, names underneath.
+ *   Three or more: the top score large, everyone else on one line below.
+ */
+function drawFrameResult(ctx: CanvasRenderingContext2D, d: FrameCardData): void {
+  const [first, second] = d.ranked;
+  const anyPoints = d.ranked.some((r) => r.score !== 0);
+
+  ctx.font = `700 11px ${SANS}`;
+  let eyebrow: string;
+  if (d.winnerName) {
+    const tail = ` WINS FRAME ${d.frameNumber}`;
+    const room = R - M - trackedWidth(ctx, tail, 3.2);
+    let name = d.winnerName.toUpperCase();
+    while (name.length > 1 && trackedWidth(ctx, `${name}…`, 3.2) > room) name = name.slice(0, -1);
+    if (name !== d.winnerName.toUpperCase()) name = `${name}…`;
+    eyebrow = `${name}${tail}`;
+  } else {
+    eyebrow = anyPoints ? `FRAME ${d.frameNumber} · DRAWN` : `FRAME ${d.frameNumber}`;
+  }
+  drawEyebrow(ctx, eyebrow, 122);
+
+  if (!first) return;
+  const winTint = d.winnerName ? CARD.accent : CARD.ink;
+
+  // Hero numbers.
+  ctx.textAlign = 'left';
+  ctx.font = `700 64px ${SANS}`;
+  let x = M;
+  const heroY = 188;
+  ctx.fillStyle = winTint;
+  ctx.fillText(String(first.score), x, heroY);
+  x += ctx.measureText(String(first.score)).width;
+
+  let subline: string;
+  if (d.ranked.length === 2 && second) {
+    const dash = ' – ';
+    ctx.fillStyle = CARD.inkFaint;
+    ctx.font = `400 64px ${SANS}`;
+    ctx.fillText(dash, x, heroY);
+    x += ctx.measureText(dash).width;
+    ctx.fillStyle = CARD.ink;
+    ctx.font = `700 64px ${SANS}`;
+    ctx.fillText(String(second.score), x, heroY);
+    subline = `${first.name}  vs  ${second.name}`;
+  } else {
+    const others = d.winnerName ? d.ranked.slice(1) : d.ranked;
+    subline = others.map((r) => `${r.name} ${r.score}`).join('   ·   ');
+    if (d.winnerName) {
+      ctx.fillStyle = CARD.inkSoft;
+      ctx.font = `500 18px ${SANS}`;
+      ctx.fillText(' pts', x + 4, heroY);
+    }
+  }
+
+  ctx.fillStyle = CARD.inkSoft;
+  ctx.font = `500 16px ${SANS}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(ellipsize(ctx, subline, R - M), M, 222);
+}
+
 export function drawFrameCard(canvas: HTMLCanvasElement, d: FrameCardData): void {
   const ctx = prepare(canvas);
   if (!ctx) return;
 
   drawHeader(ctx, `${d.mode.toUpperCase()} · FRAME ${d.frameNumber}`);
-  drawEyebrow(ctx, 'FRAME BREAKDOWN', 138);
-  drawHero(ctx, `Frame ${d.frameNumber}`);
+  drawFrameResult(ctx, d);
 
   // Spread one right-aligned column per player across the right-hand band.
   const first = 430;
