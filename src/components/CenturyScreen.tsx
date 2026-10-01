@@ -8,8 +8,8 @@ import {
   isBallBlocked,
   wouldBust,
   isCheckout,
-  CENTURY_VALUES,
-  RED_MISS_PENALTY,
+  ballValue,
+  redValueOf,
   type CenturySetup,
 } from '../engine/century';
 import { audio } from '../lib/audio';
@@ -158,7 +158,7 @@ export default function CenturyScreen() {
       <header className="century-topbar">
         <div className="century-topbar-side">
           <span className="century-target">{state.target}</span>
-          <span className="century-target-label">target</span>
+          <span className="century-target-label">target · red {redValueOf(state)}</span>
         </div>
 
         <WallClock frameStartTime={state.startedAt} />
@@ -241,7 +241,7 @@ export default function CenturyScreen() {
               }
             >
               <span className="ball-card-name">{BALL_LABELS[ball]}</span>
-              <span className="ball-card-points">+{CENTURY_VALUES[ball]}</span>
+              <span className="ball-card-points">+{ballValue(state, ball)}</span>
               {checkout && <span className="century-flag">FINISH</span>}
               {blocked && <span className="century-flag century-flag--stop">×2</span>}
             </button>
@@ -263,7 +263,7 @@ export default function CenturyScreen() {
           disabled={state.finished}
           className="btn-action-premium btn-action-foul"
         >
-          <Icon name="alert" size={15} /> MISSED RED −{RED_MISS_PENALTY}
+          <Icon name="alert" size={15} /> MISSED RED −{redValueOf(state)}
         </button>
         <button
           onClick={() => setFoulOpen(true)}
