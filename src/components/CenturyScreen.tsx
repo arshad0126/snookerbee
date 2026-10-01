@@ -10,11 +10,13 @@ import {
   isCheckout,
   ballValue,
   redValueOf,
+  toActionLog,
   type CenturySetup,
 } from '../engine/century';
 import { audio } from '../lib/audio';
 import { Icon } from './ui';
 import WallClock from './WallClock';
+import ActionLogDrawer from './ActionLogDrawer';
 import {
   saveCenturyGame as cacheCenturyGame,
   loadCenturyGame,
@@ -48,6 +50,7 @@ export default function CenturyScreen() {
   );
 
   const [foulOpen, setFoulOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const { isGuest } = useAuth();
   const savedRef = useRef(false);
 
@@ -67,6 +70,8 @@ export default function CenturyScreen() {
         createdAt: state.startedAt,
         durationMs,
         loserName: loser?.name ?? null,
+        redValue: redValueOf(state),
+        actionLog: state.actionLog,
         players: state.players.map((p) => ({
           name: p.name,
           score: p.score,
@@ -85,6 +90,8 @@ export default function CenturyScreen() {
         target: state.target,
         duration_ms: durationMs,
         loser_name: loser?.name ?? null,
+        red_value: redValueOf(state),
+        action_log: state.actionLog,
       },
       state.players.map((p) => ({
         player_name: p.name,
@@ -164,6 +171,20 @@ export default function CenturyScreen() {
         <WallClock frameStartTime={state.startedAt} />
 
         <div className="century-topbar-side century-topbar-right">
+          <button
+            onClick={() => setLogOpen(true)}
+            className="icon-btn"
+            aria-label="Game history"
+            title="Who potted what"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <line x1="9" y1="12" x2="15" y2="12" />
+              <line x1="9" y1="16" x2="15" y2="16" />
+              <line x1="9" y1="8" x2="10" y2="8" />
+            </svg>
+          </button>
           <button
             onClick={() => {
               if (window.confirm('Abandon this game?')) {
@@ -286,6 +307,13 @@ export default function CenturyScreen() {
           ? 'Game over'
           : `${player.name} to play · ${remaining} to go`}
       </p>
+
+      <ActionLogDrawer
+        isOpen={logOpen}
+        onClose={() => setLogOpen(false)}
+        actionLog={toActionLog(state.actionLog)}
+        frameStartTime={Date.parse(state.startedAt)}
+      />
 
       {/* Foul: which ball? */}
       {foulOpen && (

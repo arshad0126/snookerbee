@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { CenturyLogEntry } from '../engine/century';
 
 export interface MatchRecord {
   id?: string;
@@ -314,6 +315,23 @@ export interface CenturyGameRecord {
   created_at?: string;
   duration_ms: number;
   loser_name: string | null;
+  /** Points for a red in this game. Added later; see docs/schema.sql. */
+  red_value?: number;
+  /** Play-by-play. Added later; see docs/schema.sql. */
+  action_log?: CenturyLogEntry[];
+}
+
+/** century_games columns an un-migrated database will not have. */
+const OPTIONAL_CENTURY_COLUMNS = ['red_value', 'action_log'] as const;
+
+function isUnknownCenturyColumn(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === 'PGRST204') return true;
+  const message = e.message ?? '';
+  return OPTIONAL_CENTURY_COLUMNS.some(
+    (c) => message.includes(c) && /column|schema/i.test(message)
+  );
 }
 
 export interface CenturyPlayerRecord {
@@ -337,13 +355,25 @@ export async function saveCenturyGame(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'No authenticated user session found.' };
 
-    const { data, error } = await supabase
-      .from('century_games')
-      .insert({ ...game, user_id: user.id })
-      .select('id')
-      .single();
+    const insertGame = (row: Record<string, unknown>) =>
+      supabase.from('century_games').insert(row).select('id').single();
+
+    let { data, error } = await insertGame({ ...game, user_id: user.id });
+
+    // Losing the game over the red value or the log would be worse than
+    // losing those two fields, so a database without them still saves.
+    if (error && isUnknownCenturyColumn(error)) {
+      console.warn(
+        'century_games is missing red_value/action_log — saving without them. ' +
+        'Run the migration in docs/schema.sql.'
+      );
+      const slim: Record<string, unknown> = { ...game, user_id: user.id };
+      for (const c of OPTIONAL_CENTURY_COLUMNS) delete slim[c];
+      ({ data, error } = await insertGame(slim));
+    }
 
     if (error) throw error;
+    if (!data) throw new Error('Century game was not saved.');
     const gameId = data.id;
 
     const { error: playersError } = await supabase
@@ -370,6 +400,10 @@ export interface LocalCenturyRecord {
   createdAt: string;
   durationMs: number;
   loserName: string | null;
+  /** Missing on games saved before the red value option (they were 10). */
+  redValue?: number;
+  /** Missing on games saved before the play-by-play was kept. */
+  actionLog?: CenturyLogEntry[];
   players: {
     name: string;
     score: number;
@@ -398,5 +432,59 @@ export function getLocalCenturyHistory(): LocalCenturyRecord[] {
     return raw ? (JSON.parse(raw) as LocalCenturyRecord[]) : [];
   } catch {
     return [];
+  }
+}
+
+export function deleteLocalCenturyGame(id: string): void {
+  try {
+    localStorage.setItem(
+      LOCAL_CENTURY_KEY,
+      JSON.stringify(getLocalCenturyHistory().filter((g) => g.id !== id))
+    );
+  } catch {
+    /* a delete that cannot be written is not worth crashing over */
+  }
+}
+
+export type CenturyGameWithPlayers = CenturyGameRecord & {
+  players: CenturyPlayerRecord[];
+};
+
+export async function getCenturyHistory(): Promise<CenturyGameWithPlayers[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('century_games')
+      .select('*, players:century_players(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    return (data as CenturyGameWithPlayers[]) || [];
+  } catch (error) {
+    console.error('Error fetching century history:', error);
+    return [];
+  }
+}
+
+export async function deleteCenturyGame(id: string): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+      .from('century_games')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting century game:', error);
+    return false;
   }
 }

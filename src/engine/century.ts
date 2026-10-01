@@ -24,7 +24,7 @@
 //   - Scores may go negative.
 // ============================================================================
 
-import type { BallType } from './types';
+import type { ActionLogEntry, ActionLogType, BallType } from './types';
 
 export const CENTURY_TARGETS = [50, 100] as const;
 export type CenturyTarget = (typeof CENTURY_TARGETS)[number];
@@ -392,4 +392,31 @@ export function centuryReducer(
     default:
       return state;
   }
+}
+
+/* --------------------------------------------------------------- log views */
+
+const LOG_TYPE: Record<CenturyLogKind, ActionLogType> = {
+  pot: 'pot',
+  redMiss: 'foul',
+  foul: 'foul',
+  colourMiss: 'miss',
+  bust: 'miss',
+  blocked: 'miss',
+  finish: 'frameEnd',
+};
+
+/**
+ * Century entries in the snooker log's shape, so the same timeline drawer
+ * and timeline list render both games.
+ */
+export function toActionLog(entries: readonly CenturyLogEntry[]): ActionLogEntry[] {
+  return entries.map((e) => ({
+    timestamp: e.timestamp,
+    type: LOG_TYPE[e.kind] ?? 'miss',
+    playerName: e.playerName,
+    ball: e.ball,
+    points: e.points,
+    description: e.description,
+  }));
 }
