@@ -386,14 +386,13 @@ export default function CenturyScreen() {
               <button onClick={() => setLogOpen(true)} className="btn btn-secondary">
                 History
               </button>
+              <button
+                onClick={() => { clearCenturyGame(); navigate('/dashboard'); }}
+                className="btn btn-primary"
+              >
+                Done
+              </button>
             </div>
-            <button
-              onClick={() => { clearCenturyGame(); navigate('/dashboard'); }}
-              className="btn btn-primary btn-lg"
-              style={{ width: '100%' }}
-            >
-              Done
-            </button>
           </div>
         </div>
       )}
