@@ -8,6 +8,7 @@ import ProfileDrawer from './ProfileDrawer';
 import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
 import { loadActiveMatch } from '../lib/matchStorage';
+import { hasUnseenRelease } from '../lib/releaseSeen';
 import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
 import { summarize } from '../lib/playerStats';
 import { modeLabel, relativeDay, shortDuration } from '../lib/results';
@@ -96,6 +97,7 @@ export default function Dashboard() {
             <span className="db-avatar db-avatar--initials">{firstName.charAt(0).toUpperCase()}</span>
           )}
           <span className="db-avatar-badge"><Icon name="menu" size={11} /></span>
+          {hasUnseenRelease() && <span className="db-avatar-dot" aria-label="New update" />}
         </button>
         <div className="db-hello">
           <span className="db-greeting">{greeting()}</span>

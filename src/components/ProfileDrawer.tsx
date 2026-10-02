@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Icon, type IconName } from './ui';
+import { CURRENT_VERSION } from '../changelog';
+import { hasUnseenRelease } from '../lib/releaseSeen';
 
 export interface DrawerStats {
   matches: number;
@@ -22,10 +24,12 @@ interface Item {
   to: string;
   hint?: string;
   badge?: string;
+  /** Show the unseen-update dot on this item. */
+  dot?: boolean;
 }
 
 const PRIMARY: Item[] = [
-  { icon: 'chart', label: 'My stats', to: '/stats', badge: 'New' },
+  { icon: 'chart', label: 'My stats', to: '/stats' },
   { icon: 'history', label: 'Match history', to: '/history' },
   { icon: 'users', label: 'Players & head-to-head', to: '/stats#head-to-head' },
   { icon: 'trophy', label: 'Records & milestones', to: '/stats#breaks' },
@@ -34,10 +38,12 @@ const PRIMARY: Item[] = [
 const SECONDARY: Item[] = [
   { icon: 'settings', label: 'Settings', to: '/settings', hint: 'Theme, colours, name' },
   { icon: 'download', label: 'Export & backup', to: '/settings#data' },
+  { icon: 'star', label: "What's new", to: '/whats-new', hint: `v${CURRENT_VERSION}`, dot: true },
   { icon: 'info', label: 'About & feedback', to: '/settings#about' },
 ];
 
 export default function ProfileDrawer({ open, onClose, stats, firstPlayedAt }: Props) {
+  const unseen = hasUnseenRelease();
   const { user, isGuest, signOut } = useAuth();
   const navigate = useNavigate();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -117,6 +123,7 @@ export default function ProfileDrawer({ open, onClose, stats, firstPlayedAt }: P
                   <Icon name={item.icon} size={18} />
                   <span>{item.label}</span>
                   {item.hint && <span className="pd-hint">{item.hint}</span>}
+                  {item.dot && unseen && <span className="pd-dot" aria-label="New update" />}
                 </button>
               </li>
             ))}
@@ -128,7 +135,7 @@ export default function ProfileDrawer({ open, onClose, stats, firstPlayedAt }: P
             <Icon name="logout" size={18} />
             {isGuest ? 'Leave guest mode' : 'Log out'}
           </button>
-          <span className="pd-version">v{__APP_VERSION__}</span>
+          <button type="button" className="pd-version" onClick={() => go('/whats-new')}>v{CURRENT_VERSION}</button>
         </div>
       </nav>
     </div>

@@ -15,6 +15,7 @@ import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
 import MyStats from './components/MyStats';
 import Settings from './components/Settings';
+import WhatsNew from './components/WhatsNew';
 
 /**
  * Protected route wrapper — redirects to landing if not authenticated or guest
@@ -140,6 +141,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/whats-new"
+        element={
+          <ProtectedRoute>
+            <WhatsNew />
           </ProtectedRoute>
         }
       />
