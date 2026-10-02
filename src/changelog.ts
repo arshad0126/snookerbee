@@ -22,6 +22,17 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.4.0',
+    date: '2026-10-02',
+    title: 'Stats for every player',
+    added: [
+      'Player Stats: pick anyone you play with from the top-right and see their stats.',
+      'You vs them: wins each, frames, best breaks, and games you played on the same team.',
+      'Tap a player\'s name in history, Match Analysis or recent games to open their stats.',
+      'Streaks, frames won, results by format, and each player\'s last 10 matches.',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-10-02',
     title: "What's new",
