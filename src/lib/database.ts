@@ -1,4 +1,6 @@
 import { supabase } from './supabase';
+import type { ActionLogEntry } from '../engine/types';
+import { totalsFromFrames, savedWinner, isEmptyRecord } from './results';
 import type { CenturyLogEntry } from '../engine/century';
 
 export interface MatchRecord {
@@ -145,6 +147,54 @@ export async function getMatchHistory(): Promise<(MatchRecord & { players: Match
 }
 
 /**
+ * Every match for the signed-in user, newest first (paged past PostgREST's
+ * row cap). History and stats need all of them, not the latest 50.
+ */
+export async function getAllMatches(): Promise<(MatchRecord & { players: MatchPlayerRecord[] })[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const out: (MatchRecord & { players: MatchPlayerRecord[] })[] = [];
+    const page = 200;
+    for (let from = 0; from < 5000; from += page) {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*, players:match_players(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, from + page - 1);
+      if (error) throw error;
+      out.push(...(data || []));
+      if (!data || data.length < page) break;
+    }
+    return out;
+  } catch (error) {
+    console.error('Error fetching all matches:', error);
+    return [];
+  }
+}
+
+/** Frame logs for many matches at once (for stats). */
+export async function getFramesForMatches(
+  matchIds: string[]
+): Promise<Pick<MatchFrameRecord, 'match_id' | 'frame_number' | 'action_log'>[]> {
+  const out: Pick<MatchFrameRecord, 'match_id' | 'frame_number' | 'action_log'>[] = [];
+  try {
+    for (let i = 0; i < matchIds.length; i += 100) {
+      const { data, error } = await supabase
+        .from('match_frames')
+        .select('match_id, frame_number, action_log')
+        .in('match_id', matchIds.slice(i, i + 100));
+      if (error) throw error;
+      out.push(...(data || []));
+    }
+  } catch (error) {
+    console.error('Error fetching frames:', error);
+  }
+  return out;
+}
+
+/**
  * Delete a match
  */
 export async function deleteMatch(matchId: string): Promise<boolean> {
@@ -284,6 +334,44 @@ export function getLocalMatchHistory(): LocalMatchRecord[] {
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
+  }
+}
+
+const REPAIR_FLAG = 'snookerbee:history-repaired-v1';
+
+/**
+ * One-time fix for guest history saved before match totals spanned every
+ * frame: rebuild points and fouls from the frame logs, fill in winners that
+ * were saved as "Unknown", and drop matches where nothing was scored.
+ * Team matches keep their stored points (foul points went to a team, not a
+ * player), but still get a winner.
+ */
+export function repairLocalHistory(): void {
+  try {
+    if (localStorage.getItem(REPAIR_FLAG)) return;
+    const history = getLocalMatchHistory();
+    const repaired = history
+      .map((m) => {
+        const isTeam = m.mode === 'team';
+        const frames = (m.frames ?? []) as { actionLog: ActionLogEntry[] }[];
+        const players = isTeam || frames.length === 0
+          ? m.players
+          : (() => {
+              const t = totalsFromFrames(frames, m.players);
+              return m.players.map((p) => ({
+                ...p,
+                totalScore: t.points[p.name] ?? p.totalScore,
+                foulsCommitted: t.fouls[p.name] ?? p.foulsCommitted,
+              }));
+            })();
+        const winner = savedWinner(m.winnerName, players);
+        return { ...m, players, winnerName: winner ?? 'Draw' };
+      })
+      .filter((m) => !isEmptyRecord(m.players));
+    localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(repaired));
+    localStorage.setItem(REPAIR_FLAG, new Date().toISOString());
+  } catch {
+    /* best effort: the old rows still display */
   }
 }
 

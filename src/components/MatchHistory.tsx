@@ -2,32 +2,24 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
-  getLocalMatchHistory,
-  getMatchHistory,
   deleteLocalMatch,
   deleteMatch,
-  getLocalCenturyHistory,
-  getCenturyHistory,
   deleteLocalCenturyGame,
   deleteCenturyGame,
-  type MatchRecord,
-  type MatchPlayerRecord,
 } from '../lib/database';
+import { loadHistory, toDetails } from '../lib/history';
+import ThemeBackdrop from './ThemeBackdrop';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 import CenturyDetailsModal from './CenturyDetailsModal';
+import { Icon } from './ui';
 import { shareCenturyCard } from '../lib/centuryShare';
-import {
-  byFinish,
-  fromDbCentury,
-  fromLocalCentury,
-  type CenturyDetailsData,
-} from '../lib/centuryHistory';
+import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
+import { modeLabel } from '../lib/results';
 
 /** Snooker matches and Century games share one list, newest first. */
 type HistoryItem =
   | { kind: 'match'; at: number; data: MatchDetailsData }
   | { kind: 'century'; at: number; data: CenturyDetailsData };
-import { Icon } from './ui';
 
 export default function MatchHistory() {
   const { isGuest } = useAuth();
@@ -47,66 +39,11 @@ export default function MatchHistory() {
   const fetchMatches = async () => {
     setLoading(true);
     try {
-      if (isGuest) {
-        const localHistory = getLocalMatchHistory();
-        const mapped = localHistory.map((m): HistoryItem => ({ kind: 'match', at: Date.parse(m.createdAt) || 0, data: {
-          id: m.id,
-          date: new Date(m.createdAt).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          mode: m.mode,
-          bestOf: m.bestOf,
-          redsCount: m.redsCount,
-          durationMs: m.durationMs,
-          winnerName: m.winnerName,
-          players: m.players.map(p => ({
-            name: p.name,
-            teamName: p.teamName,
-            totalScore: p.totalScore,
-            highestBreak: p.highestBreak,
-            framesWon: p.framesWon,
-            foulsCommitted: p.foulsCommitted,
-            timeSpentMs: p.timeSpentMs,
-          })),
-          frames: m.frames,
-        } }));
-        merge(mapped, getLocalCenturyHistory().map(fromLocalCentury));
-      } else {
-        const [dbHistory, dbCentury] = await Promise.all([getMatchHistory(), getCenturyHistory()]);
-        const mapped = dbHistory.map((m: MatchRecord & { players: MatchPlayerRecord[] }): HistoryItem => ({ kind: 'match', at: m.created_at ? Date.parse(m.created_at) : 0, data: {
-          id: m.id || '',
-          date: m.created_at
-            ? new Date(m.created_at).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : '',
-          mode: m.mode,
-          bestOf: m.best_of,
-          redsCount: m.reds_count,
-          durationMs: m.duration_ms,
-          winnerName: m.winner_name,
-          players: m.players.map(p => ({
-            name: p.player_name,
-            teamName: p.team_name ?? undefined,
-            totalScore: p.total_score,
-            highestBreak: p.highest_break,
-            framesWon: p.frames_won,
-            foulsCommitted: p.fouls_committed,
-            timeSpentMs: p.time_spent_ms,
-            centuries: p.centuries ?? 0,
-            halfCenturies: p.half_centuries ?? 0,
-          })),
-        } }));
-        merge(mapped, dbCentury.map(fromDbCentury));
-      }
+      const h = await loadHistory(isGuest);
+      merge(
+        h.matches.map((m): HistoryItem => ({ kind: 'match', at: m.at, data: toDetails(m) })),
+        h.centuries
+      );
     } catch (error) {
       console.error('Error fetching match history:', error);
     } finally {
@@ -172,7 +109,7 @@ export default function MatchHistory() {
     >
       <div className="history-card-header">
         <span className="history-card-date">{match.date}</span>
-        <span className="history-card-mode badge">{match.mode}</span>
+        <span className="history-card-mode badge">{modeLabel(match.mode)}</span>
       </div>
 
       <div className="history-card-players">
@@ -218,6 +155,7 @@ export default function MatchHistory() {
 
   return (
     <div className="history-page page">
+      <ThemeBackdrop />
       <header className="history-header">
         <button onClick={() => navigate('/dashboard')} className="setup-back-btn btn-back">
           <Icon name="arrow-left" size={20} />

@@ -134,3 +134,18 @@ create index if not exists century_players_game_id_idx
 -- Both nullable; games saved before this read as red 10 with no log.
 alter table century_games add column if not exists red_value int;
 alter table century_games add column if not exists action_log jsonb;
+
+-- ============================================================================
+-- PART 4 — Per-account settings (theme, accent colour, background, player
+-- name). The app keeps a copy on the device; this makes it follow the account.
+-- ============================================================================
+
+create table if not exists user_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  settings jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table user_settings enable row level security;
+drop policy if exists "Users manage their own settings" on user_settings;
+create policy "Users manage their own settings" on user_settings
+  for all using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);

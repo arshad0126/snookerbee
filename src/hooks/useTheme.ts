@@ -1,27 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useSettings } from './useSettings';
 
 export type Theme = 'dark' | 'light';
 
+/**
+ * Light/dark for screens that still offer a quick toggle. The source of
+ * truth is the app settings (which also allow Auto); toggling here picks an
+ * explicit mode.
+ */
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light') return 'light';
-    return 'dark';
-  });
+  const { resolvedMode, update } = useSettings();
 
-  useEffect(() => {
-    const isLight = theme === 'light';
-    document.body.classList.toggle('light-theme', isLight);
-    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  const setTheme = (t: Theme) => update({ mode: t });
+  const toggleTheme = () => update({ mode: resolvedMode === 'dark' ? 'light' : 'dark' });
 
-    // Keep the browser chrome / status bar color in sync with the active theme
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', isLight ? '#F5F6F8' : '#07090b');
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  return { theme, setTheme, toggleTheme };
+  return { theme: resolvedMode as Theme, setTheme, toggleTheme };
 }
