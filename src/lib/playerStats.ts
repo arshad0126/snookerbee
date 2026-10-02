@@ -204,13 +204,15 @@ export interface CenturyStats {
   leftShort: number;
   redsMissed: number;
   redsPotted: number;
+  bestScore: number;
+  fouls: number;
   byRedValue: { value: number; games: number; firstOut: number }[];
 }
 
 export function centuryStats(games: CenturyDetailsData[], me: string): CenturyStats | null {
   const mine = games.filter((g) => g.players.some((p) => p.name === me));
   if (mine.length === 0) return null;
-  const s: CenturyStats = { games: mine.length, firstOut: 0, leftShort: 0, redsMissed: 0, redsPotted: 0, byRedValue: [] };
+  const s: CenturyStats = { games: mine.length, firstOut: 0, leftShort: 0, redsMissed: 0, redsPotted: 0, bestScore: -Infinity, fouls: 0, byRedValue: [] };
   const byVal = new Map<number, { games: number; firstOut: number }>();
   mine.forEach((g) => {
     const p = g.players.find((x) => x.name === me)!;
@@ -218,6 +220,8 @@ export function centuryStats(games: CenturyDetailsData[], me: string): CenturySt
     if (p.finishedAt === null) s.leftShort += 1;
     s.redsMissed += p.redsMissed;
     s.redsPotted += p.redsPotted;
+    s.fouls += p.fouls;
+    s.bestScore = Math.max(s.bestScore, p.score);
     const v = byVal.get(g.redValue) ?? { games: 0, firstOut: 0 };
     v.games += 1;
     if (p.finishedAt === 1) v.firstOut += 1;
@@ -230,4 +234,205 @@ export function centuryStats(games: CenturyDetailsData[], me: string): CenturySt
 export function hours(ms: number): string {
   const h = ms / 3_600_000;
   return h >= 10 ? `${Math.round(h)}h` : `${Math.round(h * 10) / 10}h`;
+}
+
+/* ======================================================= any player, deeper */
+
+/** Unnamed setup slots save as "Player 1", "Player 2"… — never real players. */
+export function isPlaceholderName(name: string): boolean {
+  return /^player\s*\d+$/i.test(name.trim());
+}
+
+/** Players with fewer games than this go under "Fewer games" in the picker. */
+export const MIN_GAMES_FOR_LIST = 3;
+
+export interface ListedPlayer { name: string; games: number }
+
+/** Every real player in the account's history, most games first, then A–Z. */
+export function listPlayers(matches: HistoryMatch[], centuries: CenturyDetailsData[] = []): ListedPlayer[] {
+  const counts = new Map<string, number>();
+  const add = (n: string) => {
+    if (!isPlaceholderName(n)) counts.set(n, (counts.get(n) ?? 0) + 1);
+  };
+  matches.forEach((m) => new Set(m.players.map((p) => p.name)).forEach(add));
+  centuries.forEach((c) => new Set(c.players.map((p) => p.name)).forEach(add));
+  return [...counts.entries()]
+    .map(([name, games]) => ({ name, games }))
+    .sort((a, b) => b.games - a.games || a.name.localeCompare(b.name));
+}
+
+/**
+ * Frames played in a match. In team mode every member carries the team's
+ * frame count (see MatchSummary), so each team is counted once.
+ */
+export function framesPlayed(m: HistoryMatch): number {
+  if (m.mode === 'team') {
+    const seen = new Map<string, number>();
+    m.players.forEach((p) => {
+      const key = p.teamName || p.name;
+      seen.set(key, Math.max(seen.get(key) ?? 0, p.framesWon));
+    });
+    return [...seen.values()].reduce((a, b) => a + b, 0);
+  }
+  return m.players.reduce((a, p) => a + p.framesWon, 0);
+}
+
+const sameSide = (m: HistoryMatch, a: string, b: string): boolean => {
+  if (m.mode !== 'team') return false;
+  const pa = m.players.find((p) => p.name === a);
+  const pb = m.players.find((p) => p.name === b);
+  return !!pa?.teamName && pa.teamName === pb?.teamName;
+};
+
+export interface FormatLine { mode: string; games: number; wins: number; winRate: number }
+
+export interface VsMe {
+  matches: number;
+  myWins: number;
+  theirWins: number;
+  othersWins: number;
+  draws: number;
+  myFrames: number;
+  theirFrames: number;
+  myBestBreak: number;
+  theirBestBreak: number;
+  /** Team matches where we were on the same side. */
+  together: number;
+  togetherWins: number;
+}
+
+export interface PlayerProfile {
+  name: string;
+  games: number;
+  wins: number;
+  losses: number;
+  winRate: number | null;
+  framesWon: number;
+  framesPlayed: number;
+  frameWinRate: number | null;
+  /** Newest first. */
+  form: ('W' | 'L')[];
+  /** e.g. "W3", "L2"; null with no games. */
+  streak: string | null;
+  bestWinStreak: number;
+  highestBreak: number;
+  centuries: number;
+  halfCenturies: number;
+  totalPoints: number;
+  avgPointsPerMatch: number | null;
+  avgPointsPerFrame: number | null;
+  fouls: number;
+  avgFoulsPerMatch: number | null;
+  tableMs: number;
+  avgTableMs: number | null;
+  firstAt: number | null;
+  lastAt: number | null;
+  byFormat: FormatLine[];
+  vsMe: VsMe | null;
+  recent: HistoryMatch[];
+}
+
+const round1 = (x: number) => Math.round(x * 10) / 10;
+const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null);
+
+/**
+ * Everything the Player Stats page shows for one player. Matches are newest
+ * first (as loadHistory returns them). Pass `me` to get head-to-head numbers
+ * when `name` is someone else.
+ */
+export function computePlayerStats(name: string, all: HistoryMatch[], me: string | null): PlayerProfile {
+  const mine = all.filter((m) => m.players.some((p) => p.name === name));
+  const rows = mine.map((m) => ({ m, p: m.players.find((p) => p.name === name)! }));
+  const results = mine.map((m) => didWin(m, name));
+  const wins = results.filter(Boolean).length;
+
+  let framesWonTotal = 0;
+  let framesPlayedTotal = 0;
+  rows.forEach(({ m, p }) => { framesWonTotal += p.framesWon; framesPlayedTotal += framesPlayed(m); });
+
+  // Streaks: results are newest first.
+  let streak: string | null = null;
+  if (results.length) {
+    const first = results[0];
+    let n = 0;
+    while (n < results.length && results[n] === first) n += 1;
+    streak = `${first ? 'W' : 'L'}${n}`;
+  }
+  let best = 0;
+  let run = 0;
+  [...results].reverse().forEach((w) => { run = w ? run + 1 : 0; best = Math.max(best, run); });
+
+  const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
+  const totalPoints = sum((r) => r.p.totalScore);
+  const fouls = sum((r) => r.p.foulsCommitted);
+  const tableMs = sum((r) => r.p.timeSpentMs);
+
+  const formats = new Map<string, { games: number; wins: number }>();
+  mine.forEach((m, i) => {
+    const f = formats.get(m.mode) ?? { games: 0, wins: 0 };
+    f.games += 1;
+    if (results[i]) f.wins += 1;
+    formats.set(m.mode, f);
+  });
+  const ORDER = ['1v1', 'freeForAll', 'team'];
+  const byFormat = [...formats.entries()]
+    .sort((a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]))
+    .map(([mode, f]) => ({ mode, games: f.games, wins: f.wins, winRate: Math.round((f.wins / f.games) * 100) }));
+
+  let vsMe: VsMe | null = null;
+  if (me && me !== name) {
+    const v: VsMe = {
+      matches: 0, myWins: 0, theirWins: 0, othersWins: 0, draws: 0,
+      myFrames: 0, theirFrames: 0, myBestBreak: 0, theirBestBreak: 0, together: 0, togetherWins: 0,
+    };
+    mine.forEach((m) => {
+      const meP = m.players.find((p) => p.name === me);
+      if (!meP) return;
+      if (sameSide(m, me, name)) {
+        v.together += 1;
+        if (didWin(m, me)) v.togetherWins += 1;
+        return;
+      }
+      const them = m.players.find((p) => p.name === name)!;
+      v.matches += 1;
+      if (!m.winner) v.draws += 1;
+      else if (didWin(m, me)) v.myWins += 1;
+      else if (didWin(m, name)) v.theirWins += 1;
+      else v.othersWins += 1;
+      v.myFrames += meP.framesWon;
+      v.theirFrames += them.framesWon;
+      v.myBestBreak = Math.max(v.myBestBreak, meP.highestBreak);
+      v.theirBestBreak = Math.max(v.theirBestBreak, them.highestBreak);
+    });
+    vsMe = v;
+  }
+
+  return {
+    name,
+    games: mine.length,
+    wins,
+    losses: mine.length - wins,
+    winRate: pct(wins, mine.length),
+    framesWon: framesWonTotal,
+    framesPlayed: framesPlayedTotal,
+    frameWinRate: pct(framesWonTotal, framesPlayedTotal),
+    form: results.slice(0, 5).map((w) => (w ? 'W' : 'L')),
+    streak,
+    bestWinStreak: best,
+    highestBreak: rows.reduce((a, r) => Math.max(a, r.p.highestBreak), 0),
+    centuries: sum((r) => r.p.centuries ?? 0),
+    halfCenturies: sum((r) => r.p.halfCenturies ?? 0),
+    totalPoints,
+    avgPointsPerMatch: rows.length ? round1(totalPoints / rows.length) : null,
+    avgPointsPerFrame: framesPlayedTotal ? round1(totalPoints / framesPlayedTotal) : null,
+    fouls,
+    avgFoulsPerMatch: rows.length ? round1(fouls / rows.length) : null,
+    tableMs,
+    avgTableMs: rows.length ? tableMs / rows.length : null,
+    firstAt: mine.length ? mine[mine.length - 1].at : null,
+    lastAt: mine.length ? mine[0].at : null,
+    byFormat,
+    vsMe,
+    recent: mine.slice(0, 10),
+  };
 }
