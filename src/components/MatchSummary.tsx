@@ -14,6 +14,7 @@ import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard } from '../lib/shareCard';
 import { Icon } from './ui';
 import { loadPendingMatch, clearPendingMatch } from '../lib/matchStorage';
+import { matchTotals, matchWinnerName, isEmptyGame } from '../lib/results';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -25,7 +26,7 @@ export default function MatchSummary() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { isGuest } = useAuth();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'empty'>('idle');
   const [dbError, setDbError] = useState<string | null>(null);
 
   // Router state does not survive a reload, and on iOS a backgrounded PWA can
@@ -66,17 +67,14 @@ export default function MatchSummary() {
   if (!stateData) return null;
 
   const { gameState, frameHistory } = stateData;
-  const { players, teams, mode, bestOf, winner, matchTimerMs } = gameState;
+  const { players, teams, mode, bestOf, matchTimerMs } = gameState;
 
-  // Determine winner name
-  let winnerName = 'Unknown';
-  if (mode === 'team') {
-    const winningTeam = teams.find(t => t.id === winner);
-    if (winningTeam) winnerName = winningTeam.name;
-  } else {
-    const winningPlayer = players.find(p => p.id === winner);
-    if (winningPlayer) winnerName = winningPlayer.name;
-  }
+  // Winner: whoever reached the frames-to-win mark, or — for a match ended
+  // early — most frames, then most points. Totals span every frame; the
+  // players' own score/foul fields only hold the last one.
+  const winnerName = matchWinnerName(gameState);
+  const totals = matchTotals(gameState);
+  const empty = isEmptyGame(gameState);
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -98,6 +96,12 @@ export default function MatchSummary() {
   };
 
   const handleSave = async () => {
+    // A match where nothing was scored is not worth a history row.
+    if (empty) {
+      clearPendingMatch();
+      setSaveStatus('empty');
+      return;
+    }
     setSaveStatus('saving');
     try {
       if (isGuest) {
@@ -126,10 +130,10 @@ export default function MatchSummary() {
             return {
               name: p.name,
               teamName: playerTeam?.name,
-              totalScore: p.score, // accumulated score
+              totalScore: totals.points[p.id] ?? p.score,
               highestBreak: p.matchHighestBreak,
               framesWon,
-              foulsCommitted: p.foulsCommitted,
+              foulsCommitted: totals.fouls[p.id] ?? p.foulsCommitted,
               timeSpentMs: p.timeSpentMs,
               centuries: p.centuries,
               halfCenturies: p.halfCenturies,
@@ -180,10 +184,10 @@ export default function MatchSummary() {
           return {
             player_name: p.name,
             team_name: playerTeam?.name ?? undefined,
-            total_score: p.score,
+            total_score: totals.points[p.id] ?? p.score,
             highest_break: p.matchHighestBreak,
             frames_won: framesWon,
-            fouls_committed: p.foulsCommitted,
+            fouls_committed: totals.fouls[p.id] ?? p.foulsCommitted,
             time_spent_ms: p.timeSpentMs,
             centuries: p.centuries,
             half_centuries: p.halfCenturies,
@@ -239,10 +243,10 @@ export default function MatchSummary() {
       return {
         name: p.name,
         teamName: pTeam?.name,
-        score: p.score,
+        score: totals.points[p.id] ?? p.score,
         framesWon,
         highestBreak: p.matchHighestBreak,
-        fouls: p.foulsCommitted,
+        fouls: totals.fouls[p.id] ?? p.foulsCommitted,
         isWinner: p.name === winnerName || (!!pTeam && pTeam.name === winnerName),
       };
     });
@@ -282,7 +286,7 @@ export default function MatchSummary() {
           <div className="winner-banner">
             <span className="trophy-large"><Icon name="trophy" size={56} /></span>
             <div className="winner-banner-text">
-              <span className="winner-label">Winner</span>
+              <span className="winner-label">{winnerName === 'Draw' ? 'Result' : 'Winner'}</span>
               <span className="winner-name-highlight">{winnerName}</span>
             </div>
           </div>
@@ -349,12 +353,16 @@ export default function MatchSummary() {
                       <span className="player-stat-value">{framesWon}</span>
                     </div>
                     <div className="player-stat-item">
+                      <span className="player-stat-label">Total Points</span>
+                      <span className="player-stat-value">{totals.points[p.id] ?? p.score}</span>
+                    </div>
+                    <div className="player-stat-item">
                       <span className="player-stat-label">Highest Break</span>
-                      <span className="player-stat-value">{p.highestBreak}</span>
+                      <span className="player-stat-value">{p.matchHighestBreak}</span>
                     </div>
                     <div className="player-stat-item">
                       <span className="player-stat-label">Fouls</span>
-                      <span className="player-stat-value">{p.foulsCommitted}</span>
+                      <span className="player-stat-value">{totals.fouls[p.id] ?? p.foulsCommitted}</span>
                     </div>
                     {p.centuries > 0 && (
                       <div className="player-stat-item">
@@ -399,6 +407,10 @@ export default function MatchSummary() {
             <div className="save-status-msg success card">
               <Icon name="check" size={16} /> Match record saved successfully!
             </div>
+          ) : saveStatus === 'empty' ? (
+            <div className="save-status-msg card">
+              <Icon name="alert" size={16} /> Nothing was scored, so this match wasn't saved.
+            </div>
           ) : saveStatus === 'error' ? (
             <div className="save-status-msg error card">
               <Icon name="alert" size={16} /> Error saving match record: {dbError || 'Unknown error'}
@@ -406,7 +418,7 @@ export default function MatchSummary() {
           ) : null}
 
           <div className="actions-button-row">
-            {saveStatus !== 'saved' && (
+            {saveStatus !== 'saved' && saveStatus !== 'empty' && (
               <button
                 onClick={handleSave}
                 disabled={saveStatus === 'saving'}
