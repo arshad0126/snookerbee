@@ -128,6 +128,8 @@ export default function MatchDetailsModal({
     let breakPlayer = '';
 
     actionLog.forEach((entry) => {
+      // Undone steps stay in the timeline but never count.
+      if (entry.undone || entry.type === 'undo' || entry.type === 'redo') return;
       const { playerName, type, ball, points } = entry;
 
       if (!analysis.redsPotted[playerName]) {
@@ -159,7 +161,7 @@ export default function MatchDetailsModal({
         analysis.foulsCommitted[playerName] += 1;
         currentBreak = 0;
         breakPlayer = '';
-      } else if (type === 'miss' || type === 'undo') {
+      } else if (type === 'miss') {
         currentBreak = 0;
         breakPlayer = '';
       }

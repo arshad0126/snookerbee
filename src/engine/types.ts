@@ -104,7 +104,8 @@ export type ActionLogType =
   | 'concede'
   | 'frameEnd'
   | 'frameStart'
-  | 'undo';
+  | 'undo'
+  | 'redo';
 
 export interface ActionLogEntry {
   /** ISO-8601 timestamp of when the action occurred. */
@@ -121,6 +122,11 @@ export interface ActionLogEntry {
   penaltyTo?: string[];
   /** Human-readable description of what happened. */
   description: string;
+  /**
+   * Taken back with Undo. The timeline keeps every step, so undone actions
+   * stay in the log, marked — anything that adds up scores must skip them.
+   */
+  undone?: boolean;
 }
 
 export interface CompletedFramePlayerStats {
@@ -212,6 +218,8 @@ export interface GameState {
    * Most recent state is at the end. Capped at MAX_UNDO_STACK entries.
    */
   undoStack: GameState[];
+  /** Undos that can be redone, newest last. Cleared by any new action. */
+  redoStack?: RedoEntry[];
 
   // --- Timers ---
   /** ISO-8601 timestamp of when the match started. */
@@ -288,6 +296,21 @@ export interface UndoAction {
   readonly type: 'UNDO';
 }
 
+/** Put back the last thing Undo took away. */
+export interface RedoAction {
+  readonly type: 'REDO';
+}
+
+/** What one Undo took back, so Redo can restore it. */
+export interface RedoEntry {
+  /** The game exactly as it was before the undo. */
+  state: GameState;
+  /** Positions in the action log that the undo marked as undone. */
+  indices: number[];
+  /** What was undone, for "Undid: …" / "Redid: …". */
+  label: string;
+}
+
 /** Toggle free ball on/off. */
 export interface FreeBallAction {
   readonly type: 'FREE_BALL';
@@ -330,6 +353,7 @@ export type GameAction =
   | InOffAction
   | MissAction
   | UndoAction
+  | RedoAction
   | FreeBallAction
   | ConcedeFrameAction
   | EndFrameAction

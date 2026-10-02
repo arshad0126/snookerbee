@@ -175,7 +175,7 @@ export function potStats(logs: ActionLogEntry[][], me: string): PotStats | null 
   let foulCount = 0;
   let foulPoints = 0;
   logs.forEach((log) => log.forEach((e) => {
-    if (e.playerName !== me) return;
+    if (e.undone || e.playerName !== me) return;
     if (e.type === 'pot' && e.ball) pots[e.ball] = (pots[e.ball] ?? 0) + 1;
     if (e.type === 'foul' || e.type === 'inOff') {
       foulCount += 1;

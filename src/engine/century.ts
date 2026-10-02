@@ -63,7 +63,8 @@ export interface CenturyPlayer {
 }
 
 export type CenturyLogKind =
-  | 'pot' | 'redMiss' | 'colourMiss' | 'foul' | 'bust' | 'finish' | 'blocked';
+  | 'pot' | 'redMiss' | 'colourMiss' | 'foul' | 'bust' | 'finish' | 'blocked'
+  | 'undo' | 'redo';
 
 export interface CenturyLogEntry {
   kind: CenturyLogKind;
@@ -72,6 +73,15 @@ export interface CenturyLogEntry {
   points?: number;
   description: string;
   timestamp: string;
+  /** Taken back with Undo; kept in the timeline, marked. */
+  undone?: boolean;
+}
+
+/** What one Undo took back, so Redo can restore it. */
+export interface CenturyRedoEntry {
+  state: CenturyState;
+  indices: number[];
+  label: string;
 }
 
 export interface CenturyState {
@@ -90,6 +100,8 @@ export interface CenturyState {
   startedAt: string;
   actionLog: CenturyLogEntry[];
   undoStack: CenturyState[];
+  /** Undos that can be redone, newest last. Cleared by any new move. */
+  redoStack?: CenturyRedoEntry[];
   finished: boolean;
   /** The player left short once everyone else is safe. */
   loserId: string | null;
@@ -101,6 +113,7 @@ export type CenturyAction =
   | { type: 'MISS_COLOUR' }
   | { type: 'FOUL'; ball: BallType }
   | { type: 'UNDO' }
+  | { type: 'REDO' }
   | { type: 'SET_STATE'; state: CenturyState };
 
 const MAX_UNDO = 12;
@@ -196,7 +209,7 @@ function log(
 }
 
 function pushUndo(state: CenturyState): CenturyState[] {
-  const snapshot: CenturyState = { ...state, undoStack: [] };
+  const snapshot: CenturyState = { ...state, undoStack: [], redoStack: [] };
   const next = [...state.undoStack, snapshot];
   return next.length > MAX_UNDO ? next.slice(next.length - MAX_UNDO) : next;
 }
@@ -251,10 +264,52 @@ export function centuryReducer(
   if (action.type === 'SET_STATE') return action.state;
 
   if (action.type === 'UNDO') {
-    if (state.undoStack.length === 0) return state;
+    const pending = pendingCenturyUndo(state);
+    if (!pending) return state;
+    // Restore the game, keep the timeline: undone steps stay, marked.
     const previous = state.undoStack[state.undoStack.length - 1];
-    return { ...previous, undoStack: state.undoStack.slice(0, -1) };
+    const marked = state.actionLog.map((e, i) =>
+      pending.indices.includes(i) ? { ...e, undone: true } : e
+    );
+    const who = currentPlayer(state)?.name ?? '';
+    return {
+      ...previous,
+      undoStack: state.undoStack.slice(0, -1),
+      redoStack: [
+        ...(state.redoStack ?? []),
+        { state: { ...state, redoStack: [] }, indices: pending.indices, label: pending.label },
+      ],
+      actionLog: [
+        ...marked,
+        { kind: 'undo', playerName: who, description: `Undid: ${pending.label}`, timestamp: new Date().toISOString() },
+      ],
+    };
   }
+
+  if (action.type === 'REDO') {
+    const stack = state.redoStack ?? [];
+    if (stack.length === 0) return state;
+    const item = stack[stack.length - 1];
+    const restored = state.actionLog.map((e, i) =>
+      item.indices.includes(i) ? { ...e, undone: false } : e
+    );
+    return {
+      ...item.state,
+      redoStack: stack.slice(0, -1),
+      actionLog: [
+        ...restored,
+        {
+          kind: 'redo',
+          playerName: currentPlayer(item.state)?.name ?? '',
+          description: `Redid: ${item.label}`,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+  }
+
+  // Any new move after an undo ends the chance to redo it.
+  if (state.redoStack?.length) state = { ...state, redoStack: [] };
 
   if (state.finished) return state;
 
@@ -394,6 +449,27 @@ export function centuryReducer(
   }
 }
 
+/* ------------------------------------------------------------ undo / redo */
+
+function pendingCenturyUndo(state: CenturyState): { indices: number[]; label: string } | null {
+  if (state.undoStack.length === 0) return null;
+  const from = state.undoStack[state.undoStack.length - 1].actionLog.length;
+  const indices: number[] = [];
+  let last: CenturyLogEntry | undefined;
+  state.actionLog.forEach((e, i) => {
+    if (i >= from && !e.undone && e.kind !== 'undo' && e.kind !== 'redo') {
+      indices.push(i);
+      last = e;
+    }
+  });
+  return { indices, label: last ? last.description : 'the last action' };
+}
+
+/** What Undo would take back right now, or null. */
+export function describeCenturyUndo(state: CenturyState): string | null {
+  return pendingCenturyUndo(state)?.label ?? null;
+}
+
 /* --------------------------------------------------------------- log views */
 
 const LOG_TYPE: Record<CenturyLogKind, ActionLogType> = {
@@ -404,6 +480,8 @@ const LOG_TYPE: Record<CenturyLogKind, ActionLogType> = {
   bust: 'miss',
   blocked: 'miss',
   finish: 'frameEnd',
+  undo: 'undo',
+  redo: 'redo',
 };
 
 /**
@@ -418,5 +496,6 @@ export function toActionLog(entries: readonly CenturyLogEntry[]): ActionLogEntry
     ball: e.ball,
     points: e.points,
     description: e.description,
+    undone: e.undone,
   }));
 }

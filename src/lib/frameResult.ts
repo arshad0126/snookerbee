@@ -58,6 +58,7 @@ export function computeFrameResult(
   };
 
   for (const e of actionLog) {
+    if (e.undone) continue;
     const pts = e.points ?? 0;
     if (!pts) continue;
     if (e.type === 'pot') add(e.playerName, pts);
