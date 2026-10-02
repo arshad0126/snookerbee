@@ -692,3 +692,62 @@ button.pd-version {
 .player-link:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: 1px; border-radius: 4px; }
 div.db-row { cursor: pointer; }
 div.db-row:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: -2px; }
+
+/* ------------------------------------------------------------ undo / redo */
+
+.undo-bar {
+  position: fixed; z-index: var(--z-toast, 1100);
+  left: 50%; top: max(12px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  max-width: min(92vw, 560px); box-sizing: border-box;
+  padding: 6px 6px 6px 14px; border-radius: 999px;
+  background: var(--bg-dialog, #1a1d21); color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font-size: 13.5px;
+  animation: undo-bar-in 180ms ease-out;
+}
+@keyframes undo-bar-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .undo-bar { animation: none; } }
+.undo-bar > svg { color: var(--accent-sage); flex-shrink: 0; }
+.undo-bar-msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+.undo-bar-msg b { color: var(--text-primary); font-weight: 600; }
+.undo-bar-redo {
+  flex-shrink: 0; min-height: 36px; padding: 0 16px; border-radius: 999px;
+  border: none; background: var(--accent-sage); color: var(--on-accent);
+  font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+.undo-bar-close {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: transparent; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+/* Undone steps stay in the timeline, struck through. */
+.action-log-entry.is-undone .action-log-desc,
+.ma-event.is-undone .ma-event-what { text-decoration: line-through; opacity: 0.6; }
+.action-log-entry.is-undone .action-log-desc .log-undone-tag,
+.ma-event.is-undone .log-undone-tag { text-decoration: none; display: inline-block; }
+.log-undone-tag {
+  margin-left: 8px; padding: 1px 6px; border-radius: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--border-color); color: var(--text-secondary);
+}
+.ma-event--undo .ma-event-dot, .ma-event--redo .ma-event-dot { background: var(--accent-sage); }
+
+/* Settings switch */
+.st-switch {
+  position: relative; flex-shrink: 0;
+  width: 52px; height: 32px; padding: 0; border-radius: 999px;
+  border: 1px solid var(--v3-line); background: var(--v3-surface-2); cursor: pointer;
+  transition: background 160ms ease;
+}
+.st-switch.is-on { background: var(--accent-sage); border-color: transparent; }
+.st-switch-knob {
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 160ms ease;
+}
+.st-switch.is-on .st-switch-knob { transform: translateX(20px); }
+.st-switch:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: 2px; }

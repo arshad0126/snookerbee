@@ -36,6 +36,8 @@ export interface AppSettings {
   backdrop: Backdrop;
   /** The name you play under, for stats. Null = worked out from history. */
   playerName: string | null;
+  /** Ask "Undo this?" before every undo. */
+  confirmUndo: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -43,6 +45,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   accent: 'blue',
   backdrop: 'rack',
   playerName: null,
+  confirmUndo: false,
 };
 
 const KEY = 'snookerbee:settings';
@@ -61,6 +64,7 @@ export function sanitize(raw: unknown): AppSettings {
     backdrop: isBackdrop(r.backdrop) ? r.backdrop : DEFAULT_SETTINGS.backdrop,
     playerName:
       typeof r.playerName === 'string' && r.playerName.trim() ? r.playerName.trim().slice(0, 60) : null,
+    confirmUndo: r.confirmUndo === true,
   };
 }
 

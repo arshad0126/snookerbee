@@ -91,9 +91,9 @@ export default function CenturyDetailsModal({ game, onClose, onShare }: Props) {
             ) : (
               <ol className="ma-timeline">
                 {log.map((entry, idx) => (
-                  <li key={idx} className={`ma-event ma-event--${entry.type}`}>
+                  <li key={idx} className={`ma-event ma-event--${entry.type}${entry.undone ? ' is-undone' : ''}`}>
                     <span className="ma-event-dot" />
-                    <span className="ma-event-what">{entry.description}</span>
+                    <span className="ma-event-what">{entry.description}{entry.undone && <span className="log-undone-tag">undone</span>}</span>
                   </li>
                 ))}
               </ol>

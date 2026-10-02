@@ -10,6 +10,8 @@ import {
 } from '../engine';
 import { audio } from '../lib/audio';
 import FoulDialog from './FoulDialog';
+import { useUndoControls } from '../hooks/useUndoControls';
+import { describeUndo } from '../engine/reducer';
 import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
 import PreviousFramesModal from './PreviousFramesModal';
@@ -114,6 +116,13 @@ export default function ScoringScreen() {
     prevScoresRef.current = newScores;
   }, [state.players]);
 
+  // Undo (a hook, so above the early return): double-tap guard, optional confirm, and an "Undone · Redo" bar.
+  const { onUndo: handleUndo, undoBar } = useUndoControls({
+    describe: () => describeUndo(state),
+    undo: () => { audio.playUndo(); dispatch({ type: 'UNDO' }); },
+    redo: () => dispatch({ type: 'REDO' }),
+  });
+
   if (state.players.length === 0) {
     return (
       <div className="page page-centered">
@@ -173,13 +182,6 @@ export default function ScoringScreen() {
     dispatch({ type: 'MISS' });
   };
 
-  // Undo Handler
-  const handleUndo = () => {
-    if (state.undoStack.length > 0) {
-      audio.playUndo();
-      dispatch({ type: 'UNDO' });
-    }
-  };
 
   // Frame transition handlers
   const handleNextFrame = () => {
@@ -668,6 +670,8 @@ export default function ScoringScreen() {
         onClose={() => setIsPreviousFramesOpen(false)}
         completedFrames={state.completedFrames}
       />
+
+      {undoBar}
 
       <ActionLogDrawer
         isOpen={isLogOpen}

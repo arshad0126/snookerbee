@@ -22,6 +22,23 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.5.0',
+    date: '2026-10-02',
+    title: 'Safer undo, with Redo',
+    added: [
+      'Redo: after every undo, a bar shows what was undone with a Redo button for a few seconds.',
+      'Settings → Scoring → Ask before undo: shows what will be undone and asks first. Off by default.',
+    ],
+    improved: [
+      'The timeline keeps every step. Undone shots stay, struck through, with an "Undid: …" line.',
+      'A quick accidental double-tap on Undo is ignored.',
+      'All of this works in Century too.',
+    ],
+    fixed: [
+      'Two undos in a row only showed one in the timeline, and never said what was undone.',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-10-02',
     title: 'Stats for every player',
