@@ -42,6 +42,7 @@ export default function ActionLogDrawer({
       case 'inOff':
         return 'log-foul';
       case 'undo':
+      case 'redo':
         return 'log-undo';
       case 'frame_end':
       case 'frameEnd':
@@ -62,6 +63,8 @@ export default function ActionLogDrawer({
         return <Icon name="alert" className="log-icon log-icon--foul" />;
       case 'undo':
         return <Icon name="arrow-left" className="log-icon log-icon--undo" />;
+      case 'redo':
+        return <Icon name="arrow-right" className="log-icon log-icon--undo" />;
       case 'frame_end':
       case 'frameEnd':
       case 'concede':
@@ -97,10 +100,13 @@ export default function ActionLogDrawer({
             <div className="action-log-empty">Waiting for break-off shot...</div>
           ) : (
             actionLog.map((entry, index) => (
-              <div key={index} className={`action-log-entry ${getLogClass(entry.type)}`}>
+              <div key={index} className={`action-log-entry ${getLogClass(entry.type)}${entry.undone ? ' is-undone' : ''}`}>
                 <span className="action-log-time">{formatRelativeTime(entry.timestamp)}</span>
                 <span className="action-log-icon">{getLogIcon(entry.type)}</span>
-                <span className="action-log-desc">{entry.description}</span>
+                <span className="action-log-desc">
+                  {entry.description}
+                  {entry.undone && <span className="log-undone-tag">undone</span>}
+                </span>
               </div>
             ))
           )}

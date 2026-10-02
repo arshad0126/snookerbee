@@ -11,6 +11,7 @@ import {
   ballValue,
   redValueOf,
   toActionLog,
+  describeCenturyUndo,
   type CenturySetup,
 } from '../engine/century';
 import { audio } from '../lib/audio';
@@ -18,6 +19,7 @@ import { Icon } from './ui';
 import WallClock from './WallClock';
 import ActionLogDrawer from './ActionLogDrawer';
 import { shareCenturyCard } from '../lib/centuryShare';
+import { useUndoControls } from '../hooks/useUndoControls';
 import {
   saveCenturyGame as cacheCenturyGame,
   loadCenturyGame,
@@ -52,6 +54,11 @@ export default function CenturyScreen() {
 
   const [foulOpen, setFoulOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const { onUndo: handleUndo, undoBar } = useUndoControls({
+    describe: () => describeCenturyUndo(state),
+    undo: () => { audio.playUndo(); dispatch({ type: 'UNDO' }); },
+    redo: () => dispatch({ type: 'REDO' }),
+  });
   const { isGuest } = useAuth();
   const savedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -277,7 +284,7 @@ export default function CenturyScreen() {
       {/* Turn outcomes — the scoring screen's premium action row */}
       <div className="action-buttons-row-premium century-actions">
         <button
-          onClick={() => { audio.playUndo(); dispatch({ type: 'UNDO' }); }}
+          onClick={handleUndo}
           disabled={state.undoStack.length === 0}
           className="btn-action-premium btn-action-undo"
         >
@@ -402,6 +409,8 @@ export default function CenturyScreen() {
         actionLog={toActionLog(state.actionLog)}
         frameStartTime={Date.parse(state.startedAt)}
       />
+
+      {undoBar}
 
       {/* Off-screen canvas for the share card */}
       <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />

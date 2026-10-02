@@ -99,7 +99,7 @@ export function isEmptyGame(state: GameState): boolean {
   const anyPoints = Object.values(points).some((v) => v !== 0);
   const anyFrames = Object.values(state.frameScores ?? {}).some((v) => v > 0);
   const anyShots = (state.completedFrames ?? []).some((f) => f.actionLog.length > 0)
-    || state.actionLog.some((e) => e.type === 'pot' || e.type === 'foul' || e.type === 'inOff');
+    || state.actionLog.some((e) => !e.undone && (e.type === 'pot' || e.type === 'foul' || e.type === 'inOff'));
   return !anyPoints && !anyFrames && !anyShots;
 }
 
@@ -144,6 +144,7 @@ export function totalsFromFrames(
   for (const p of players) { points[p.name] = 0; fouls[p.name] = 0; }
   for (const f of frames) {
     for (const e of f.actionLog ?? []) {
+      if (e.undone) continue;
       if (e.type === 'pot' && e.points && e.playerName in points) points[e.playerName] += e.points;
       if ((e.type === 'foul' || e.type === 'inOff') && e.playerName in fouls) fouls[e.playerName] += 1;
       if ((e.type === 'foul' || e.type === 'inOff') && e.points) {

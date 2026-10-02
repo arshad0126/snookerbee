@@ -195,6 +195,27 @@ export default function Settings() {
           <p className="st-note">Used for your win rate, form and head-to-head. Automatic picks the name in most of your games.</p>
         </section>
 
+        <section className="st-section" aria-labelledby="st-scoring">
+          <h2 id="st-scoring" className="st-h2">Scoring</h2>
+          <div className="st-field">
+            <span className="st-label" id="st-confirm-undo">Ask before undo</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.confirmUndo}
+              aria-labelledby="st-confirm-undo"
+              className={`st-switch${settings.confirmUndo ? ' is-on' : ''}`}
+              onClick={() => update({ confirmUndo: !settings.confirmUndo })}
+            >
+              <span className="st-switch-knob" />
+            </button>
+          </div>
+          <p className="st-note">
+            Shows what will be undone and asks first. Either way, a quick double-tap is ignored and you get a
+            Redo button for a few seconds after every undo.
+          </p>
+        </section>
+
         <section className="st-section" id="data" aria-labelledby="st-data">
           <h2 id="st-data" className="st-h2">Export &amp; backup</h2>
           <p className="st-note">

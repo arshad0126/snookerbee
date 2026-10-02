@@ -69,7 +69,37 @@ function generateId(prefix: string): string {
  * The undoStack is reset to empty in the snapshot to avoid nesting stacks.
  */
 function cloneStateForUndo(state: GameState): GameState {
-  return { ...state, undoStack: [] };
+  return { ...state, undoStack: [], redoStack: [] };
+}
+
+/**
+ * What an Undo right now would take back: the log entries added since the
+ * last snapshot that are still live. The log is append-only (entries are
+ * marked, never removed), so the snapshot's log length is a stable index.
+ */
+function pendingUndo(state: GameState): { indices: number[]; label: string } | null {
+  if (state.undoStack.length === 0) return null;
+  const from = state.undoStack[state.undoStack.length - 1].actionLog.length;
+  const indices: number[] = [];
+  let last: ActionLogEntry | undefined;
+  state.actionLog.forEach((e, i) => {
+    if (i >= from && !e.undone && e.type !== 'undo' && e.type !== 'redo') {
+      indices.push(i);
+      last = e;
+    }
+  });
+  return { indices, label: last ? last.description : 'the last action' };
+}
+
+/** "Arshad potted black (+7)" — what Undo would take back, or null. */
+export function describeUndo(state: GameState): string | null {
+  return pendingUndo(state)?.label ?? null;
+}
+
+/** What Redo would put back, or null. */
+export function describeRedo(state: GameState): string | null {
+  const stack = state.redoStack ?? [];
+  return stack.length ? stack[stack.length - 1].label : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -426,7 +456,19 @@ export function createInitialState(config: GameSetupConfig): GameState {
 // gameReducer — The main pure reducer
 // ============================================================================
 
+/** Actions that don't count as a new move, so Redo stays available. */
+const KEEPS_REDO = new Set<GameAction['type']>(['UNDO', 'REDO', 'COMMIT_TURN_TIME', 'SET_STATE']);
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  const next = reduceAction(state, action);
+  // A new move after an undo makes the undone steps history, not redo-able.
+  if (next !== state && !KEEPS_REDO.has(action.type) && next.redoStack?.length) {
+    return { ...next, redoStack: [] };
+  }
+  return next;
+}
+
+function reduceAction(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     // -----------------------------------------------------------------------
     // POT_BALL — Player pots a ball
@@ -699,22 +741,52 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
 
-      // Pop the most recent state from the undo stack
+      // Restore the game to the last snapshot, but keep the timeline: the
+      // steps being taken back stay in the log, marked undone, and an
+      // "Undid: …" line is added. Every tap is on the record.
       const previousState = state.undoStack[state.undoStack.length - 1];
-
-      // Restore the undo stack from the current state minus the popped entry
       const restoredUndoStack = state.undoStack.slice(0, -1);
+      const pending = pendingUndo(state)!;
+      const marked = state.actionLog.map((e, i) =>
+        pending.indices.includes(i) ? { ...e, undone: true } : e,
+      );
 
       const logEntry = createLogEntry({
         type: 'undo',
         playerName: getCurrentPlayer(state).name,
-        description: 'Action undone',
+        description: `Undid: ${pending.label}`,
       });
 
       return {
         ...previousState,
         undoStack: restoredUndoStack,
-        actionLog: [...previousState.actionLog, logEntry],
+        redoStack: [
+          ...(state.redoStack ?? []),
+          { state: { ...state, redoStack: [] }, indices: pending.indices, label: pending.label },
+        ],
+        actionLog: [...marked, logEntry],
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // REDO — Put back what the last Undo took away
+    // -----------------------------------------------------------------------
+    case 'REDO': {
+      const stack = state.redoStack ?? [];
+      if (stack.length === 0) return state;
+      const item = stack[stack.length - 1];
+      const restoredLog = state.actionLog.map((e, i) =>
+        item.indices.includes(i) ? { ...e, undone: false } : e,
+      );
+      const logEntry = createLogEntry({
+        type: 'redo',
+        playerName: getCurrentPlayer(item.state).name,
+        description: `Redid: ${item.label}`,
+      });
+      return {
+        ...item.state,
+        redoStack: stack.slice(0, -1),
+        actionLog: [...restoredLog, logEntry],
       };
     }
 

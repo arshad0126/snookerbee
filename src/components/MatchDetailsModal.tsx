@@ -128,6 +128,8 @@ export default function MatchDetailsModal({
     let breakPlayer = '';
 
     actionLog.forEach((entry) => {
+      // Undone steps stay in the timeline but never count.
+      if (entry.undone || entry.type === 'undo' || entry.type === 'redo') return;
       const { playerName, type, ball, points } = entry;
 
       if (!analysis.redsPotted[playerName]) {
@@ -159,7 +161,7 @@ export default function MatchDetailsModal({
         analysis.foulsCommitted[playerName] += 1;
         currentBreak = 0;
         breakPlayer = '';
-      } else if (type === 'miss' || type === 'undo') {
+      } else if (type === 'miss') {
         currentBreak = 0;
         breakPlayer = '';
       }
@@ -390,10 +392,10 @@ export default function MatchDetailsModal({
                         <li className="ma-empty">No events logged in this frame.</li>
                       ) : (
                         activeFrame.actionLog.map((entry, idx) => (
-                          <li key={idx} className={`ma-event ma-event--${entry.type}`}>
+                          <li key={idx} className={`ma-event ma-event--${entry.type}${entry.undone ? ' is-undone' : ''}`}>
                             <span className="ma-event-dot" />
                             <span className="ma-event-who">{entry.playerName}</span>
-                            <span className="ma-event-what">{entry.description}</span>
+                            <span className="ma-event-what">{entry.description}{entry.undone && <span className="log-undone-tag">undone</span>}</span>
                           </li>
                         ))
                       )}
