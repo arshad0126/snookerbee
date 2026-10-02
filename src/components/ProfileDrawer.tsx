@@ -29,10 +29,10 @@ interface Item {
 }
 
 const PRIMARY: Item[] = [
-  { icon: 'chart', label: 'My stats', to: '/stats' },
+  { icon: 'chart', label: 'Player stats', to: '/players' },
   { icon: 'history', label: 'Match history', to: '/history' },
-  { icon: 'users', label: 'Players & head-to-head', to: '/stats#head-to-head' },
-  { icon: 'trophy', label: 'Records & milestones', to: '/stats#breaks' },
+  { icon: 'users', label: 'Head-to-head', to: '/players#head-to-head' },
+  { icon: 'trophy', label: 'Records & milestones', to: '/players#breaks' },
 ];
 
 const SECONDARY: Item[] = [

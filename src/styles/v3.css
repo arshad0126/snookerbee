@@ -616,3 +616,64 @@ button.pd-version {
   border: none; background: none; padding: 8px 4px; cursor: pointer;
   font: inherit; font-size: 12px; color: var(--v3-ink-2); text-decoration: underline; text-underline-offset: 3px;
 }
+
+/* ------------------------------------------------------------ player stats */
+
+.ps-avatar { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand-tint); }
+.ps-avatar--initial {
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  background: var(--brand-deep); color: #FFFFFF; font-weight: 700; font-size: 17px;
+}
+.ps-you { font-weight: 500; color: var(--v3-ink-2); font-size: 0.7em; }
+.ps-controls { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.ms-header .ms-range { margin-left: 0; }
+
+.ps-picker {
+  position: relative; display: inline-flex; align-items: center;
+  color: var(--v3-ink);
+}
+.ps-picker select {
+  appearance: none; -webkit-appearance: none;
+  min-height: 42px; min-width: 150px; max-width: 220px;
+  padding: 0 34px 0 14px; border-radius: 12px;
+  border: 1px solid var(--v3-line); background: var(--v3-surface); color: var(--v3-ink);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  text-overflow: ellipsis;
+}
+.ps-picker select:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: 2px; }
+.ps-picker svg { position: absolute; right: 12px; pointer-events: none; color: var(--v3-ink-2); }
+
+.ms-sep { font-style: normal; color: var(--v3-ink-2); }
+
+.ps-vs { display: flex; flex-direction: column; gap: 12px; }
+.ps-vs-score { display: flex; flex-wrap: wrap; gap: 28px; }
+.ps-vs-score > div { display: flex; flex-direction: column; gap: 2px; }
+.ps-vs-score b { font-size: 32px; letter-spacing: -0.02em; line-height: 1.1; }
+.ps-vs-score span { font-size: 12px; color: var(--v3-ink-2); }
+.ps-vs-rows { display: flex; flex-direction: column; }
+.ps-vs-rows > div {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 0; font-size: 13.5px; border-top: 1px solid var(--v3-line-soft);
+}
+.ps-vs-rows span { color: var(--v3-ink-2); }
+
+.ps-formats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ps-format {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 10px 12px; border-radius: 12px; background: var(--v3-surface-2);
+}
+.ps-format b { font-size: 20px; }
+
+.ps-recent { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ps-recent li + li { border-top: 1px solid var(--v3-line-soft); }
+.ps-recent-row {
+  width: 100%; min-height: 44px;
+  display: grid; grid-template-columns: 92px minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
+  padding: 6px 2px; border: none; background: none; color: var(--v3-ink);
+  font: inherit; font-size: 13.5px; text-align: left; cursor: pointer;
+}
+.ps-recent-day { color: var(--v3-ink-2); font-size: 12.5px; }
+.ps-recent-opp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-recent-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.ps-thisisme { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }

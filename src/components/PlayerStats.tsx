@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import { loadHistory, guessMyName, type History } from '../lib/history';
+import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
 import { getFramesForMatches } from '../lib/database';
 import type { ActionLogEntry, BallType } from '../engine/types';
 import {
   inRange, summarize, byMonth, breakBuckets, headToHead, byWeekday, potStats, centuryStats, hours,
+  listPlayers, computePlayerStats, MIN_GAMES_FOR_LIST,
   type Range,
 } from '../lib/playerStats';
-import { relativeDay, shortDuration } from '../lib/results';
+import { relativeDay, shortDuration, modeLabel } from '../lib/results';
+import MatchDetailsModal from './MatchDetailsModal';
 import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
 
@@ -30,11 +32,13 @@ const DAY_NAMES: Record<string, string> = {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export default function MyStats() {
+export default function PlayerStats() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isGuest } = useAuth();
-  const { settings } = useSettings();
+  const { user, isGuest } = useAuth();
+  const { settings, update } = useSettings();
+  const [params, setParams] = useSearchParams();
+  const [openMatch, setOpenMatch] = useState<HistoryMatch | null>(null);
   const [history, setHistory] = useState<History | null>(null);
   const [logsById, setLogsById] = useState<Map<string, ActionLogEntry[][]> | null>(null);
   const [range, setRange] = useState<Range>('all');
@@ -72,8 +76,22 @@ export default function MyStats() {
     [settings.playerName, history]
   );
 
+  const meName = me;
+  const players = useMemo(() => (history ? listPlayers(history.matches, history.centuries) : []), [history]);
+  const asked = params.get('name');
+  // The player in the URL if they're in this account's history, else me.
+  const subject = asked && players.some((p) => p.name === asked) ? asked : me;
+  const isMe = !!subject && subject === me;
+  const their = isMe ? 'your' : `${subject}'s`;
+
+  const pick = (name: string) => {
+    if (name === me) setParams({}, { replace: true });
+    else setParams({ name }, { replace: true });
+  };
+
   const view = useMemo(() => {
-    if (!history || !me) return null;
+    if (!history || !subject) return null;
+    const me = subject;
     const matches = inRange(history.matches, range);
     const centuries = inRange(history.centuries, range);
     const logs = logsById
@@ -88,12 +106,20 @@ export default function MyStats() {
       days: byWeekday(matches, me),
       pots: logsById ? potStats(logs, me) : undefined,
       century: centuryStats(centuries, me),
+      profile: computePlayerStats(me, matches, isMe ? null : (meName ?? null)),
     };
-  }, [history, me, range, logsById]);
+  }, [history, subject, isMe, meName, range, logsById]);
 
   if (!history) {
     return <div className="ms-page ms-page--loading"><div className="spinner" /></div>;
   }
+
+  const avatarUrl: string | undefined = user?.user_metadata?.avatar_url;
+  const others = players.filter((p) => p.name !== me);
+  const regulars = others.filter((p) => p.games >= MIN_GAMES_FOR_LIST);
+  const occasional = others.filter((p) => p.games < MIN_GAMES_FOR_LIST);
+  const pr = view?.profile;
+  const dash = (v: number | null | undefined, suffix = '') => (v === null || v === undefined ? '–' : `${v}${suffix}`);
 
   const s = view?.summary;
   const empty = !view || !s || s.matches === 0;
@@ -109,29 +135,50 @@ export default function MyStats() {
     <div className="ms-page">
       <ThemeBackdrop />
       <header className="ms-header">
-        <button type="button" className="st-back" onClick={() => navigate('/dashboard')} aria-label="Back to dashboard">
+        <button type="button" className="st-back" onClick={() => navigate(-1)} aria-label="Back">
           <Icon name="arrow-left" size={18} />
         </button>
+        {isMe && avatarUrl ? (
+          <img className="ps-avatar" src={avatarUrl} alt="" />
+        ) : (
+          <span className="ps-avatar ps-avatar--initial" aria-hidden="true">{(subject ?? '?').charAt(0).toUpperCase()}</span>
+        )}
         <div className="ms-titles">
-          <h1 className="st-title">My stats</h1>
+          <h1 className="st-title">{subject ?? 'Player stats'}{isMe && <span className="ps-you"> (you)</span>}</h1>
           <span className="ms-sub">
-            {me ? `${me} · ` : ''}
-            {view?.allTime.firstAt ? `${view.allTime.matches} matches since ${new Date(view.allTime.firstAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}` : 'No matches yet'}
+            {view?.allTime.firstAt
+              ? `Based on ${view.allTime.matches} match${view.allTime.matches === 1 ? '' : 'es'} recorded in this account`
+              : 'No matches yet'}
           </span>
         </div>
-        <div className="st-seg ms-range" role="radiogroup" aria-label="Time range">
-          {RANGES.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              role="radio"
-              aria-checked={range === r.id}
-              className={`st-seg-btn${range === r.id ? ' is-on' : ''}`}
-              onClick={() => setRange(r.id)}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="ps-controls">
+          <label className="ps-picker">
+            <span className="visually-hidden">Player</span>
+            <select value={subject ?? ''} onChange={(e) => pick(e.target.value)}>
+              {me && <option value={me}>{me} (you)</option>}
+              {regulars.map((p) => <option key={p.name} value={p.name}>{p.name} · {p.games}</option>)}
+              {occasional.length > 0 && (
+                <optgroup label="Fewer games">
+                  {occasional.map((p) => <option key={p.name} value={p.name}>{p.name} · {p.games}</option>)}
+                </optgroup>
+              )}
+            </select>
+            <Icon name="chevron-down" size={14} />
+          </label>
+          <div className="st-seg ms-range" role="radiogroup" aria-label="Time range">
+            {RANGES.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                role="radio"
+                aria-checked={range === r.id}
+                className={`st-seg-btn${range === r.id ? ' is-on' : ''}`}
+                onClick={() => setRange(r.id)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -139,16 +186,16 @@ export default function MyStats() {
         <div className="ms-card ms-empty">
           <Icon name="chart" size={32} />
           <b>{range === 'all' ? 'No matches yet' : `No matches in the last ${range}`}</b>
-          <span>{range === 'all' ? 'Play a game and your stats start here.' : 'Try All time.'}</span>
+          <span>{range === 'all' ? (isMe ? 'Play a game and your stats start here.' : `No matches with ${subject} recorded here yet.`) : 'Try All time.'}</span>
         </div>
       ) : (
         <main className="ms-body">
           <section id="overview" className="ms-card ms-kpis" aria-label="Overview">
-            <div className="ms-kpi"><b>{s.matches}</b><span>Matches</span><small>{s.thisWeek} this week</small></div>
-            <div className="ms-kpi"><b>{s.wins}</b><span>Won</span><small>{s.winRate}% win rate</small></div>
-            <div className="ms-kpi"><b>{s.framesWon}</b><span>Frames won</span><small>across all matches</small></div>
-            <div className="ms-kpi"><b>{s.avgPoints}</b><span>Avg points</span><small>per match</small></div>
-            <div className="ms-kpi"><b>{hours(s.tableMs)}</b><span>At the table</span><small>your visits only</small></div>
+            <div className="ms-kpi"><b>{s.matches}</b><span>Matches</span><small>{pr?.wins ?? 0} won · {pr?.losses ?? 0} lost</small></div>
+            <div className="ms-kpi"><b>{dash(pr?.winRate, '%')}</b><span>Win rate</span><small>{s.thisWeek} this week</small></div>
+            <div className="ms-kpi"><b>{pr ? `${pr.framesWon}/${pr.framesPlayed}` : '–'}</b><span>Frames</span><small>{dash(pr?.frameWinRate, '%')} of frames won</small></div>
+            <div className="ms-kpi"><b>{pr?.streak ?? '–'}</b><span>Streak</span><small>best run W{pr?.bestWinStreak ?? 0}</small></div>
+            <div className="ms-kpi"><b>{dash(pr?.avgPointsPerMatch)}</b><span>Avg points</span><small>{dash(pr?.avgPointsPerFrame)} per frame</small></div>
           </section>
 
           <div className="ms-two">
@@ -182,8 +229,11 @@ export default function MyStats() {
               <div className="ms-heroes">
                 <div><b className="ms-accent">{s.bestBreak}</b><span>highest break{s.bestBreakAt ? ` · ${relativeDay(s.bestBreakAt)}` : ''}</span></div>
                 <div><b>{s.avgBestBreak}</b><span>avg best break per match</span></div>
+                {pr && pr.halfCenturies + pr.centuries > 0 && (
+                  <div><b>{pr.halfCenturies}<i className="ms-sep"> / </i>{pr.centuries}</b><span>50+ / 100+ breaks</span></div>
+                )}
               </div>
-              <span className="ms-meta">Matches by your best break</span>
+              <span className="ms-meta">Matches by {their} best break</span>
               <div className="ms-hbars">
                 {view.breaks.map((b) => (
                   <div key={b.label} className="ms-hbar" title={`${b.count} matches with a best break of ${b.label}`}>
@@ -196,13 +246,14 @@ export default function MyStats() {
               {nextMilestone && (
                 <p className="ms-insight">
                   Next milestone: a <b>{nextMilestone} break</b>.
-                  {fifteenPlus > 0 ? ` You've made 15+ ${fifteenPlus === 1 ? 'once' : `${fifteenPlus} times`}.` : ''}
+                  {fifteenPlus > 0 ? ` ${isMe ? "You've" : `${subject} has`} made 15+ ${fifteenPlus === 1 ? 'once' : `${fifteenPlus} times`}.` : ''}
                 </p>
               )}
             </section>
           </div>
 
-          <section id="head-to-head" className="ms-card" aria-labelledby="ms-h2h">
+          {isMe ? (
+            <section id="head-to-head" className="ms-card" aria-labelledby="ms-h2h">
             <div className="ms-card-head">
               <h2 id="ms-h2h" className="ms-h2">Head to head</h2>
               <span className="ms-meta">who finished higher, every match you both played</span>
@@ -227,10 +278,40 @@ export default function MyStats() {
               </div>
             )}
           </section>
+          ) : pr?.vsMe && (
+            <section id="head-to-head" className="ms-card" aria-labelledby="ms-vs">
+              <div className="ms-card-head">
+                <h2 id="ms-vs" className="ms-h2">You vs {subject}</h2>
+                <span className="ms-meta">{pr.vsMe.matches} match{pr.vsMe.matches === 1 ? '' : 'es'} against each other</span>
+              </div>
+              {pr.vsMe.matches === 0 ? (
+                <p className="ms-insight">You haven't played against {subject} yet.</p>
+              ) : (
+                <div className="ps-vs">
+                  <div className="ps-vs-score">
+                    <div><b className="ms-accent">{pr.vsMe.myWins}</b><span>{me} won</span></div>
+                    <div><b>{pr.vsMe.theirWins}</b><span>{subject} won</span></div>
+                    {pr.vsMe.othersWins > 0 && <div><b>{pr.vsMe.othersWins}</b><span>someone else won</span></div>}
+                    {pr.vsMe.draws > 0 && <div><b>{pr.vsMe.draws}</b><span>drawn</span></div>}
+                  </div>
+                  <span className="ms-split" aria-hidden="true">
+                    <span className="ms-split-win" style={{ width: `${(pr.vsMe.myWins / Math.max(1, pr.vsMe.myWins + pr.vsMe.theirWins)) * 100}%` }} />
+                  </span>
+                  <div className="ps-vs-rows">
+                    <div><span>Frames won</span><b>{pr.vsMe.myFrames} – {pr.vsMe.theirFrames}</b></div>
+                    <div><span>Best break in these matches</span><b>{pr.vsMe.myBestBreak} – {pr.vsMe.theirBestBreak}</b></div>
+                    {pr.vsMe.together > 0 && (
+                      <div><span>Played together (same team)</span><b>{pr.vsMe.together} · {pr.vsMe.togetherWins} won</b></div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="ms-two">
             <section id="pots" className="ms-card" aria-labelledby="ms-pots">
-              <h2 id="ms-pots" className="ms-h2">What you pot</h2>
+              <h2 id="ms-pots" className="ms-h2">{isMe ? 'What you pot' : `What ${subject} pots`}</h2>
               {view.pots === undefined ? (
                 <div className="ms-mini-loading"><div className="spinner" /></div>
               ) : view.pots === null ? (
@@ -258,7 +339,7 @@ export default function MyStats() {
                     ))}
                   </div>
                   {view.pots.byColour[0].count > 0 && (
-                    <p className="ms-insight">{cap(view.pots.byColour[0].ball)} is your most-potted colour.</p>
+                    <p className="ms-insight">{cap(view.pots.byColour[0].ball)} is {their} most-potted colour.</p>
                   )}
                 </>
               )}
@@ -268,7 +349,9 @@ export default function MyStats() {
               <h2 id="ms-fouls" className="ms-h2">Fouls</h2>
               {view.pots === undefined ? (
                 <div className="ms-mini-loading"><div className="spinner" /></div>
-              ) : view.pots === null || view.pots.fouls === 0 ? (
+              ) : view.pots === null ? (
+                <p className="ms-insight">No shot-by-shot data for this period.</p>
+              ) : view.pots.fouls === 0 ? (
                 <p className="ms-insight">No fouls recorded for this period. Nice.</p>
               ) : (
                 <>
@@ -287,7 +370,7 @@ export default function MyStats() {
                     ))}
                   </div>
                   <p className="ms-insight">
-                    {Math.round((view.pots.foulsByBall[0].count / view.pots.fouls) * 100)}% of your fouls are on the {view.pots.foulsByBall[0].ball}.
+                    {Math.round((view.pots.foulsByBall[0].count / view.pots.fouls) * 100)}% of {their} fouls are on the {view.pots.foulsByBall[0].ball}.
                   </p>
                 </>
               )}
@@ -297,8 +380,8 @@ export default function MyStats() {
           <div className="ms-two">
             <section id="days" className="ms-card" aria-labelledby="ms-days">
               <div className="ms-card-head">
-                <h2 id="ms-days" className="ms-h2">When you play</h2>
-                <span className="ms-meta">avg match {shortDuration(s.avgMatchMs)}</span>
+                <h2 id="ms-days" className="ms-h2">{isMe ? 'When you play' : `When ${subject} plays`}</h2>
+                <span className="ms-meta">avg match {shortDuration(s.avgMatchMs)} · {hours(s.tableMs)} at the table</span>
               </div>
               <div className="ms-cols ms-cols--days" role="img" aria-label={view.days.map((d) => `${d.label}: ${d.games}`).join('; ')}>
                 {view.days.map((d) => (
@@ -310,7 +393,7 @@ export default function MyStats() {
                 ))}
               </div>
               {busiest && quietest && busiest.games > 0 && (
-                <p className="ms-insight">You play most on {DAY_NAMES[busiest.label]}{quietest.games < busiest.games ? `, least on ${DAY_NAMES[quietest.label]}` : ''}.</p>
+                <p className="ms-insight">{isMe ? 'You play' : `${subject} plays`} most on {DAY_NAMES[busiest.label]}{quietest.games < busiest.games ? `, least on ${DAY_NAMES[quietest.label]}` : ''}.</p>
               )}
             </section>
 
@@ -349,8 +432,61 @@ export default function MyStats() {
             </section>
           </div>
 
-          <p className="ms-foot">Based on your saved matches with at least one point scored.</p>
+          <div className="ms-two">
+            <section id="formats" className="ms-card" aria-labelledby="ms-formats">
+              <h2 id="ms-formats" className="ms-h2">By format</h2>
+              <div className="ps-formats">
+                {pr?.byFormat.map((f) => (
+                  <div key={f.mode} className="ps-format">
+                    <span className={`db-tag db-tag--${f.mode}`}>{modeLabel(f.mode)}</span>
+                    <b>{f.wins}/{f.games}</b>
+                    <span className="ms-meta">{f.winRate}% won</span>
+                  </div>
+                ))}
+              </div>
+              <div className="ps-vs-rows">
+                <div><span>Fouls</span><b>{pr?.fouls ?? 0} · {dash(pr?.avgFoulsPerMatch)} per match</b></div>
+                <div><span>Points</span><b>{pr?.totalPoints ?? 0} total</b></div>
+                {pr?.firstAt && <div><span>First / latest match</span><b>{relativeDay(pr.firstAt)} · {relativeDay(pr.lastAt!)}</b></div>}
+              </div>
+            </section>
+
+            <section id="recent" className="ms-card" aria-labelledby="ms-recent">
+              <h2 id="ms-recent" className="ms-h2">Recent matches</h2>
+              <ul className="ps-recent">
+                {pr?.recent.map((m) => {
+                  const won = !!subject && didWin(m, subject);
+                  const p = m.players.find((x) => x.name === subject);
+                  const opp = m.players.filter((x) => x.name !== subject && (!p?.teamName || x.teamName !== p.teamName)).map((x) => x.name);
+                  return (
+                    <li key={m.id}>
+                      <button type="button" className="ps-recent-row" onClick={() => setOpenMatch(m)}>
+                        <span className="ps-recent-day">{relativeDay(m.at)}</span>
+                        <span className="ps-recent-opp">vs {opp.join(', ') || '—'}</span>
+                        <span className="ps-recent-score">{p?.totalScore ?? 0}</span>
+                        <span className={`db-form-dot${won ? ' is-win' : ''}`}>{won ? 'W' : 'L'}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          </div>
+
+          {!isMe && subject && (
+            <div className="ps-thisisme">
+              <button type="button" className="db-link" onClick={() => { update({ playerName: subject }); pick(subject); }}>
+                This is me
+              </button>
+              <span className="ms-meta">Use if {subject} is the name you play under.</span>
+            </div>
+          )}
+
+          <p className="ms-foot">Only matches recorded in this account count, not {their} whole record.</p>
         </main>
+      )}
+      {openMatch && (
+        <MatchDetailsModal isOpen onClose={() => setOpenMatch(null)} matchData={toDetails(openMatch)} />
       )}
     </div>
   );

@@ -13,7 +13,7 @@ import CenturyScreen from './components/CenturyScreen';
 import MatchSummary from './components/MatchSummary';
 import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
-import MyStats from './components/MyStats';
+import PlayerStats from './components/PlayerStats';
 import Settings from './components/Settings';
 import WhatsNew from './components/WhatsNew';
 
@@ -132,7 +132,15 @@ function AppRoutes() {
         path="/stats"
         element={
           <ProtectedRoute>
-            <MyStats />
+            <PlayerStats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/players"
+        element={
+          <ProtectedRoute>
+            <PlayerStats />
           </ProtectedRoute>
         }
       />
