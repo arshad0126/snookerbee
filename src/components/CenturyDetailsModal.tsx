@@ -83,9 +83,9 @@ export default function CenturyDetailsModal({ game, onClose, onShare }: Props) {
           </section>
 
           <section className="ma-section">
-            <h4 className="ma-section-title">Play-by-play</h4>
+            <h4 className="ma-section-title">Event Timeline</h4>
             {!log ? (
-              <p className="ma-empty">Play-by-play wasn't kept for games saved before this update.</p>
+              <p className="ma-empty">No event timeline for this game — it was played before timelines were saved.</p>
             ) : log.length === 0 ? (
               <p className="ma-empty">No shots recorded.</p>
             ) : (

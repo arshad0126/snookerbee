@@ -2067,6 +2067,27 @@ body.light-theme .btn-topbar-icon.active-pause {
   align-items: center;
 }
 
+.century-timeline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.century-timeline-btn:active {
+  transform: scale(0.97);
+}
+
 .century-target {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
