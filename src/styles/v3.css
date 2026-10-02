@@ -677,3 +677,18 @@ button.pd-version {
 .ps-recent-score { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .ps-thisisme { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+/* Tappable player names: look like the text around them, 44px tap area. */
+.player-link {
+  display: inline-flex; align-items: center;
+  min-height: 44px; margin: -12px 0; padding: 0 2px;
+  border: none; background: none; color: inherit;
+  font: inherit; letter-spacing: inherit; cursor: pointer;
+  text-decoration: none; -webkit-tap-highlight-color: transparent;
+}
+.player-link:hover, .player-link:focus-visible {
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.player-link:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: 1px; border-radius: 4px; }
+div.db-row { cursor: pointer; }
+div.db-row:focus-visible { outline: 2px solid var(--accent-sage); outline-offset: -2px; }

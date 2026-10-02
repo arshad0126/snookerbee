@@ -5,6 +5,7 @@ import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard, drawFrameCard } from '../lib/shareCard';
 import { computeFrameResult } from '../lib/frameResult';
 import { Icon } from './ui';
+import PlayerLink from './PlayerLink';
 
 interface PlayerDetail {
   name: string;
@@ -285,7 +286,7 @@ export default function MatchDetailsModal({
                   <article key={i} className={`ma-player${isWinner ? ' is-winner' : ''}`}>
                     <div className="ma-player-head">
                       {isWinner && <Icon name="trophy" size={15} className="ma-player-trophy" />}
-                      <span className="ma-player-name">{p.name}</span>
+                      <span className="ma-player-name"><PlayerLink name={p.name} onBeforeNavigate={onClose} /></span>
                       {p.teamName ? <span className="ma-team">{p.teamName}</span> : null}
                       <span className="ma-player-score">{p.totalScore}</span>
                     </div>
@@ -361,7 +362,7 @@ export default function MatchDetailsModal({
                       {matchData.players.map((p, i) => (
                         <article key={i} className="ma-player">
                           <div className="ma-player-head">
-                            <span className="ma-player-name">{p.name}</span>
+                            <span className="ma-player-name"><PlayerLink name={p.name} onBeforeNavigate={onClose} /></span>
                           </div>
                           <div className="ma-stats">
                             <div className="ma-stat">

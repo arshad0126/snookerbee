@@ -12,6 +12,7 @@ import ThemeBackdrop from './ThemeBackdrop';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 import CenturyDetailsModal from './CenturyDetailsModal';
 import { Icon } from './ui';
+import PlayerLink from './PlayerLink';
 import { shareCenturyCard } from '../lib/centuryShare';
 import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
 import { modeLabel } from '../lib/results';
@@ -119,7 +120,7 @@ export default function MatchHistory() {
             <div key={i} className={`history-card-player ${isWinner ? 'history-card-winner' : ''}`}>
               <span className="player-name-span">
                 {p.teamName ? `[${p.teamName}] ` : ''}
-                {p.name}
+                <PlayerLink name={p.name} />
               </span>
               <span className="history-card-score">{p.totalScore}</span>
               {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
@@ -195,7 +196,7 @@ export default function MatchHistory() {
                     >
                       <span className="player-name-span">
                         {p.finishedAt ? `#${p.finishedAt} ` : 'Short · '}
-                        {p.name}
+                        <PlayerLink name={p.name} />
                       </span>
                       <span className="history-card-score">{p.score}</span>
                       {i < all.length - 1 && <span className="history-card-vs"> · </span>}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
@@ -7,6 +7,7 @@ import CenturyDetailsModal from './CenturyDetailsModal';
 import ProfileDrawer from './ProfileDrawer';
 import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
+import PlayerLink from './PlayerLink';
 import { loadActiveMatch } from '../lib/matchStorage';
 import { hasUnseenRelease } from '../lib/releaseSeen';
 import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
@@ -36,6 +37,12 @@ function CardRack() {
       {balls.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="16" />)}
     </svg>
   );
+}
+
+/** Enter/Space on a row that acts as a button (it holds name buttons, so it can't be one). */
+function activate(e: KeyboardEvent<HTMLDivElement>, run: () => void) {
+  if (e.target !== e.currentTarget) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); run(); }
 }
 
 export default function Dashboard() {
@@ -187,7 +194,7 @@ export default function Dashboard() {
             <ul className="db-recent">
               {recent.map((item) => item.kind === 'match' ? (
                 <li key={`m-${item.m.id}`}>
-                  <button type="button" className={`db-row${me && didWin(item.m, me) ? ' is-mine' : ''}`} onClick={() => setSelectedMatch(item.m)}>
+                  <div role="button" tabIndex={0} className={`db-row${me && didWin(item.m, me) ? ' is-mine' : ''}`} onClick={() => setSelectedMatch(item.m)} onKeyDown={(e) => activate(e, () => setSelectedMatch(item.m))}>
                     <span className="db-row-when">
                       <span className="db-row-day">{relativeDay(item.m.at)}</span>
                       <span className={`db-tag db-tag--${item.m.mode}`}>{modeLabel(item.m.mode)}</span>
@@ -204,7 +211,7 @@ export default function Dashboard() {
                           return (
                             <span key={p.name} className={`db-p${won ? ' is-winner' : ''}`}>
                               {won && <Icon name="trophy" size={13} className="db-p-trophy" />}
-                              {p.name}
+                              <PlayerLink name={p.name} />
                               <span className="db-p-score">{p.totalScore}</span>
                             </span>
                           );
@@ -213,11 +220,11 @@ export default function Dashboard() {
                       {!item.m.winner && <span className="db-draw">Draw</span>}
                     </span>
                     <span className="db-row-time">{shortDuration(item.m.durationMs)}</span>
-                  </button>
+                  </div>
                 </li>
               ) : (
                 <li key={`c-${item.c.id}`}>
-                  <button type="button" className="db-row" onClick={() => setSelectedCentury(item.c)}>
+                  <div role="button" tabIndex={0} className="db-row" onClick={() => setSelectedCentury(item.c)} onKeyDown={(e) => activate(e, () => setSelectedCentury(item.c))}>
                     <span className="db-row-when">
                       <span className="db-row-day">{relativeDay(item.c.at)}</span>
                       <span className="db-tag db-tag--century">Century</span>
@@ -226,13 +233,13 @@ export default function Dashboard() {
                       {byFinish(item.c.players).map((p) => (
                         <span key={p.name} className={`db-p${p.finishedAt === 1 ? ' is-winner' : ''}`}>
                           {p.finishedAt === 1 && <Icon name="trophy" size={13} className="db-p-trophy" />}
-                          {p.name}
+                          <PlayerLink name={p.name} />
                           <span className="db-p-score">{p.finishedAt ? `#${p.finishedAt}` : 'short'}</span>
                         </span>
                       ))}
                     </span>
                     <span className="db-row-time">{shortDuration(item.c.durationMs)}</span>
-                  </button>
+                  </div>
                 </li>
               ))}
             </ul>
