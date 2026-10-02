@@ -579,3 +579,40 @@ body:not(.light-theme) .st-seg-btn.is-on { background: #3A3A3A; }
   .pd-item { min-height: 40px; font-size: 14.5px; }
   .pd-scroll { gap: 4px; }
 }
+
+/* ---------------------------------------------------------------- what's new */
+
+.wn-list { gap: 12px; }
+.wn-release.is-current { border-color: var(--accent-sage); }
+.wn-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wn-version { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--accent-sage); font-variant-numeric: tabular-nums; }
+.wn-current {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 6px; background: var(--accent-sage); color: var(--on-accent);
+}
+.wn-date { margin-left: auto; font-size: 12.5px; color: var(--v3-ink-2); }
+.wn-group { display: flex; flex-direction: column; gap: 6px; }
+.wn-tag {
+  align-self: flex-start;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 6px;
+  background: var(--tag-1v1-bg); color: var(--tag-1v1-ink);
+}
+.wn-tag--improved { background: var(--tag-team-bg); color: var(--tag-team-ink); }
+.wn-tag--fixed { background: var(--tag-cen-bg); color: var(--tag-cen-ink); }
+.wn-items { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.45; }
+.wn-items li::marker { color: var(--v3-ink-2); }
+
+/* Unseen-update dots */
+.pd-dot, .db-avatar-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent-sage);
+  box-shadow: 0 0 0 2px var(--bg-dialog, var(--v3-surface));
+}
+.pd-dot { margin-left: 8px; flex-shrink: 0; }
+.pd-item .pd-hint + .pd-dot { margin-left: 8px; }
+.db-avatar-dot { position: absolute; top: -1px; right: -1px; box-shadow: 0 0 0 2px var(--bg-primary); }
+button.pd-version {
+  border: none; background: none; padding: 8px 4px; cursor: pointer;
+  font: inherit; font-size: 12px; color: var(--v3-ink-2); text-decoration: underline; text-underline-offset: 3px;
+}

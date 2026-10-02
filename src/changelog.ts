@@ -1,0 +1,111 @@
+/**
+ * changelog — what changed in each version, newest first.
+ *
+ * Every release adds an entry at the top and bumps "version" in
+ * package.json to match. `npm run build` (and so every Vercel deploy) runs
+ * scripts/check-release.mjs, which fails if the two disagree — a version
+ * can't ship without its notes.
+ *
+ * Numbering: a new feature bumps the middle number (1.2.0 → 1.3.0); a fix or
+ * small tweak bumps the last (1.3.0 → 1.3.1).
+ */
+
+export interface Release {
+  version: string;
+  /** YYYY-MM-DD */
+  date: string;
+  title: string;
+  added?: string[];
+  improved?: string[];
+  fixed?: string[];
+}
+
+export const CHANGELOG: Release[] = [
+  {
+    version: '1.3.0',
+    date: '2026-10-02',
+    title: "What's new",
+    added: [
+      "This page: every version and what changed, in the profile menu.",
+      'A dot in the menu when there is an update you have not seen yet.',
+    ],
+    improved: [
+      'The version number now goes up with every update.',
+    ],
+  },
+  {
+    version: '1.2.0',
+    date: '2026-10-02',
+    title: 'New dashboard, themes and My Stats',
+    added: [
+      'Profile menu: tap your photo. Stats, history, settings and Log out live here.',
+      'Themes: pick a background (Classic, Baize, Break-off, Pocket, Plain) and one of seven accent colours.',
+      'Light, Dark or Auto mode. Your theme follows your account to other phones.',
+      'My Stats: form, breaks, head-to-head, what you pot, fouls by ball, when you play, Century.',
+      'Settings: choose your name in matches, export your history.',
+    ],
+    improved: [
+      'Dashboard redesign: one stats strip, your last 5 results, recent games with the winner.',
+      'Recent games include Century, with "Yesterday"-style dates and mode tags.',
+    ],
+    fixed: [
+      'Match scores only counted the last frame. They now add up every frame, old matches included.',
+      'Matches ended early showed no winner. Now: most frames, then most points.',
+      'Top break showed the best break by anyone. It now shows yours.',
+      'Games where nothing was scored are no longer saved.',
+    ],
+  },
+  {
+    version: '1.1.1',
+    date: '2026-10-02',
+    title: 'Easier-to-find Century timeline',
+    improved: [
+      'A labelled Timeline button on the Century screen.',
+      'The end-of-game sheet reads Share · Timeline · Done.',
+    ],
+  },
+  {
+    version: '1.1.0',
+    date: '2026-10-02',
+    title: 'Results on share cards, Century red value',
+    added: [
+      'Frame share card shows who won and the score.',
+      'Century: choose a red worth 10 or 20. A missed red costs the same.',
+      'Century: full shot-by-shot timeline, saved with every game.',
+      'Century games appear in Match History, with a shareable result card.',
+    ],
+  },
+  {
+    version: '1.0.4',
+    date: '2026-08-21',
+    title: 'Century mode and the big rebuild',
+    added: [
+      'Century: race to exactly 50 or 100.',
+      'Wall clock and frame start time on the scoring screen.',
+      'Preset players, breaker choice and frame rotation.',
+      'Break milestones: 50+ and century breaks.',
+      'Pause a match; previous frames at a glance.',
+    ],
+    improved: [
+      'Landscape-only layout with a one-screen setup.',
+      'New icon set and the Icy Blue / Shadow Grey look.',
+    ],
+    fixed: [
+      'Matches no longer lost if the phone closes the app before saving.',
+      'Share as image now opens the iPhone share sheet.',
+    ],
+  },
+  {
+    version: '1.0.0',
+    date: '2026-06-25',
+    title: 'First release',
+    added: [
+      'Snooker scoring with the rules built in: reds, colours, fouls, free ball, re-spotted black.',
+      '1 v 1, free-for-all and team games.',
+      'Sign in with Google or play as a guest.',
+      'Match history and shareable score cards.',
+    ],
+  },
+];
+
+export const CURRENT_VERSION = CHANGELOG[0].version;
