@@ -361,3 +361,84 @@ export function drawFrameCard(canvas: HTMLCanvasElement, d: FrameCardData): void
 
   drawFooter(ctx, `Frame duration  ·  ${d.durationLabel}`, d.dateLabel);
 }
+
+/* ------------------------------------------------------------ century card */
+
+export interface CenturyCardPlayer {
+  name: string;
+  score: number;
+  /** Finishing position; null for the player left short. */
+  finishedAt: number | null;
+  potted: number;
+  redsPotted: number;
+  fouls: number;
+}
+
+export interface CenturyCardData {
+  target: number;
+  redValue: number;
+  dateLabel: string;
+  durationLabel: string;
+  /** In finishing order, the player left short last. */
+  players: CenturyCardPlayer[];
+}
+
+export function drawCenturyCard(canvas: HTMLCanvasElement, d: CenturyCardData): void {
+  const ctx = prepare(canvas);
+  if (!ctx) return;
+
+  drawHeader(ctx, `CENTURY · TARGET ${d.target} · RED ${d.redValue}`);
+  const first = d.players.find((p) => p.finishedAt === 1);
+  drawEyebrow(ctx, 'FIRST OUT', 138);
+  drawHero(ctx, first?.name ?? 'Century');
+
+  const posX = M;
+  const nameX = M + 44;
+  const cols = [448, 544, 640, R];
+  const heads = ['SCORE', 'POTS', 'REDS', 'FOULS'];
+
+  ctx.fillStyle = CARD.inkFaint;
+  ctx.font = `600 10px ${SANS}`;
+  drawTracked(ctx, 'POS', posX, 272, 2.4);
+  drawTracked(ctx, 'PLAYER', nameX, 272, 2.4);
+  heads.forEach((h, i) => {
+    drawTracked(ctx, h, cols[i] - trackedWidth(ctx, h, 2.4), 272, 2.4);
+  });
+  rule(ctx, 284, CARD.rule);
+
+  const { step, fontPx, top } = rowMetrics(d.players.length);
+
+  d.players.forEach((p, i) => {
+    const y = top + step * i + step / 2 + fontPx * 0.34;
+    const isFirst = p.finishedAt === 1;
+    const short = p.finishedAt === null;
+    const tint = isFirst ? CARD.accent : short ? CARD.inkSoft : CARD.ink;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = tint;
+    ctx.font = `${isFirst ? 600 : 400} ${fontPx}px ${MONO}`;
+    ctx.fillText(short ? '—' : String(p.finishedAt), posX, y);
+
+    ctx.font = `${isFirst ? 700 : 500} ${fontPx}px ${SANS}`;
+    const name = ellipsize(ctx, p.name, 400 - nameX - (short ? 64 : 0));
+    ctx.fillText(name, nameX, y);
+
+    if (short) {
+      const nameW = ctx.measureText(name).width;
+      ctx.fillStyle = CARD.inkFaint;
+      ctx.font = `600 11px ${SANS}`;
+      drawTracked(ctx, 'SHORT', nameX + nameW + 12, y, 1.4);
+    }
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = tint;
+    ctx.font = `${isFirst ? 600 : 400} ${fontPx}px ${MONO}`;
+    [p.score, p.potted, p.redsPotted, p.fouls].forEach((v, c) => {
+      ctx.fillText(String(v), cols[c], y);
+    });
+
+    if (i < d.players.length - 1) rule(ctx, top + step * (i + 1), CARD.ruleFaint);
+  });
+
+  drawFooter(ctx, `${d.durationLabel}  ·  ${d.players.length} players`, d.dateLabel);
+}

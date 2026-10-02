@@ -17,6 +17,7 @@ import { audio } from '../lib/audio';
 import { Icon } from './ui';
 import WallClock from './WallClock';
 import ActionLogDrawer from './ActionLogDrawer';
+import { shareCenturyCard } from '../lib/centuryShare';
 import {
   saveCenturyGame as cacheCenturyGame,
   loadCenturyGame,
@@ -53,6 +54,9 @@ export default function CenturyScreen() {
   const [logOpen, setLogOpen] = useState(false);
   const { isGuest } = useAuth();
   const savedRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** Game length, fixed at the moment it ended so the card doesn't keep counting. */
+  const durationRef = useRef<number | null>(null);
 
   // Save the result once, the moment the game ends. Same lesson as matches:
   // a result that needs a button press to survive is a result that gets lost.
@@ -62,6 +66,7 @@ export default function CenturyScreen() {
 
     const loser = state.players.find((p) => p.finishedAt === null);
     const durationMs = Math.max(0, Date.now() - Date.parse(state.startedAt));
+    durationRef.current = durationMs;
 
     if (isGuest) {
       saveCenturyGameLocally({
@@ -308,13 +313,6 @@ export default function CenturyScreen() {
           : `${player.name} to play · ${remaining} to go`}
       </p>
 
-      <ActionLogDrawer
-        isOpen={logOpen}
-        onClose={() => setLogOpen(false)}
-        actionLog={toActionLog(state.actionLog)}
-        frameStartTime={Date.parse(state.startedAt)}
-      />
-
       {/* Foul: which ball? */}
       {foulOpen && (
         <div className="modal-backdrop modal-centered" onClick={() => setFoulOpen(false)}>
@@ -367,6 +365,28 @@ export default function CenturyScreen() {
                   </li>
                 ))}
             </ol>
+            <div className="century-result-actions">
+              <button
+                onClick={() => {
+                  if (!canvasRef.current) return;
+                  void shareCenturyCard(canvasRef.current, {
+                    target: state.target,
+                    redValue: redValueOf(state),
+                    durationMs:
+                      durationRef.current ??
+                      Math.max(0, Date.now() - Date.parse(state.startedAt)),
+                    playedAt: state.startedAt,
+                    players: state.players,
+                  });
+                }}
+                className="btn btn-secondary"
+              >
+                <Icon name="share" size={17} /> Share
+              </button>
+              <button onClick={() => setLogOpen(true)} className="btn btn-secondary">
+                History
+              </button>
+            </div>
             <button
               onClick={() => { clearCenturyGame(); navigate('/dashboard'); }}
               className="btn btn-primary btn-lg"
@@ -377,6 +397,16 @@ export default function CenturyScreen() {
           </div>
         </div>
       )}
+
+      <ActionLogDrawer
+        isOpen={logOpen}
+        onClose={() => setLogOpen(false)}
+        actionLog={toActionLog(state.actionLog)}
+        frameStartTime={Date.parse(state.startedAt)}
+      />
+
+      {/* Off-screen canvas for the share card */}
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
     </div>
   );
 }

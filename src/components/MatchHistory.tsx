@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -15,6 +15,7 @@ import {
 } from '../lib/database';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
 import CenturyDetailsModal from './CenturyDetailsModal';
+import { shareCenturyCard } from '../lib/centuryShare';
 import {
   byFinish,
   fromDbCentury,
@@ -35,6 +36,7 @@ export default function MatchHistory() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
   const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const merge = (matches: HistoryItem[], centuries: CenturyDetailsData[]) =>
     setItems(
@@ -291,10 +293,20 @@ export default function MatchHistory() {
         />
       )}
 
+      {/* Off-screen canvas for the Century share card */}
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
+
       {selectedCentury && (
         <CenturyDetailsModal
           game={selectedCentury}
           onClose={() => setSelectedCentury(null)}
+          onShare={() => {
+            if (!canvasRef.current) return;
+            void shareCenturyCard(canvasRef.current, {
+              ...selectedCentury,
+              playedAt: selectedCentury.at,
+            });
+          }}
         />
       )}
     </div>
