@@ -18,7 +18,8 @@ export type IconName =
   | 'arrow-left' | 'arrow-right' | 'chevron-up' | 'chevron-down'
   | 'minus' | 'plus' | 'check' | 'alert' | 'save' | 'star'
   | 'flag' | 'exit' | 'users' | 'duo' | 'target' | 'rotate'
-  | 'bee' | 'pass' | 'dot' | 'sun' | 'moon' | 'chart';
+  | 'bee' | 'pass' | 'dot' | 'sun' | 'moon' | 'chart'
+  | 'menu' | 'settings' | 'download' | 'info' | 'history' | 'logout';
 
 /** Stroked paths on a 24px grid. `dot` is the only filled glyph. */
 const PATHS: Record<IconName, string[]> = {
@@ -50,6 +51,12 @@ const PATHS: Record<IconName, string[]> = {
   'sun':          ['M12 7.6a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8z', 'M12 1.8v2.4', 'M12 19.8v2.4', 'm4.8 4.8 1.7 1.7', 'm17.5 17.5 1.7 1.7', 'M1.8 12h2.4', 'M19.8 12h2.4', 'm4.8 19.2 1.7-1.7', 'm17.5 6.5 1.7-1.7'],
   'moon':         ['M20.5 14.3A8.7 8.7 0 0 1 9.7 3.5a8.7 8.7 0 1 0 10.8 10.8z'],
   'chart':        ['M3.5 20.5h17', 'M7 20.5v-6.8', 'M12 20.5V7.2', 'M17 20.5v-9.6'],
+  'menu':         ['M4 7h16', 'M4 12h16', 'M4 17h16'],
+  'settings':     ['M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', 'M12 2.8v2.4', 'M12 18.8v2.4', 'm5.5 5.5 1.7 1.7', 'm16.8 16.8 1.7 1.7', 'M2.8 12h2.4', 'M18.8 12h2.4', 'm5.5 18.5 1.7-1.7', 'm16.8 7.2 1.7-1.7'],
+  'download':     ['M12 4v11', 'm7 10 5 5 5-5', 'M5 20h14'],
+  'info':         ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M12 11v6', 'M12 7.5v.01'],
+  'history':      ['M3.5 12a8.5 8.5 0 1 0 2.5-6', 'M3.5 4v4h4', 'M12 7.5V12l3 2'],
+  'logout':       ['M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3', 'm10 16-4-4 4-4', 'M6 12h10'],
 };
 
 /** Glyphs drawn as fills rather than strokes. */

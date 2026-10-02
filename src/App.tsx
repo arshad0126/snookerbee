@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { SettingsProvider } from './hooks/useSettings';
 import { GameProvider } from './engine/GameContext';
 import { ToastProvider, LayoutDebug } from './components/ui';
 import LandingPage from './components/LandingPage';
@@ -12,6 +13,8 @@ import CenturyScreen from './components/CenturyScreen';
 import MatchSummary from './components/MatchSummary';
 import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
+import MyStats from './components/MyStats';
+import Settings from './components/Settings';
 
 /**
  * Protected route wrapper — redirects to landing if not authenticated or guest
@@ -124,6 +127,23 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/stats"
+        element={
+          <ProtectedRoute>
+            <MyStats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch-all redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -135,7 +155,9 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <AppRoutes />
+          <SettingsProvider>
+            <AppRoutes />
+          </SettingsProvider>
         </AuthProvider>
         <OrientationWarning />
         <LayoutDebug />

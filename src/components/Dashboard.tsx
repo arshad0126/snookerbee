@@ -1,25 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../hooks/useTheme';
-import {
-  getLocalMatchHistory,
-  getMatchHistory,
-  type MatchRecord,
-  type MatchPlayerRecord,
-} from '../lib/database';
-import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
+import { useSettings } from '../hooks/useSettings';
+import MatchDetailsModal from './MatchDetailsModal';
+import CenturyDetailsModal from './CenturyDetailsModal';
+import ProfileDrawer from './ProfileDrawer';
+import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
 import { loadActiveMatch } from '../lib/matchStorage';
+import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
+import { summarize } from '../lib/playerStats';
+import { modeLabel, relativeDay, shortDuration } from '../lib/results';
+import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
+
+type RecentItem =
+  | { kind: 'match'; at: number; m: HistoryMatch }
+  | { kind: 'century'; at: number; c: CenturyDetailsData };
+
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/** The rack drawn inside the New Game card. */
+function CardRack() {
+  const balls: [number, number][] = [];
+  [1, 2, 3, 4].forEach((count, row) => {
+    for (let i = 0; i < count; i += 1) balls.push([row * 31, (i - (count - 1) / 2) * 36]);
+  });
+  return (
+    <svg className="db-new-art" viewBox="-20 -80 140 160" aria-hidden="true">
+      {balls.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="16" />)}
+    </svg>
+  );
+}
 
 export default function Dashboard() {
-  const { user, isGuest, signOut } = useAuth();
+  const { user, isGuest } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ totalGames: 0, highestBreak: 0, winRate: 0 });
-  const [recentMatches, setRecentMatches] = useState<MatchDetailsData[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
+  const [history, setHistory] = useState<History | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<HistoryMatch | null>(null);
+  const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
 
   // An unfinished match left behind by an evicted or closed session.
   const [resumable] = useState(() => {
@@ -27,277 +52,204 @@ export default function Dashboard() {
     return saved && saved.state.winner === null ? saved : null;
   });
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest';
-  const avatarUrl = user?.user_metadata?.avatar_url;
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
+  const accountName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest';
+  const firstName = String(accountName).split(' ')[0];
+  const avatarUrl: string | undefined = user?.user_metadata?.avatar_url;
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        if (isGuest) {
-          const localHistory = getLocalMatchHistory();
-          const totalGames = localHistory.length;
+    let live = true;
+    void loadHistory(isGuest).then((h) => { if (live) setHistory(h); });
+    return () => { live = false; };
+  }, [isGuest]);
 
-          let maxBreak = 0;
-          let wins = 0;
+  const me = useMemo(
+    () => settings.playerName || (history ? guessMyName(history.matches, history.centuries) : null),
+    [settings.playerName, history]
+  );
 
-          // Guest default stats calculation
-          localHistory.forEach(m => {
-            m.players.forEach(p => {
-              maxBreak = Math.max(maxBreak, p.highestBreak);
-            });
-            // Assume the first player is the guest for simple local stats
-            if (m.players[0] && m.winnerName === m.players[0].name) {
-              wins++;
-            }
-          });
+  const summary = useMemo(
+    () => (history && me ? summarize(history.matches, me, 5) : null),
+    [history, me]
+  );
 
-          const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-          setStats({ totalGames, highestBreak: maxBreak, winRate });
+  const recent = useMemo<RecentItem[]>(() => {
+    if (!history) return [];
+    return [
+      ...history.matches.map((m): RecentItem => ({ kind: 'match', at: m.at, m })),
+      ...history.centuries.map((c): RecentItem => ({ kind: 'century', at: c.at, c })),
+    ]
+      .sort((a, b) => b.at - a.at)
+      .slice(0, 6);
+  }, [history]);
 
-          // Map to unified match format
-          const mapped: MatchDetailsData[] = localHistory.slice(0, 5).map(m => ({
-            id: m.id,
-            date: new Date(m.createdAt).toLocaleDateString(),
-            mode: m.mode,
-            bestOf: m.bestOf,
-            redsCount: m.redsCount,
-            durationMs: m.durationMs,
-            winnerName: m.winnerName,
-            players: m.players.map(p => ({
-              name: p.name,
-              teamName: p.teamName,
-              totalScore: p.totalScore,
-              highestBreak: p.highestBreak,
-              framesWon: p.framesWon,
-              foulsCommitted: p.foulsCommitted,
-              timeSpentMs: p.timeSpentMs,
-              centuries: p.centuries ?? 0,
-              halfCenturies: p.halfCenturies ?? 0,
-            })),
-            frames: m.frames,
-          }));
-          setRecentMatches(mapped);
-        } else {
-          // Logged in user (Supabase)
-          const dbHistory = await getMatchHistory();
-          const totalGames = dbHistory.length;
-
-          let maxBreak = 0;
-          let wins = 0;
-
-          dbHistory.forEach((m: MatchRecord & { players: MatchPlayerRecord[] }) => {
-            m.players.forEach((p: MatchPlayerRecord) => {
-              maxBreak = Math.max(maxBreak, p.highest_break || 0);
-            });
-
-            // Check if user is among players and has won
-            // Or if user name matches winner
-            const userPlayer = m.players.find(p => p.player_name === userName);
-            if (userPlayer) {
-              if (m.winner_name === userPlayer.player_name) {
-                wins++;
-              }
-            } else if (m.players[0] && m.winner_name === m.players[0].player_name) {
-              wins++;
-            }
-          });
-
-          const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-          setStats({ totalGames, highestBreak: maxBreak, winRate });
-
-          const mapped: MatchDetailsData[] = dbHistory.slice(0, 5).map(m => ({
-            id: m.id || '',
-            date: m.created_at ? new Date(m.created_at).toLocaleDateString() : '',
-            mode: m.mode,
-            bestOf: m.best_of,
-            redsCount: m.reds_count,
-            durationMs: m.duration_ms,
-            winnerName: m.winner_name,
-            players: m.players.map(p => ({
-              name: p.player_name,
-              teamName: p.team_name ?? undefined,
-              totalScore: p.total_score,
-              highestBreak: p.highest_break,
-              framesWon: p.frames_won,
-              foulsCommitted: p.fouls_committed,
-              timeSpentMs: p.time_spent_ms,
-              centuries: p.centuries ?? 0,
-              halfCenturies: p.half_centuries ?? 0,
-            })),
-          }));
-          setRecentMatches(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [isGuest, userName]);
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  if (loading) {
-    return (
-      <div className="page page-centered">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="dashboard-page page">
-      <header className="dashboard-header">
-        <div className="dashboard-welcome">
+    <div className="db-page">
+      <ThemeBackdrop />
+
+      <header className="db-header">
+        <button type="button" className="db-avatar-btn" onClick={() => setDrawerOpen(true)} aria-label="Open profile menu">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={userName} className="dashboard-avatar" />
+            <img className="db-avatar" src={avatarUrl} alt="" />
           ) : (
-            <div className="dashboard-avatar dashboard-avatar-placeholder">
-              {userName.charAt(0).toUpperCase()}
-            </div>
+            <span className="db-avatar db-avatar--initials">{firstName.charAt(0).toUpperCase()}</span>
           )}
-          <div>
-            <div className="dashboard-greeting">{getGreeting()},</div>
-            <div className="dashboard-name">{userName}</div>
-          </div>
+          <span className="db-avatar-badge"><Icon name="menu" size={11} /></span>
+        </button>
+        <div className="db-hello">
+          <span className="db-greeting">{greeting()}</span>
+          <span className="db-name">{firstName}</span>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-          <button onClick={toggleTheme} className="btn-topbar-icon" style={{ borderRadius: 'var(--radius-md)' }} aria-label="Toggle theme">
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-          </button>
-          <button onClick={handleLogout} className="btn btn-ghost">
-            Log Out
-          </button>
-        </div>
+        <span className="db-today">{today}</span>
       </header>
 
-      <main className="dashboard-grid">
-        {/* Left column: fixed in landscape */}
-        <div className="dashboard-left">
-        {resumable && (
-          <button
-            type="button"
-            onClick={() => navigate('/play')}
-            className="resume-cta"
-          >
-            <span className="resume-glyph">
+      <main className="db-grid">
+        <div className="db-left">
+          {resumable && (
+            <button type="button" onClick={() => navigate('/play')} className="db-resume">
               <Icon name="pass" size={18} />
-            </span>
-            <span className="new-game-copy">
-              <span className="resume-title">Resume match</span>
-              <span className="resume-sub">
-                Frame {resumable.state.frameNumber} · {resumable.state.players.length} players
+              <span className="db-resume-copy">
+                <b>Resume match</b>
+                <span>Frame {resumable.state.frameNumber} · {resumable.state.players.length} players</span>
               </span>
-            </span>
-            <Icon name="arrow-right" size={16} className="new-game-arrow" />
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() => navigate('/setup')}
-          className="new-game-cta"
-        >
-          <span className="new-game-glyph">
-            <Icon name="ball" size={26} />
-          </span>
-          <span className="new-game-copy">
-            <span className="new-game-title">New Game</span>
-            <span className="new-game-sub">Start a new frame</span>
-          </span>
-          <Icon name="arrow-right" size={18} className="new-game-arrow" />
-        </button>
-
-        <div className="stats-row">
-          <div className="stat-card">
-            <span className="stat-glyph"><Icon name="chart" size={14} /></span>
-            <span className="stat-value">{stats.totalGames}</span>
-            <span className="stat-label">Games</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-glyph stat-glyph--accent"><Icon name="ball" size={14} /></span>
-            <span className="stat-value stat-value--accent">{stats.highestBreak}</span>
-            <span className="stat-label">Top break</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-glyph"><Icon name="trophy" size={14} /></span>
-            <span className="stat-value">{stats.winRate}%</span>
-            <span className="stat-label">Win rate</span>
-          </div>
-        </div>
-
-        </div>
-
-        {/* Right column: the only scrolling region in landscape */}
-        <div className="dashboard-right">
-        <section className="recent-matches-section">
-          <h3 className="dashboard-section-title">Recent Matches</h3>
-          {recentMatches.length === 0 ? (
-            <div className="empty-state card">
-              <div className="empty-state-icon"><Icon name="trophy" size={40} /></div>
-              <h4 className="empty-state-title">No matches yet</h4>
-              <p className="empty-state-text">Play your first game to see history!</p>
-            </div>
-          ) : (
-            <div className="history-list">
-              {recentMatches.map(match => (
-                <div
-                  key={match.id}
-                  onClick={() => setSelectedMatch(match)}
-                  className="history-card"
-                >
-                  <div className="history-card-header">
-                    <span className="history-card-date">{match.date}</span>
-                    <span className="history-card-mode badge">{match.mode}</span>
-                  </div>
-                  <div className="history-card-players">
-                    {match.players.map((p, i) => {
-                      const isWinner = p.name === match.winnerName || p.teamName === match.winnerName;
-                      return (
-                        <span key={i} className={isWinner ? 'history-card-winner' : ''}>
-                          {p.teamName ? `[${p.teamName}] ` : ''}{p.name} ({p.totalScore})
-                          {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {recentMatches.length > 0 && (
-            <button
-              onClick={() => navigate('/history')}
-              className="btn btn-ghost view-all-btn"
-              style={{ marginTop: 'var(--space-md)', width: '100%' }}
-            >
-              View All History <Icon name="arrow-right" size={16} />
+              <Icon name="arrow-right" size={16} />
             </button>
           )}
-        </section>
+
+          <button type="button" onClick={() => navigate('/setup')} className="db-new">
+            <CardRack />
+            <span className="db-new-eyebrow">Ready when you are</span>
+            <span className="db-new-row">
+              <span className="db-new-copy">
+                <span className="db-new-title">New game</span>
+                <span className="db-new-sub">Snooker · Free for all · Century</span>
+              </span>
+              <span className="db-new-go"><Icon name="arrow-right" size={18} /></span>
+            </span>
+          </button>
+
+          <div className="db-stats">
+            <div className="db-stat">
+              <span className="db-stat-value">{summary?.matches ?? '–'}</span>
+              <span className="db-stat-label">Matches</span>
+              <span className="db-stat-note db-stat-note--up">
+                {summary && summary.thisWeek > 0 ? `▲ ${summary.thisWeek} this week` : 'none this week'}
+              </span>
+            </div>
+            <div className="db-stat">
+              <span className="db-stat-value">{summary ? `${summary.winRate}%` : '–'}</span>
+              <span className="db-stat-label">Win rate</span>
+              <span className="db-stat-note">{summary ? `${summary.wins} win${summary.wins === 1 ? '' : 's'}` : ''}</span>
+            </div>
+            <div className="db-stat">
+              <span className="db-stat-value db-stat-value--accent">{summary?.bestBreak ?? '–'}</span>
+              <span className="db-stat-label">Best break</span>
+              <span className="db-stat-note">{summary?.bestBreakAt ? relativeDay(summary.bestBreakAt) : ''}</span>
+            </div>
+          </div>
+
+          {summary && summary.form.length > 0 && (
+            <div className="db-form">
+              <span className="db-form-label">Last {summary.form.length}</span>
+              <span
+                className="db-form-dots"
+                aria-label={`Last ${summary.form.length} results, oldest first: ${summary.form.map((r) => (r === 'W' ? 'win' : 'loss')).join(', ')}`}
+              >
+                {summary.form.map((r, i) => (
+                  <span key={i} className={`db-form-dot${r === 'W' ? ' is-win' : ''}`}>{r}</span>
+                ))}
+              </span>
+              <button type="button" className="db-link" onClick={() => navigate('/stats')}>My stats →</button>
+            </div>
+          )}
         </div>
+
+        <section className="db-right" aria-label="Recent games">
+          <div className="db-right-head">
+            <h2 className="db-section-title">Recent</h2>
+            {recent.length > 0 && (
+              <button type="button" className="db-link" onClick={() => navigate('/history')}>See all</button>
+            )}
+          </div>
+
+          {!history ? (
+            <div className="db-loading"><div className="spinner" /></div>
+          ) : recent.length === 0 ? (
+            <div className="db-empty">
+              <Icon name="trophy" size={32} />
+              <b>No games yet</b>
+              <span>Play your first game and it shows up here.</span>
+            </div>
+          ) : (
+            <ul className="db-recent">
+              {recent.map((item) => item.kind === 'match' ? (
+                <li key={`m-${item.m.id}`}>
+                  <button type="button" className={`db-row${me && didWin(item.m, me) ? ' is-mine' : ''}`} onClick={() => setSelectedMatch(item.m)}>
+                    <span className="db-row-when">
+                      <span className="db-row-day">{relativeDay(item.m.at)}</span>
+                      <span className={`db-tag db-tag--${item.m.mode}`}>{modeLabel(item.m.mode)}</span>
+                    </span>
+                    <span className="db-row-players">
+                      {[...item.m.players]
+                        .sort((a, b) => {
+                          const aw = a.name === item.m.winner || a.teamName === item.m.winner ? 1 : 0;
+                          const bw = b.name === item.m.winner || b.teamName === item.m.winner ? 1 : 0;
+                          return bw - aw || b.framesWon - a.framesWon || b.totalScore - a.totalScore;
+                        })
+                        .map((p) => {
+                          const won = p.name === item.m.winner || (!!p.teamName && p.teamName === item.m.winner);
+                          return (
+                            <span key={p.name} className={`db-p${won ? ' is-winner' : ''}`}>
+                              {won && <Icon name="trophy" size={13} className="db-p-trophy" />}
+                              {p.name}
+                              <span className="db-p-score">{p.totalScore}</span>
+                            </span>
+                          );
+                        })}
+                      {me && didWin(item.m, me) && <span className="db-you-won">You won</span>}
+                      {!item.m.winner && <span className="db-draw">Draw</span>}
+                    </span>
+                    <span className="db-row-time">{shortDuration(item.m.durationMs)}</span>
+                  </button>
+                </li>
+              ) : (
+                <li key={`c-${item.c.id}`}>
+                  <button type="button" className="db-row" onClick={() => setSelectedCentury(item.c)}>
+                    <span className="db-row-when">
+                      <span className="db-row-day">{relativeDay(item.c.at)}</span>
+                      <span className="db-tag db-tag--century">Century</span>
+                    </span>
+                    <span className="db-row-players">
+                      {byFinish(item.c.players).map((p) => (
+                        <span key={p.name} className={`db-p${p.finishedAt === 1 ? ' is-winner' : ''}`}>
+                          {p.finishedAt === 1 && <Icon name="trophy" size={13} className="db-p-trophy" />}
+                          {p.name}
+                          <span className="db-p-score">{p.finishedAt ? `#${p.finishedAt}` : 'short'}</span>
+                        </span>
+                      ))}
+                    </span>
+                    <span className="db-row-time">{shortDuration(item.c.durationMs)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
 
+      <ProfileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        stats={summary ? { matches: summary.matches, wins: summary.wins, bestBreak: summary.bestBreak } : null}
+        firstPlayedAt={summary?.firstAt ?? null}
+      />
+
       {selectedMatch && (
-        <MatchDetailsModal
-          isOpen={!!selectedMatch}
-          onClose={() => setSelectedMatch(null)}
-          matchData={selectedMatch}
-        />
+        <MatchDetailsModal isOpen onClose={() => setSelectedMatch(null)} matchData={toDetails(selectedMatch)} />
+      )}
+      {selectedCentury && (
+        <CenturyDetailsModal game={selectedCentury} onClose={() => setSelectedCentury(null)} />
       )}
     </div>
   );

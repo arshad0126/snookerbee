@@ -1,0 +1,201 @@
+/* ============================================================================
+   Accent themes — generated from one light, one dark and one deep value per
+   preset. Every text pairing was contrast-checked: accent text on light
+   surfaces >= 5:1, accent tint on dark surfaces >= 7.7:1, dark ink on the
+   tint >= 7.9:1, white on the deep shade >= 8.7:1. Club Blue (the default)
+   only sets the brand tokens, so the app looks exactly as before.
+   ============================================================================ */
+
+body {
+  --brand-deep: #1F4D70;
+  --brand-art: #3A6281;
+  --brand-on-deep: #A4D8FF;
+  --brand-tint: #A4D8FF;
+}
+
+body[data-accent="green"] {
+  --brand-deep: #1E5539;
+  --brand-art: #396951;
+  --brand-on-deep: #93D9AE;
+  --brand-tint: #93D9AE;
+  --accent-sage: #93D9AE;
+  --accent-sage-light: #B9E6CA;
+  --accent-sage-dark: #7DB894;
+  --on-accent: #21262A;
+  --accent: #93D9AE;
+  --accent-soft: #93D9AE;
+  --accent-tint: rgba(147, 217, 174, 0.16);
+  --shadow-glow: 0 0 24px rgba(147, 217, 174, 0.25);
+  --felt-card-active: rgba(125, 184, 148, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(147, 217, 174, 0.18) 0%, rgba(147, 217, 174, 0.06) 100%);
+}
+
+body.light-theme[data-accent="green"] {
+  --accent-sage: #2E7550;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #93D9AE;
+  --accent-sage-dark: #1E5539;
+  --gradient-primary: linear-gradient(135deg, #2E7550 0%, #1E5539 100%);
+  --accent: #2E7550;
+  --accent-soft: #93D9AE;
+  --accent-tint: rgba(147, 217, 174, 0.2);
+  --shadow-glow: 0 0 24px rgba(46, 117, 80, 0.15);
+  --felt-card-active: rgba(46, 117, 80, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(46, 117, 80, 0.1) 0%, rgba(46, 117, 80, 0.04) 100%);
+}
+
+body[data-accent="claret"] {
+  --brand-deep: #6B1F31;
+  --brand-art: #7D3A4A;
+  --brand-on-deep: #F2A6B4;
+  --brand-tint: #F2A6B4;
+  --accent-sage: #F2A6B4;
+  --accent-sage-light: #F7C5CE;
+  --accent-sage-dark: #CE8D99;
+  --on-accent: #21262A;
+  --accent: #F2A6B4;
+  --accent-soft: #F2A6B4;
+  --accent-tint: rgba(242, 166, 180, 0.16);
+  --shadow-glow: 0 0 24px rgba(242, 166, 180, 0.25);
+  --felt-card-active: rgba(206, 141, 153, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(242, 166, 180, 0.18) 0%, rgba(242, 166, 180, 0.06) 100%);
+}
+
+body.light-theme[data-accent="claret"] {
+  --accent-sage: #9E2F45;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #F2A6B4;
+  --accent-sage-dark: #6B1F31;
+  --gradient-primary: linear-gradient(135deg, #9E2F45 0%, #6B1F31 100%);
+  --accent: #9E2F45;
+  --accent-soft: #F2A6B4;
+  --accent-tint: rgba(242, 166, 180, 0.2);
+  --shadow-glow: 0 0 24px rgba(158, 47, 69, 0.15);
+  --felt-card-active: rgba(158, 47, 69, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(158, 47, 69, 0.1) 0%, rgba(158, 47, 69, 0.04) 100%);
+}
+
+body[data-accent="gold"] {
+  --brand-deep: #5E450B;
+  --brand-art: #715B28;
+  --brand-on-deep: #F2CF78;
+  --brand-tint: #F2CF78;
+  --accent-sage: #F2CF78;
+  --accent-sage-light: #F7E0A7;
+  --accent-sage-dark: #CEB066;
+  --on-accent: #21262A;
+  --accent: #F2CF78;
+  --accent-soft: #F2CF78;
+  --accent-tint: rgba(242, 207, 120, 0.16);
+  --shadow-glow: 0 0 24px rgba(242, 207, 120, 0.25);
+  --felt-card-active: rgba(206, 176, 102, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(242, 207, 120, 0.18) 0%, rgba(242, 207, 120, 0.06) 100%);
+}
+
+body.light-theme[data-accent="gold"] {
+  --accent-sage: #86620F;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #F2CF78;
+  --accent-sage-dark: #5E450B;
+  --gradient-primary: linear-gradient(135deg, #86620F 0%, #5E450B 100%);
+  --accent: #86620F;
+  --accent-soft: #F2CF78;
+  --accent-tint: rgba(242, 207, 120, 0.2);
+  --shadow-glow: 0 0 24px rgba(134, 98, 15, 0.15);
+  --felt-card-active: rgba(134, 98, 15, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(134, 98, 15, 0.1) 0%, rgba(134, 98, 15, 0.04) 100%);
+}
+
+body[data-accent="pink"] {
+  --brand-deep: #77244A;
+  --brand-art: #873E60;
+  --brand-on-deep: #F6A9C9;
+  --brand-tint: #F6A9C9;
+  --accent-sage: #F6A9C9;
+  --accent-sage-light: #F9C7DC;
+  --accent-sage-dark: #D190AB;
+  --on-accent: #21262A;
+  --accent: #F6A9C9;
+  --accent-soft: #F6A9C9;
+  --accent-tint: rgba(246, 169, 201, 0.16);
+  --shadow-glow: 0 0 24px rgba(246, 169, 201, 0.25);
+  --felt-card-active: rgba(209, 144, 171, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(246, 169, 201, 0.18) 0%, rgba(246, 169, 201, 0.06) 100%);
+}
+
+body.light-theme[data-accent="pink"] {
+  --accent-sage: #AD3A6C;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #F6A9C9;
+  --accent-sage-dark: #77244A;
+  --gradient-primary: linear-gradient(135deg, #AD3A6C 0%, #77244A 100%);
+  --accent: #AD3A6C;
+  --accent-soft: #F6A9C9;
+  --accent-tint: rgba(246, 169, 201, 0.2);
+  --shadow-glow: 0 0 24px rgba(173, 58, 108, 0.15);
+  --felt-card-active: rgba(173, 58, 108, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(173, 58, 108, 0.1) 0%, rgba(173, 58, 108, 0.04) 100%);
+}
+
+body[data-accent="slate"] {
+  --brand-deep: #323C48;
+  --brand-art: #4B535E;
+  --brand-on-deep: #C3CDD8;
+  --brand-tint: #C3CDD8;
+  --accent-sage: #C3CDD8;
+  --accent-sage-light: #D8DFE6;
+  --accent-sage-dark: #A6AEB8;
+  --on-accent: #21262A;
+  --accent: #C3CDD8;
+  --accent-soft: #C3CDD8;
+  --accent-tint: rgba(195, 205, 216, 0.16);
+  --shadow-glow: 0 0 24px rgba(195, 205, 216, 0.25);
+  --felt-card-active: rgba(166, 174, 184, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(195, 205, 216, 0.18) 0%, rgba(195, 205, 216, 0.06) 100%);
+}
+
+body.light-theme[data-accent="slate"] {
+  --accent-sage: #4A5868;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #C3CDD8;
+  --accent-sage-dark: #323C48;
+  --gradient-primary: linear-gradient(135deg, #4A5868 0%, #323C48 100%);
+  --accent: #4A5868;
+  --accent-soft: #C3CDD8;
+  --accent-tint: rgba(195, 205, 216, 0.2);
+  --shadow-glow: 0 0 24px rgba(74, 88, 104, 0.15);
+  --felt-card-active: rgba(74, 88, 104, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(74, 88, 104, 0.1) 0%, rgba(74, 88, 104, 0.04) 100%);
+}
+
+body[data-accent="clay"] {
+  --brand-deep: #663720;
+  --brand-art: #784F3B;
+  --brand-on-deep: #EDB792;
+  --brand-tint: #EDB792;
+  --accent-sage: #EDB792;
+  --accent-sage-light: #F3D0B8;
+  --accent-sage-dark: #C99C7C;
+  --on-accent: #21262A;
+  --accent: #EDB792;
+  --accent-soft: #EDB792;
+  --accent-tint: rgba(237, 183, 146, 0.16);
+  --shadow-glow: 0 0 24px rgba(237, 183, 146, 0.25);
+  --felt-card-active: rgba(201, 156, 124, 0.12);
+  --gradient-active-card: linear-gradient(135deg, rgba(237, 183, 146, 0.18) 0%, rgba(237, 183, 146, 0.06) 100%);
+}
+
+body.light-theme[data-accent="clay"] {
+  --accent-sage: #975430;
+  --on-accent: #FFFFFF;
+  --accent-sage-light: #EDB792;
+  --accent-sage-dark: #663720;
+  --gradient-primary: linear-gradient(135deg, #975430 0%, #663720 100%);
+  --accent: #975430;
+  --accent-soft: #EDB792;
+  --accent-tint: rgba(237, 183, 146, 0.2);
+  --shadow-glow: 0 0 24px rgba(151, 84, 48, 0.15);
+  --felt-card-active: rgba(151, 84, 48, 0.06);
+  --gradient-active-card: linear-gradient(135deg, rgba(151, 84, 48, 0.1) 0%, rgba(151, 84, 48, 0.04) 100%);
+}
+
