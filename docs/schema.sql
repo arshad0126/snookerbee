@@ -129,3 +129,8 @@ create policy "Users can CRUD their own century players" on century_players
 
 create index if not exists century_players_game_id_idx
   on century_players (game_id);
+
+-- Century: red value (10 or 20) and the play-by-play, added after launch.
+-- Both nullable; games saved before this read as red 10 with no log.
+alter table century_games add column if not exists red_value int;
+alter table century_games add column if not exists action_log jsonb;

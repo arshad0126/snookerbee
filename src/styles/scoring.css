@@ -2263,6 +2263,20 @@ body.light-theme .btn-topbar-icon.active-pause {
   color: var(--text-primary);
 }
 
+.century-result-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-md, 12px);
+}
+
+.century-result-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .century-result-row.loser {
   background: var(--danger-tint, rgba(192, 57, 43, 0.14));
   border: 1px solid var(--danger);

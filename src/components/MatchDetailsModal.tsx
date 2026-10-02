@@ -3,6 +3,7 @@ import type { ActionLogEntry } from '../engine/types';
 import { getMatchFrames } from '../lib/database';
 import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard, drawFrameCard } from '../lib/shareCard';
+import { computeFrameResult } from '../lib/frameResult';
 import { Icon } from './ui';
 
 interface PlayerDetail {
@@ -205,8 +206,12 @@ export default function MatchDetailsModal({
     const pick = (key: keyof FrameAnalysis) =>
       names.map(n => (analysis[key] && analysis[key][n]) || 0);
 
+    const result = computeFrameResult(frame.actionLog, matchData.players);
+
     drawFrameCard(canvas, {
       frameNumber: frame.frameNumber,
+      ranked: result.ranked,
+      winnerName: result.winnerName,
       mode: matchData.mode,
       dateLabel: matchData.date,
       durationLabel: formatDuration(frame.durationMs),

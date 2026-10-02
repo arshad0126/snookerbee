@@ -8,9 +8,10 @@
 //
 // Rules
 //   - 2-8 players race to land EXACTLY on the target (50 or 100).
-//   - Red is worth 10; colours keep their snooker values.
+//   - Red is worth 10 or 20 (chosen at setup); colours keep snooker values.
 //   - No sequence: any ball, any time. Red is never compulsory.
-//   - Red is a gamble — potting it scores 10, missing it costs 10 and the visit.
+//   - Red is a gamble — potting it scores the red value, missing it costs the
+//     same and the visit.
 //   - Missing a colour just ends the visit, with no penalty. That asymmetry is
 //     what makes going for a red an actual decision.
 //   - Other fouls deduct from the fouler; nobody gains.
@@ -23,12 +24,12 @@
 //   - Scores may go negative.
 // ============================================================================
 
-import type { BallType } from './types';
+import type { ActionLogEntry, ActionLogType, BallType } from './types';
 
 export const CENTURY_TARGETS = [50, 100] as const;
 export type CenturyTarget = (typeof CENTURY_TARGETS)[number];
 
-/** Red is 10 here, not 1. Colours are unchanged. */
+/** Default values. Red is overridden by the game's chosen red value. */
 export const CENTURY_VALUES: Readonly<Record<BallType, number>> = {
   red: 10,
   yellow: 2,
@@ -39,8 +40,9 @@ export const CENTURY_VALUES: Readonly<Record<BallType, number>> = {
   black: 7,
 } as const;
 
-/** Cost of missing an attempted red — the same 10 it would have scored. */
-export const RED_MISS_PENALTY = 10;
+/** Red can be played at 10 or 20. A missed red costs the same. */
+export const CENTURY_RED_VALUES = [10, 20] as const;
+export const DEFAULT_RED_VALUE = 10;
 
 /** Snooker's minimum foul value. */
 const MIN_FOUL = 4;
@@ -74,6 +76,8 @@ export interface CenturyLogEntry {
 
 export interface CenturyState {
   target: number;
+  /** Points for a red, and the cost of missing one. Older saves lack it. */
+  redValue?: number;
   players: CenturyPlayer[];
   /** Indices into `players`, in playing order. */
   turnOrder: number[];
@@ -103,6 +107,7 @@ const MAX_UNDO = 12;
 
 export interface CenturySetup {
   target: number;
+  redValue?: number;
   players: { name: string }[];
 }
 
@@ -120,6 +125,7 @@ export function createCenturyState(setup: CenturySetup): CenturyState {
 
   return {
     target: setup.target,
+    redValue: setup.redValue ?? DEFAULT_RED_VALUE,
     players,
     turnOrder: players.map((_, i) => i),
     currentTurn: 0,
@@ -135,6 +141,16 @@ export function createCenturyState(setup: CenturySetup): CenturyState {
 }
 
 /* ------------------------------------------------------------------ helpers */
+
+/** Red value for this game (10 for games saved before the option existed). */
+export function redValueOf(state: Pick<CenturyState, 'redValue'>): number {
+  return state.redValue ?? DEFAULT_RED_VALUE;
+}
+
+/** What a ball scores in this game. */
+export function ballValue(state: Pick<CenturyState, 'redValue'>, ball: BallType): number {
+  return ball === 'red' ? redValueOf(state) : CENTURY_VALUES[ball];
+}
 
 export function currentPlayer(state: CenturyState): CenturyPlayer | undefined {
   return state.players[state.turnOrder[state.currentTurn]];
@@ -154,18 +170,19 @@ export function isBallBlocked(state: CenturyState, ball: BallType): boolean {
 export function wouldBust(state: CenturyState, ball: BallType): boolean {
   const p = currentPlayer(state);
   if (!p) return false;
-  return p.score + CENTURY_VALUES[ball] > state.target;
+  return p.score + ballValue(state, ball) > state.target;
 }
 
 /** Exactly finishes the player — the checkout. */
 export function isCheckout(state: CenturyState, ball: BallType): boolean {
   const p = currentPlayer(state);
   if (!p) return false;
-  return p.score + CENTURY_VALUES[ball] === state.target;
+  return p.score + ballValue(state, ball) === state.target;
 }
 
+/** Foul cost: a foul on the red is 4 whatever the red is worth. */
 export function foulValue(ball: BallType): number {
-  return Math.max(MIN_FOUL, CENTURY_VALUES[ball] === 10 ? MIN_FOUL : CENTURY_VALUES[ball]);
+  return ball === 'red' ? MIN_FOUL : Math.max(MIN_FOUL, CENTURY_VALUES[ball]);
 }
 
 function log(
@@ -254,7 +271,7 @@ export function centuryReducer(
       // The rule is enforced by hiding the ball, so this is belt and braces.
       if (isBallBlocked(state, ball)) return state;
 
-      const value = CENTURY_VALUES[ball];
+      const value = ballValue(state, ball);
       const next = player.score + value;
 
       // Past the target: no score, ball re-spots, visit ends. Anything already
@@ -317,8 +334,9 @@ export function centuryReducer(
     }
 
     case 'MISS_RED': {
+      const penalty = redValueOf(state);
       const players = updatePlayer(state, playerIndex, {
-        score: player.score - RED_MISS_PENALTY,
+        score: player.score - penalty,
         redsMissed: player.redsMissed + 1,
       });
       return passTurn({
@@ -329,9 +347,9 @@ export function centuryReducer(
           kind: 'redMiss',
           playerName: player.name,
           ball: 'red',
-          points: -RED_MISS_PENALTY,
-          description: `${player.name} missed the red (−${RED_MISS_PENALTY}) — ${
-            player.score - RED_MISS_PENALTY
+          points: -penalty,
+          description: `${player.name} missed the red (−${penalty}) — ${
+            player.score - penalty
           }`,
         }),
       });
@@ -374,4 +392,31 @@ export function centuryReducer(
     default:
       return state;
   }
+}
+
+/* --------------------------------------------------------------- log views */
+
+const LOG_TYPE: Record<CenturyLogKind, ActionLogType> = {
+  pot: 'pot',
+  redMiss: 'foul',
+  foul: 'foul',
+  colourMiss: 'miss',
+  bust: 'miss',
+  blocked: 'miss',
+  finish: 'frameEnd',
+};
+
+/**
+ * Century entries in the snooker log's shape, so the same timeline drawer
+ * and timeline list render both games.
+ */
+export function toActionLog(entries: readonly CenturyLogEntry[]): ActionLogEntry[] {
+  return entries.map((e) => ({
+    timestamp: e.timestamp,
+    type: LOG_TYPE[e.kind] ?? 'miss',
+    playerName: e.playerName,
+    ball: e.ball,
+    points: e.points,
+    description: e.description,
+  }));
 }

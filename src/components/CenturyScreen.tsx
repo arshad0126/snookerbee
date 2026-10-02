@@ -8,13 +8,16 @@ import {
   isBallBlocked,
   wouldBust,
   isCheckout,
-  CENTURY_VALUES,
-  RED_MISS_PENALTY,
+  ballValue,
+  redValueOf,
+  toActionLog,
   type CenturySetup,
 } from '../engine/century';
 import { audio } from '../lib/audio';
 import { Icon } from './ui';
 import WallClock from './WallClock';
+import ActionLogDrawer from './ActionLogDrawer';
+import { shareCenturyCard } from '../lib/centuryShare';
 import {
   saveCenturyGame as cacheCenturyGame,
   loadCenturyGame,
@@ -48,8 +51,12 @@ export default function CenturyScreen() {
   );
 
   const [foulOpen, setFoulOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const { isGuest } = useAuth();
   const savedRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** Game length, fixed at the moment it ended so the card doesn't keep counting. */
+  const durationRef = useRef<number | null>(null);
 
   // Save the result once, the moment the game ends. Same lesson as matches:
   // a result that needs a button press to survive is a result that gets lost.
@@ -59,6 +66,7 @@ export default function CenturyScreen() {
 
     const loser = state.players.find((p) => p.finishedAt === null);
     const durationMs = Math.max(0, Date.now() - Date.parse(state.startedAt));
+    durationRef.current = durationMs;
 
     if (isGuest) {
       saveCenturyGameLocally({
@@ -67,6 +75,8 @@ export default function CenturyScreen() {
         createdAt: state.startedAt,
         durationMs,
         loserName: loser?.name ?? null,
+        redValue: redValueOf(state),
+        actionLog: state.actionLog,
         players: state.players.map((p) => ({
           name: p.name,
           score: p.score,
@@ -85,6 +95,8 @@ export default function CenturyScreen() {
         target: state.target,
         duration_ms: durationMs,
         loser_name: loser?.name ?? null,
+        red_value: redValueOf(state),
+        action_log: state.actionLog,
       },
       state.players.map((p) => ({
         player_name: p.name,
@@ -158,12 +170,26 @@ export default function CenturyScreen() {
       <header className="century-topbar">
         <div className="century-topbar-side">
           <span className="century-target">{state.target}</span>
-          <span className="century-target-label">target</span>
+          <span className="century-target-label">target · red {redValueOf(state)}</span>
         </div>
 
         <WallClock frameStartTime={state.startedAt} />
 
         <div className="century-topbar-side century-topbar-right">
+          <button
+            onClick={() => setLogOpen(true)}
+            className="icon-btn"
+            aria-label="Game history"
+            title="Who potted what"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              <line x1="9" y1="12" x2="15" y2="12" />
+              <line x1="9" y1="16" x2="15" y2="16" />
+              <line x1="9" y1="8" x2="10" y2="8" />
+            </svg>
+          </button>
           <button
             onClick={() => {
               if (window.confirm('Abandon this game?')) {
@@ -241,7 +267,7 @@ export default function CenturyScreen() {
               }
             >
               <span className="ball-card-name">{BALL_LABELS[ball]}</span>
-              <span className="ball-card-points">+{CENTURY_VALUES[ball]}</span>
+              <span className="ball-card-points">+{ballValue(state, ball)}</span>
               {checkout && <span className="century-flag">FINISH</span>}
               {blocked && <span className="century-flag century-flag--stop">×2</span>}
             </button>
@@ -263,7 +289,7 @@ export default function CenturyScreen() {
           disabled={state.finished}
           className="btn-action-premium btn-action-foul"
         >
-          <Icon name="alert" size={15} /> MISSED RED −{RED_MISS_PENALTY}
+          <Icon name="alert" size={15} /> MISSED RED −{redValueOf(state)}
         </button>
         <button
           onClick={() => setFoulOpen(true)}
@@ -339,16 +365,47 @@ export default function CenturyScreen() {
                   </li>
                 ))}
             </ol>
-            <button
-              onClick={() => { clearCenturyGame(); navigate('/dashboard'); }}
-              className="btn btn-primary btn-lg"
-              style={{ width: '100%' }}
-            >
-              Done
-            </button>
+            <div className="century-result-actions">
+              <button
+                onClick={() => {
+                  if (!canvasRef.current) return;
+                  void shareCenturyCard(canvasRef.current, {
+                    target: state.target,
+                    redValue: redValueOf(state),
+                    durationMs:
+                      durationRef.current ??
+                      Math.max(0, Date.now() - Date.parse(state.startedAt)),
+                    playedAt: state.startedAt,
+                    players: state.players,
+                  });
+                }}
+                className="btn btn-secondary"
+              >
+                <Icon name="share" size={17} /> Share
+              </button>
+              <button onClick={() => setLogOpen(true)} className="btn btn-secondary">
+                History
+              </button>
+              <button
+                onClick={() => { clearCenturyGame(); navigate('/dashboard'); }}
+                className="btn btn-primary"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      <ActionLogDrawer
+        isOpen={logOpen}
+        onClose={() => setLogOpen(false)}
+        actionLog={toActionLog(state.actionLog)}
+        frameStartTime={Date.parse(state.startedAt)}
+      />
+
+      {/* Off-screen canvas for the share card */}
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
     </div>
   );
 }

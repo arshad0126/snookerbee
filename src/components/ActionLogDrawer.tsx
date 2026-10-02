@@ -39,10 +39,12 @@ export default function ActionLogDrawer({
         return 'log-pot';
       case 'foul':
       case 'in_off':
+      case 'inOff':
         return 'log-foul';
       case 'undo':
         return 'log-undo';
       case 'frame_end':
+      case 'frameEnd':
       case 'concede':
         return 'log-frame';
       default:
@@ -56,10 +58,12 @@ export default function ActionLogDrawer({
         return <Icon name="dot" className="log-icon log-icon--pot" />;
       case 'foul':
       case 'in_off':
+      case 'inOff':
         return <Icon name="alert" className="log-icon log-icon--foul" />;
       case 'undo':
         return <Icon name="arrow-left" className="log-icon log-icon--undo" />;
       case 'frame_end':
+      case 'frameEnd':
       case 'concede':
         return <Icon name="flag" className="log-icon log-icon--frame" />;
       default:

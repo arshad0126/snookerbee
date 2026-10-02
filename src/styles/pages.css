@@ -847,6 +847,12 @@
 }
 
 
+.history-card-player {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .history-card-score {
   font-family: var(--font-mono);
   font-size: var(--text-lg);

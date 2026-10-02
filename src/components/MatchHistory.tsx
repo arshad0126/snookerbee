@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -6,25 +6,50 @@ import {
   getMatchHistory,
   deleteLocalMatch,
   deleteMatch,
+  getLocalCenturyHistory,
+  getCenturyHistory,
+  deleteLocalCenturyGame,
+  deleteCenturyGame,
   type MatchRecord,
   type MatchPlayerRecord,
 } from '../lib/database';
 import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
+import CenturyDetailsModal from './CenturyDetailsModal';
+import { shareCenturyCard } from '../lib/centuryShare';
+import {
+  byFinish,
+  fromDbCentury,
+  fromLocalCentury,
+  type CenturyDetailsData,
+} from '../lib/centuryHistory';
+
+/** Snooker matches and Century games share one list, newest first. */
+type HistoryItem =
+  | { kind: 'match'; at: number; data: MatchDetailsData }
+  | { kind: 'century'; at: number; data: CenturyDetailsData };
 import { Icon } from './ui';
 
 export default function MatchHistory() {
   const { isGuest } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [matches, setMatches] = useState<MatchDetailsData[]>([]);
+  const [items, setItems] = useState<HistoryItem[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
+  const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const merge = (matches: HistoryItem[], centuries: CenturyDetailsData[]) =>
+    setItems(
+      [...matches, ...centuries.map((c): HistoryItem => ({ kind: 'century', at: c.at, data: c }))]
+        .sort((a, b) => b.at - a.at)
+    );
 
   const fetchMatches = async () => {
     setLoading(true);
     try {
       if (isGuest) {
         const localHistory = getLocalMatchHistory();
-        const mapped = localHistory.map((m): MatchDetailsData => ({
+        const mapped = localHistory.map((m): HistoryItem => ({ kind: 'match', at: Date.parse(m.createdAt) || 0, data: {
           id: m.id,
           date: new Date(m.createdAt).toLocaleDateString(undefined, {
             year: 'numeric',
@@ -48,11 +73,11 @@ export default function MatchHistory() {
             timeSpentMs: p.timeSpentMs,
           })),
           frames: m.frames,
-        }));
-        setMatches(mapped);
+        } }));
+        merge(mapped, getLocalCenturyHistory().map(fromLocalCentury));
       } else {
-        const dbHistory = await getMatchHistory();
-        const mapped = dbHistory.map((m: MatchRecord & { players: MatchPlayerRecord[] }): MatchDetailsData => ({
+        const [dbHistory, dbCentury] = await Promise.all([getMatchHistory(), getCenturyHistory()]);
+        const mapped = dbHistory.map((m: MatchRecord & { players: MatchPlayerRecord[] }): HistoryItem => ({ kind: 'match', at: m.created_at ? Date.parse(m.created_at) : 0, data: {
           id: m.id || '',
           date: m.created_at
             ? new Date(m.created_at).toLocaleDateString(undefined, {
@@ -79,8 +104,8 @@ export default function MatchHistory() {
             centuries: p.centuries ?? 0,
             halfCenturies: p.half_centuries ?? 0,
           })),
-        }));
-        setMatches(mapped);
+        } }));
+        merge(mapped, dbCentury.map(fromDbCentury));
       }
     } catch (error) {
       console.error('Error fetching match history:', error);
@@ -100,11 +125,11 @@ export default function MatchHistory() {
     try {
       if (isGuest) {
         deleteLocalMatch(matchId);
-        setMatches(prev => prev.filter(m => m.id !== matchId));
+        setItems(prev => prev.filter(m => m.data.id !== matchId));
       } else {
         const success = await deleteMatch(matchId);
         if (success) {
-          setMatches(prev => prev.filter(m => m.id !== matchId));
+          setItems(prev => prev.filter(m => m.data.id !== matchId));
         } else {
           alert('Failed to delete match from server. Please check your connection and try again.');
         }
@@ -113,6 +138,18 @@ export default function MatchHistory() {
       console.error('Failed to delete match:', err);
       alert('An unexpected error occurred while deleting the match.');
     }
+  };
+
+  const handleDeleteCentury = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this Century game?')) return;
+    if (isGuest) {
+      deleteLocalCenturyGame(id);
+    } else if (!(await deleteCenturyGame(id))) {
+      alert('Failed to delete the game from the server. Please check your connection and try again.');
+      return;
+    }
+    setItems(prev => prev.filter(m => !(m.kind === 'century' && m.data.id === id)));
   };
 
   const formatDuration = (ms: number) => {
@@ -125,6 +162,51 @@ export default function MatchHistory() {
     }
     return `${minutes}m`;
   };
+
+  const renderMatchCard = (match: MatchDetailsData) => (
+    <div
+      key={match.id}
+      onClick={() => setSelectedMatch(match)}
+      className="history-card card ripple"
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="history-card-header">
+        <span className="history-card-date">{match.date}</span>
+        <span className="history-card-mode badge">{match.mode}</span>
+      </div>
+
+      <div className="history-card-players">
+        {match.players.map((p, i) => {
+          const isWinner = p.name === match.winnerName || p.teamName === match.winnerName;
+          return (
+            <div key={i} className={`history-card-player ${isWinner ? 'history-card-winner' : ''}`}>
+              <span className="player-name-span">
+                {p.teamName ? `[${p.teamName}] ` : ''}
+                {p.name}
+              </span>
+              <span className="history-card-score">{p.totalScore}</span>
+              {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="history-card-details">
+        <span>Reds: {match.redsCount}</span>
+        <span>•</span>
+        <span>Best of: {match.bestOf}</span>
+        <span>•</span>
+        <span>Duration: {formatDuration(match.durationMs)}</span>
+        <button
+          onClick={(e) => handleDelete(match.id, e)}
+          className="history-card-delete btn btn-ghost"
+          title="Delete Match"
+        >
+          <Icon name="trash" size={18} />
+        </button>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -144,7 +226,7 @@ export default function MatchHistory() {
       </header>
 
       <main className="history-content">
-        {matches.length === 0 ? (
+        {items.length === 0 ? (
           <div className="empty-state card">
             <div className="empty-state-icon"><Icon name="trophy" size={40} /></div>
             <h3 className="empty-state-title">No matches yet</h3>
@@ -155,50 +237,50 @@ export default function MatchHistory() {
           </div>
         ) : (
           <div className="history-list">
-            {matches.map(match => (
+            {items.map(item => item.kind === 'century' ? (
               <div
-                key={match.id}
-                onClick={() => setSelectedMatch(match)}
+                key={`c-${item.data.id}`}
+                onClick={() => setSelectedCentury(item.data)}
                 className="history-card card ripple"
                 style={{ cursor: 'pointer' }}
               >
                 <div className="history-card-header">
-                  <span className="history-card-date">{match.date}</span>
-                  <span className="history-card-mode badge">{match.mode}</span>
+                  <span className="history-card-date">{item.data.date}</span>
+                  <span className="history-card-mode badge">century</span>
                 </div>
 
                 <div className="history-card-players">
-                  {match.players.map((p, i) => {
-                    const isWinner = p.name === match.winnerName || p.teamName === match.winnerName;
-                    return (
-                      <div key={i} className={`history-card-player ${isWinner ? 'history-card-winner' : ''}`}>
-                        <span className="player-name-span">
-                          {p.teamName ? `[${p.teamName}] ` : ''}
-                          {p.name}
-                        </span>
-                        <span className="history-card-score">{p.totalScore}</span>
-                        {i < match.players.length - 1 && <span className="history-card-vs"> vs </span>}
-                      </div>
-                    );
-                  })}
+                  {byFinish(item.data.players).map((p, i, all) => (
+                    <div
+                      key={i}
+                      className={`history-card-player ${p.finishedAt === 1 ? 'history-card-winner' : ''}`}
+                    >
+                      <span className="player-name-span">
+                        {p.finishedAt ? `#${p.finishedAt} ` : 'Short · '}
+                        {p.name}
+                      </span>
+                      <span className="history-card-score">{p.score}</span>
+                      {i < all.length - 1 && <span className="history-card-vs"> · </span>}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="history-card-details">
-                  <span>Reds: {match.redsCount}</span>
+                  <span>Target: {item.data.target}</span>
                   <span>•</span>
-                  <span>Best of: {match.bestOf}</span>
+                  <span>Red: {item.data.redValue}</span>
                   <span>•</span>
-                  <span>Duration: {formatDuration(match.durationMs)}</span>
+                  <span>Duration: {formatDuration(item.data.durationMs)}</span>
                   <button
-                    onClick={(e) => handleDelete(match.id, e)}
+                    onClick={(e) => { void handleDeleteCentury(item.data.id, e); }}
                     className="history-card-delete btn btn-ghost"
-                    title="Delete Match"
+                    title="Delete Game"
                   >
                     <Icon name="trash" size={18} />
                   </button>
                 </div>
               </div>
-            ))}
+            ) : renderMatchCard(item.data))}
           </div>
         )}
       </main>
@@ -208,6 +290,23 @@ export default function MatchHistory() {
           isOpen={!!selectedMatch}
           onClose={() => setSelectedMatch(null)}
           matchData={selectedMatch}
+        />
+      )}
+
+      {/* Off-screen canvas for the Century share card */}
+      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
+
+      {selectedCentury && (
+        <CenturyDetailsModal
+          game={selectedCentury}
+          onClose={() => setSelectedCentury(null)}
+          onShare={() => {
+            if (!canvasRef.current) return;
+            void shareCenturyCard(canvasRef.current, {
+              ...selectedCentury,
+              playedAt: selectedCentury.at,
+            });
+          }}
         />
       )}
     </div>

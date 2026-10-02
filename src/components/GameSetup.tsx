@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
 import { Icon, type IconName } from './ui';
+import { CENTURY_RED_VALUES, DEFAULT_RED_VALUE } from '../engine/century';
 
 /** Frames per match. Odd only — an even best-of can end level (issue #10). */
 const MATCH_LENGTHS = [1, 3, 5];
@@ -37,6 +38,7 @@ export default function GameSetup() {
 
   const [format, setFormat] = useState<Format>('snooker');
   const [centuryTarget, setCenturyTarget] = useState<number>(100);
+  const [centuryRedValue, setCenturyRedValue] = useState<number>(DEFAULT_RED_VALUE);
   const [gameMode, setGameMode] = useState<GameMode>('1v1');
   const [teamSize, setTeamSize] = useState<2 | 3>(2);
   const [redsCount, setRedsCount] = useState<10 | 15>(15);
@@ -122,6 +124,7 @@ export default function GameSetup() {
         state: {
           setup: {
             target: centuryTarget,
+            redValue: centuryRedValue,
             players: playerNames.map((name, i) => ({
               name: name.trim() || `Player ${i + 1}`,
             })),
@@ -222,6 +225,7 @@ export default function GameSetup() {
           </fieldset>
 
           {format === 'century' ? (
+            <>
             <fieldset className="setup-field">
               <legend className="setup-legend">Target</legend>
               <div className="tile-row">
@@ -237,11 +241,29 @@ export default function GameSetup() {
                   </button>
                 ))}
               </div>
+            </fieldset>
+            <fieldset className="setup-field">
+              <legend className="setup-legend">Red value</legend>
+              <div className="tile-row">
+                {CENTURY_RED_VALUES.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={centuryRedValue === v}
+                    aria-label={`Red worth ${v}`}
+                    onClick={() => setCenturyRedValue(v)}
+                    className={`tile ${centuryRedValue === v ? 'tile--on' : ''}`}
+                  >
+                    <span className="tile-value">{v}</span>
+                  </button>
+                ))}
+              </div>
               <p className="setup-hint">
-                Land exactly on {centuryTarget}. Red is 10 — pot it or lose 10.
-                Last player short is the loser.
+                Land exactly on {centuryTarget}. Red is {centuryRedValue} — pot it
+                or lose {centuryRedValue}. Last player short is the loser.
               </p>
             </fieldset>
+            </>
           ) : (
           <>
           <fieldset className="setup-field">
