@@ -22,6 +22,22 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.2.0',
+    date: '2026-10-04',
+    title: 'New share cards and share screen',
+    added: [
+      'Share cards now match the app: light or dark, in your accent colour. They start in the look you\'re using, and you can switch before sharing.',
+      'Story shape: a tall card that fits WhatsApp and Instagram status.',
+      'Add stats: an optional strip with best breaks and fouls (and reds for a frame) for when friends want the detail.',
+    ],
+    improved: [
+      'Simpler cards: the result big at the top, then each player with frames as dots and their points, plus the best break of the match.',
+      'The share screen looks like the rest of SnookerBee — same background art, card on the left, choices on the right — with Share and Save image.',
+      'Cards say "Free for all" instead of FREEFORALL, and list players by frames won, then points.',
+      'Team cards name the players ("Suraj & Zeeshan") instead of "Team 2".',
+    ],
+  },
+  {
     version: '2.1.0',
     date: '2026-10-03',
     title: 'Every match gets its own page',

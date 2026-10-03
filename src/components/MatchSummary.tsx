@@ -10,11 +10,10 @@ import {
   type LocalMatchRecord,
 } from '../lib/database';
 import type { GameState } from '../engine/types';
-import { presentShareCard, cardFilename } from '../lib/shareImage';
-import { drawMatchCard } from '../lib/shareCard';
+import { openShareSheet, cardFilename } from '../lib/shareSheet';
 import { Icon } from './ui';
 import { loadPendingMatch, clearPendingMatch } from '../lib/matchStorage';
-import { matchTotals, matchWinnerName, isEmptyGame, pointsLeader } from '../lib/results';
+import { matchTotals, matchWinnerName, isEmptyGame, pointsLeader, relativeDay, shortDuration } from '../lib/results';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -23,7 +22,6 @@ interface FrameHistoryItem {
 
 export default function MatchSummary() {
   const location = useLocation();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { isGuest } = useAuth();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'empty'>('idle');
@@ -260,19 +258,12 @@ export default function MatchSummary() {
 
   handleSaveRef.current = handleSave;
 
-  const handleShareCard = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
+  const handleShareCard = () => {
     const rows = players.map((p) => {
-      const pTeam = mode === 'team'
-        ? teams.find(t => t.playerIds.includes(p.id))
-        : undefined;
-
+      const pTeam = mode === 'team' ? teams.find(t => t.playerIds.includes(p.id)) : undefined;
       const framesWon = mode === 'team' && pTeam
         ? (gameState.frameScores[pTeam.id] || 0)
         : (gameState.frameScores[p.id] || 0);
-
       return {
         name: p.name,
         teamName: pTeam?.name,
@@ -280,32 +271,24 @@ export default function MatchSummary() {
         framesWon,
         highestBreak: p.matchHighestBreak,
         fouls: totals.fouls[p.id] ?? p.foulsCommitted,
-        isWinner: p.name === winnerName || (!!pTeam && pTeam.name === winnerName),
       };
     });
-
-    drawMatchCard(canvas, {
-      winnerName,
-      mode,
-      bestOf,
-      dateLabel: new Date().toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      durationLabel: formatTime(matchTimerMs),
-      redsCount: gameState.redsTotal,
-      players: rows,
-    });
-
     const names = mode === 'team' ? teams.map(t => t.name) : players.map(p => p.name);
-    await presentShareCard(
-      canvas,
-      cardFilename(names.slice(0, 2)),
-      'SnookerBee match summary'
-    );
+    openShareSheet({
+      title: 'Share match',
+      filename: cardFilename(names.slice(0, 2)),
+      spec: {
+        kind: 'match',
+        data: {
+          winnerName: winnerName === 'Draw' ? null : winnerName,
+          mode,
+          bestOf,
+          dateLabel: `${relativeDay(Date.now())}, ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`,
+          durationLabel: shortDuration(matchTimerMs),
+          players: rows,
+        },
+      },
+    });
   };
 
   return (
@@ -483,7 +466,6 @@ export default function MatchSummary() {
       </main>
       
       {/* Off-screen canvas for image generation */}
-      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
     </div>
   );
 }

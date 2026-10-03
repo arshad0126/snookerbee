@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ActionLogEntry, BallType } from '../engine/types';
 import { useAuth } from '../hooks/useAuth';
@@ -8,8 +8,7 @@ import { framesPlayed } from '../lib/playerStats';
 import { computeFrameResult } from '../lib/frameResult';
 import { frameProgress, frameStats, frameVisits, isEmptyFrame, sidesOf, type Visit } from '../lib/frameAnalysis';
 import { frameLine, modeLabel, pointsLeader, relativeDay, shortDuration } from '../lib/results';
-import { drawFrameCard, drawMatchCard } from '../lib/shareCard';
-import { cardFilename, presentShareCard } from '../lib/shareImage';
+import { cardFilename, openShareSheet } from '../lib/shareSheet';
 import ThemeBackdrop from './ThemeBackdrop';
 import PlayerLink from './PlayerLink';
 import FrameChart from './FrameChart';
@@ -42,7 +41,6 @@ export default function MatchPage() {
   const { id } = useParams();
   const { isGuest } = useAuth();
   const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [match, setMatch] = useState<HistoryMatch | null | undefined>(undefined);
   const [frames, setFrames] = useState<PageFrame[] | null>(null);
@@ -120,46 +118,49 @@ export default function MatchPage() {
   const visible = showMisses ? visits : visits.filter((v) => v.kind !== 'miss');
   const misses = visits.length - visits.filter((v) => v.kind !== 'miss').length;
 
-  const shareMatch = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    drawMatchCard(canvas, {
-      winnerName: match.winner ?? 'Draw',
-      mode: match.mode,
-      bestOf: match.bestOf,
-      dateLabel: when,
-      durationLabel: shortDuration(match.durationMs),
-      redsCount: match.redsCount,
-      players: players.map((p) => ({
-        name: p.name, teamName: p.teamName, score: p.totalScore, framesWon: p.framesWon,
-        highestBreak: p.highestBreak, fouls: p.foulsCommitted, isWinner: isWinner(p),
-      })),
+  const shareMatch = () => {
+    openShareSheet({
+      title: 'Share match',
+      filename: cardFilename(players.slice(0, 2).map((p) => p.name)),
+      spec: {
+        kind: 'match',
+        data: {
+          winnerName: match.winner,
+          mode: match.mode,
+          bestOf: match.bestOf,
+          dateLabel: when,
+          durationLabel: shortDuration(match.durationMs),
+          players: players.map((p) => ({
+            name: p.name, teamName: p.teamName, score: p.totalScore, framesWon: p.framesWon,
+            highestBreak: p.highestBreak, fouls: p.foulsCommitted,
+          })),
+        },
+      },
     });
-    await presentShareCard(canvas, cardFilename(players.slice(0, 2).map((p) => p.name)), 'SnookerBee match summary');
   };
 
-  const shareFrame = async (f: (typeof shown)[number]) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const shareFrame = (f: (typeof shown)[number]) => {
     const s = frameStats(f.actionLog, players);
-    const names = players.map((p) => p.name);
-    const pick = (k: 'reds' | 'colours' | 'highestBreak' | 'fouls') => names.map((n) => s[n]?.[k] ?? 0);
-    drawFrameCard(canvas, {
-      frameNumber: f.frameNumber,
-      ranked: f.result.ranked,
-      winnerName: f.winner,
-      mode: match.mode,
-      dateLabel: when,
-      durationLabel: shortDuration(f.durationMs),
-      playerNames: names,
-      rows: [
-        { label: 'Reds potted', values: pick('reds'), higherIsBetter: true },
-        { label: 'Colors potted', values: pick('colours'), higherIsBetter: true },
-        { label: 'Highest break', values: pick('highestBreak'), higherIsBetter: true },
-        { label: 'Fouls', values: pick('fouls'), higherIsBetter: false },
-      ],
+    openShareSheet({
+      title: `Share frame ${f.frameNumber}`,
+      filename: cardFilename(players.slice(0, 2).map((p) => p.name), `frame-${f.frameNumber}`),
+      spec: {
+        kind: 'frame',
+        data: {
+          frameNumber: f.frameNumber,
+          winnerName: f.winner,
+          mode: match.mode,
+          dateLabel: when,
+          durationLabel: shortDuration(f.durationMs),
+          sides: f.result.scores,
+          players: players.map((p) => ({
+            name: p.name, teamName: p.teamName,
+            score: s[p.name]?.points ?? 0, reds: s[p.name]?.reds ?? 0, colours: s[p.name]?.colours ?? 0,
+            highestBreak: s[p.name]?.highestBreak ?? 0, fouls: s[p.name]?.fouls ?? 0,
+          })),
+        },
+      },
     });
-    await presentShareCard(canvas, cardFilename(names.slice(0, 2), `frame-${f.frameNumber}`), `SnookerBee frame ${f.frameNumber}`);
   };
 
   const sideIndex = (name: string) => {
@@ -171,7 +172,6 @@ export default function MatchPage() {
   return (
     <div className="ms-page mp-page">
       <ThemeBackdrop />
-      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
 
       <header className="ms-header">
         <button type="button" className="st-back" onClick={() => navigate(-1)} aria-label="Back">
@@ -181,7 +181,7 @@ export default function MatchPage() {
           <h1 className="st-title">Match</h1>
           <span className="ms-sub">{when} · {modeLabel(match.mode)} · Best of {match.bestOf} · {shortDuration(match.durationMs)}</span>
         </div>
-        <button type="button" className="mp-share" onClick={() => { void shareMatch(); }}>
+        <button type="button" className="mp-share" onClick={shareMatch}>
           <Icon name="share" size={16} /> Share
         </button>
       </header>
@@ -254,7 +254,7 @@ export default function MatchPage() {
                     </span>
                     <span className="mp-frame-score">{f.result.ranked.map((r) => r.score).join('–')} · {shortDuration(f.durationMs)}</span>
                   </button>
-                  <button type="button" className="mp-frame-share" onClick={() => { void shareFrame(f); }} aria-label={`Share frame ${f.frameNumber}`}>
+                  <button type="button" className="mp-frame-share" onClick={() => shareFrame(f)} aria-label={`Share frame ${f.frameNumber}`}>
                     <Icon name="share" size={15} />
                   </button>
                 </div>

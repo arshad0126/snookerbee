@@ -62,7 +62,6 @@ export default function CenturyScreen() {
   });
   const { isGuest } = useAuth();
   const savedRef = useRef(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   /** Game length, fixed at the moment it ended so the card doesn't keep counting. */
   const durationRef = useRef<number | null>(null);
 
@@ -376,8 +375,7 @@ export default function CenturyScreen() {
             <div className="century-result-actions">
               <button
                 onClick={() => {
-                  if (!canvasRef.current) return;
-                  void shareCenturyCard(canvasRef.current, {
+                  shareCenturyCard({
                     target: state.target,
                     redValue: redValueOf(state),
                     durationMs:
@@ -415,7 +413,6 @@ export default function CenturyScreen() {
       {undoBar}
 
       {/* Off-screen canvas for the share card */}
-      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
     </div>
   );
 }

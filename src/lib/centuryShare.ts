@@ -1,10 +1,9 @@
 /**
- * centuryShare — draw the Century result card and hand it to the share flow.
+ * centuryShare — open the share screen with a Century result card.
  * Used by the end-of-game sheet and by Century games in Match History.
  */
 
-import { drawCenturyCard } from './shareCard';
-import { presentShareCard, cardFilename } from './shareImage';
+import { openShareSheet, cardFilename } from './shareSheet';
 import { byFinish, formatCenturyDuration, type CenturyDetailsPlayer } from './centuryHistory';
 
 export interface CenturyShareInput {
@@ -16,22 +15,20 @@ export interface CenturyShareInput {
   players: CenturyDetailsPlayer[];
 }
 
-export async function shareCenturyCard(canvas: HTMLCanvasElement, g: CenturyShareInput): Promise<void> {
+export function shareCenturyCard(g: CenturyShareInput): void {
   const ordered = byFinish(g.players);
-  drawCenturyCard(canvas, {
-    target: g.target,
-    redValue: g.redValue,
-    durationLabel: formatCenturyDuration(g.durationMs),
-    dateLabel: new Date(g.playedAt).toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }),
-    players: ordered,
+  openShareSheet({
+    title: 'Share Century game',
+    filename: cardFilename(ordered.slice(0, 2).map((p) => p.name), 'century'),
+    spec: {
+      kind: 'century',
+      data: {
+        target: g.target,
+        redValue: g.redValue,
+        durationLabel: formatCenturyDuration(g.durationMs),
+        dateLabel: new Date(g.playedAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+        players: ordered,
+      },
+    },
   });
-  await presentShareCard(
-    canvas,
-    cardFilename(ordered.slice(0, 2).map((p) => p.name), 'century'),
-    'SnookerBee century result'
-  );
 }

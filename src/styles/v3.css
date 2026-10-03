@@ -944,3 +944,81 @@ body.light-theme .mp-page {
   .mp-board-row { grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)); }
   .mp-board-row > :nth-child(6) { display: none; }
 }
+
+/* ============================================================= share screen
+   (2.2) The step between tapping Share and the image going out. App look,
+   app backdrop; card on the left, choices on the right (landscape).
+   ========================================================================== */
+
+.sh-screen {
+  position: fixed; inset: 0; z-index: 10000;
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  background: var(--bg-primary); color: var(--v3-ink);
+  animation: fadeIn var(--transition-fast, 150ms) ease-out;
+}
+.sh-screen > .theme-backdrop { z-index: 0; opacity: 0.045; }
+.sh-preview, .sh-panel { position: relative; z-index: 1; }
+
+.sh-preview { display: flex; align-items: center; justify-content: center; min-width: 0; height: 100%; }
+.sh-preview img {
+  display: block; max-width: 100%; max-height: calc(100dvh - 40px); object-fit: contain;
+  border-radius: 18px; border: 1px solid var(--v3-line);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.sh-panel { display: flex; flex-direction: column; gap: 14px; min-height: 0; max-height: 100%; overflow-y: auto; }
+.sh-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sh-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.sh-close {
+  width: 44px; height: 44px; flex: none; border-radius: 50%;
+  border: 1px solid var(--v3-line); background: var(--v3-surface); color: var(--v3-ink-2);
+  display: grid; place-items: center; cursor: pointer;
+}
+.sh-group { display: flex; flex-direction: column; gap: 6px; }
+.sh-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--v3-ink-2); }
+.sh-seg {
+  display: grid; grid-template-columns: 1fr 1fr; padding: 3px; gap: 3px;
+  border-radius: 12px; background: var(--v3-surface-2); border: 1px solid var(--v3-line);
+}
+.sh-seg button {
+  min-height: 40px; border: none; border-radius: 9px; background: transparent;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--v3-ink-2); cursor: pointer;
+}
+.sh-seg button.is-on { background: var(--v3-surface); color: var(--v3-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+
+.sh-switch { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 44px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.sh-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.sh-switch i {
+  position: relative; width: 46px; height: 28px; border-radius: 14px; flex: none;
+  background: var(--v3-surface-2); border: 1px solid var(--v3-line); transition: background 150ms;
+}
+.sh-switch i::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--v3-ink-2); transition: transform 150ms, background 150ms;
+}
+.sh-switch input:checked + i { background: var(--accent-sage); border-color: var(--accent-sage); }
+.sh-switch input:checked + i::after { transform: translateX(18px); background: var(--on-accent, #fff); }
+.sh-switch input:focus-visible + i { outline: 2px solid var(--accent-sage); outline-offset: 2px; }
+
+.sh-actions { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-top: auto; }
+.sh-actions:has(> :only-child) { grid-template-columns: 1fr; }
+.sh-btn {
+  min-height: 48px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--v3-line); background: var(--v3-surface); color: var(--v3-ink);
+  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.sh-btn--primary { background: var(--accent-sage); border-color: var(--accent-sage); color: var(--on-accent, #1E1E1E); }
+.sh-btn:disabled { opacity: 0.5; cursor: default; }
+.sh-hint { margin: 0; font-size: 12.5px; color: var(--v3-ink-2); }
+.sh-toast {
+  position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+  padding: 10px 18px; border-radius: 999px; background: var(--v3-surface); border: 1px solid var(--v3-line);
+  font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Narrow (portrait desktop window): stack */
+@media (max-width: 640px) {
+  .sh-screen { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+  .sh-preview img { max-height: 55dvh; }
+}

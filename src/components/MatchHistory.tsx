@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -28,7 +28,6 @@ export default function MatchHistory() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const merge = (matches: HistoryItem[], centuries: CenturyDetailsData[]) =>
     setItems(
@@ -224,16 +223,13 @@ export default function MatchHistory() {
       </main>
 
 
-      {/* Off-screen canvas for the Century share card */}
-      <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />
 
       {selectedCentury && (
         <CenturyDetailsModal
           game={selectedCentury}
           onClose={() => setSelectedCentury(null)}
           onShare={() => {
-            if (!canvasRef.current) return;
-            void shareCenturyCard(canvasRef.current, {
+            shareCenturyCard({
               ...selectedCentury,
               playedAt: selectedCentury.at,
             });

@@ -16,6 +16,7 @@ import UIDemo from './components/dev/UIDemo';
 import PlayerStats from './components/PlayerStats';
 import PlayedTogether from './components/PlayedTogether';
 import MatchPage from './components/MatchPage';
+import ShareSheet from './components/ShareSheet';
 import Settings from './components/Settings';
 import WhatsNew from './components/WhatsNew';
 
@@ -193,6 +194,7 @@ export default function App() {
         <AuthProvider>
           <SettingsProvider>
             <AppRoutes />
+            <ShareSheet />
           </SettingsProvider>
         </AuthProvider>
         <OrientationWarning />
