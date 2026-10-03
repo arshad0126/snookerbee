@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import MatchDetailsModal from './MatchDetailsModal';
 import CenturyDetailsModal from './CenturyDetailsModal';
 import ProfileDrawer from './ProfileDrawer';
 import ThemeBackdrop from './ThemeBackdrop';
@@ -10,7 +9,7 @@ import { Icon } from './ui';
 import PlayerLink from './PlayerLink';
 import { loadActiveMatch } from '../lib/matchStorage';
 import { hasUnseenRelease } from '../lib/releaseSeen';
-import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
+import { loadHistory, guessMyName, didWin, type History, type HistoryMatch } from '../lib/history';
 import { summarize } from '../lib/playerStats';
 import { frameLine, modeLabel, relativeDay, shortDuration } from '../lib/results';
 import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
@@ -52,7 +51,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [history, setHistory] = useState<History | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<HistoryMatch | null>(null);
   const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
 
   // An unfinished match left behind by an evicted or closed session.
@@ -150,7 +148,7 @@ export default function Dashboard() {
             <div className="db-stat">
               <span className="db-stat-value">{summary ? `${summary.winRate}%` : '–'}</span>
               <span className="db-stat-label">Win rate</span>
-              <span className="db-stat-note">{summary ? `${summary.wins} of ${summary.framesPlayed} frames` : ''}</span>
+              <span className="db-stat-note">{summary ? `${summary.wins}/${summary.framesPlayed} frames` : ''}</span>
             </div>
             <div className="db-stat">
               <span className="db-stat-value db-stat-value--accent">{summary?.bestBreak ?? '–'}</span>
@@ -195,7 +193,7 @@ export default function Dashboard() {
             <ul className="db-recent">
               {recent.map((item) => item.kind === 'match' ? (
                 <li key={`m-${item.m.id}`}>
-                  <div role="button" tabIndex={0} className={`db-row${me && didWin(item.m, me) ? ' is-mine' : ''}`} onClick={() => setSelectedMatch(item.m)} onKeyDown={(e) => activate(e, () => setSelectedMatch(item.m))}>
+                  <div role="button" tabIndex={0} className={`db-row${me && didWin(item.m, me) ? ' is-mine' : ''}`} onClick={() => navigate(`/match/${item.m.id}`)} onKeyDown={(e) => activate(e, () => navigate(`/match/${item.m.id}`))}>
                     <span className="db-row-when">
                       <span className="db-row-day">{relativeDay(item.m.at)}</span>
                       <span className={`db-tag db-tag--${item.m.mode}`}>{modeLabel(item.m.mode)}</span>
@@ -255,9 +253,6 @@ export default function Dashboard() {
         firstPlayedAt={summary?.firstAt ?? null}
       />
 
-      {selectedMatch && (
-        <MatchDetailsModal isOpen onClose={() => setSelectedMatch(null)} matchData={toDetails(selectedMatch)} />
-      )}
       {selectedCentury && (
         <CenturyDetailsModal game={selectedCentury} onClose={() => setSelectedCentury(null)} />
       )}

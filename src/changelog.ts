@@ -22,6 +22,21 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.1.0',
+    date: '2026-10-03',
+    title: 'Every match gets its own page',
+    added: [
+      'Tap any match — on Home, History, Player stats or Played together — and it opens as a full page instead of a popup.',
+      'See how each frame went: a chart of everyone\'s points after every scoring shot. Touch or hover it to replay any moment.',
+      'Frame play, visit by visit: each break with the balls potted in order, every foul and who got the points. Misses are tucked away until you want them.',
+      'A scoreboard for the whole match and a per-frame table of points, reds, colours, best break and fouls.',
+    ],
+    improved: [
+      'Frames that never got going — like an empty last frame after End Match — are no longer listed.',
+      'The home screen shows your win rate as frames won / frames played without cutting off.',
+    ],
+  },
+  {
     version: '2.0.1',
     date: '2026-10-03',
     title: 'Popups in the middle, easier next-frame setup',

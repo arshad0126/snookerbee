@@ -15,6 +15,7 @@ import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
 import PlayerStats from './components/PlayerStats';
 import PlayedTogether from './components/PlayedTogether';
+import MatchPage from './components/MatchPage';
 import Settings from './components/Settings';
 import WhatsNew from './components/WhatsNew';
 
@@ -150,6 +151,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PlayedTogether />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/match/:id"
+        element={
+          <ProtectedRoute>
+            <MatchPage />
           </ProtectedRoute>
         }
       />

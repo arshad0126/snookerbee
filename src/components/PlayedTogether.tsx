@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import { loadHistory, guessMyName, toDetails, type History, type HistoryMatch } from '../lib/history';
+import { loadHistory, guessMyName, type History } from '../lib/history';
 import { getFramesForMatches } from '../lib/database';
 import type { ActionLogEntry } from '../engine/types';
 import { listPlayers, hours } from '../lib/playerStats';
 import { computeGroupStats, normName, type GroupPlayer } from '../lib/groupStats';
 import { relativeDay } from '../lib/results';
-import MatchDetailsModal from './MatchDetailsModal';
 import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
 
@@ -29,7 +28,6 @@ export default function PlayedTogether() {
   const [params, setParams] = useSearchParams();
   const [history, setHistory] = useState<History | null>(null);
   const [logsById, setLogsById] = useState<Map<string, ActionLogEntry[][]> | null>(null);
-  const [openMatch, setOpenMatch] = useState<HistoryMatch | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -332,7 +330,7 @@ export default function PlayedTogether() {
                     const top = [...m.players].sort((a, b) => b.framesWon - a.framesWon || b.totalScore - a.totalScore);
                     return (
                       <li key={m.id}>
-                        <button type="button" className="ps-recent-row pt-recent-row" onClick={() => setOpenMatch(m)}>
+                        <button type="button" className="ps-recent-row pt-recent-row" onClick={() => navigate(`/match/${m.id}`)}>
                           <span className="ps-recent-day">{relativeDay(m.at)}</span>
                           <span className="ps-recent-opp">{m.winner ? `${m.winner} won` : 'Draw'}</span>
                           <span className="ps-recent-score">{top.map((p) => p.framesWon).join('–')}</span>
@@ -353,9 +351,6 @@ export default function PlayedTogether() {
           </>
         )}
       </main>
-      {openMatch && (
-        <MatchDetailsModal isOpen onClose={() => setOpenMatch(null)} matchData={toDetails(openMatch)} />
-      )}
     </div>
   );
 }

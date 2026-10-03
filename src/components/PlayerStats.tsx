@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import { loadHistory, guessMyName, toDetails, type History, type HistoryMatch } from '../lib/history';
+import { loadHistory, guessMyName, type History } from '../lib/history';
 import { getFramesForMatches } from '../lib/database';
 import type { ActionLogEntry, BallType } from '../engine/types';
 import {
@@ -11,7 +11,6 @@ import {
   type Range,
 } from '../lib/playerStats';
 import { relativeDay, shortDuration, modeLabel } from '../lib/results';
-import MatchDetailsModal from './MatchDetailsModal';
 import ThemeBackdrop from './ThemeBackdrop';
 import { Icon } from './ui';
 
@@ -38,7 +37,6 @@ export default function PlayerStats() {
   const { user, isGuest } = useAuth();
   const { settings, update } = useSettings();
   const [params, setParams] = useSearchParams();
-  const [openMatch, setOpenMatch] = useState<HistoryMatch | null>(null);
   const [history, setHistory] = useState<History | null>(null);
   const [logsById, setLogsById] = useState<Map<string, ActionLogEntry[][]> | null>(null);
   const [range, setRange] = useState<Range>('all');
@@ -470,7 +468,7 @@ export default function PlayerStats() {
                   const opp = m.players.filter((x) => x.name !== subject && (!p?.teamName || x.teamName !== p.teamName)).map((x) => x.name);
                   return (
                     <li key={m.id}>
-                      <button type="button" className="ps-recent-row" onClick={() => setOpenMatch(m)}>
+                      <button type="button" className="ps-recent-row" onClick={() => navigate(`/match/${m.id}`)}>
                         <span className="ps-recent-day">{relativeDay(m.at)}</span>
                         <span className="ps-recent-opp">vs {opp.join(', ') || '—'}</span>
                         <span className="ps-recent-score">{p?.totalScore ?? 0}</span>
@@ -494,9 +492,6 @@ export default function PlayerStats() {
 
           <p className="ms-foot">Only matches recorded in this account count, not {their} whole record.</p>
         </main>
-      )}
-      {openMatch && (
-        <MatchDetailsModal isOpen onClose={() => setOpenMatch(null)} matchData={toDetails(openMatch)} />
       )}
     </div>
   );

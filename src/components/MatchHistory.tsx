@@ -9,7 +9,7 @@ import {
 } from '../lib/database';
 import { loadHistory, toDetails } from '../lib/history';
 import ThemeBackdrop from './ThemeBackdrop';
-import MatchDetailsModal, { type MatchDetailsData } from './MatchDetailsModal';
+import type { MatchDetailsData } from '../lib/history';
 import CenturyDetailsModal from './CenturyDetailsModal';
 import { Icon } from './ui';
 import PlayerLink from './PlayerLink';
@@ -27,7 +27,6 @@ export default function MatchHistory() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<HistoryItem[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<MatchDetailsData | null>(null);
   const [selectedCentury, setSelectedCentury] = useState<CenturyDetailsData | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -104,7 +103,7 @@ export default function MatchHistory() {
   const renderMatchCard = (match: MatchDetailsData) => (
     <div
       key={match.id}
-      onClick={() => setSelectedMatch(match)}
+      onClick={() => navigate(`/match/${match.id}`)}
       className="history-card card ripple"
       style={{ cursor: 'pointer' }}
     >
@@ -224,13 +223,6 @@ export default function MatchHistory() {
         )}
       </main>
 
-      {selectedMatch && (
-        <MatchDetailsModal
-          isOpen={!!selectedMatch}
-          onClose={() => setSelectedMatch(null)}
-          matchData={selectedMatch}
-        />
-      )}
 
       {/* Off-screen canvas for the Century share card */}
       <canvas ref={canvasRef} width={1600} height={1200} style={{ display: 'none' }} />

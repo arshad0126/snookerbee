@@ -4,7 +4,6 @@
  */
 
 import type { ActionLogEntry } from '../engine/types';
-import type { MatchDetailsData } from '../components/MatchDetailsModal';
 import {
   getAllMatches,
   getCenturyHistory,
@@ -102,7 +101,20 @@ export async function loadHistory(isGuest: boolean): Promise<History> {
   return { matches, centuries: centuries.map(fromDbCentury) };
 }
 
-/** The shape the match details sheet takes. */
+/** A saved match flattened for history lists. */
+export interface MatchDetailsData {
+  id: string;
+  date: string;
+  mode: string;
+  bestOf: number;
+  redsCount: number;
+  durationMs: number;
+  winnerName: string;
+  players: HistoryPlayer[];
+  frames?: { frameNumber: number; durationMs: number; actionLog: ActionLogEntry[] }[];
+}
+
+/** The shape the history list takes. */
 export function toDetails(m: HistoryMatch): MatchDetailsData {
   return {
     id: m.id,
