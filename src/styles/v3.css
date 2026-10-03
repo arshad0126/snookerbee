@@ -168,7 +168,8 @@ body.light-theme .theme-backdrop { color: var(--accent-sage); opacity: 0.07; }
   padding: 12px 14px; border-radius: 16px;
   background: var(--v3-surface); border: 1px solid var(--v3-line);
 }
-.db-form-label { font-size: 13px; font-weight: 600; }
+.db-form-label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.db-form .db-link { white-space: nowrap; }
 .db-form-dots { display: flex; gap: 5px; }
 .db-form-dot {
   width: 26px; height: 26px; border-radius: 8px;
@@ -232,10 +233,24 @@ body.light-theme .theme-backdrop { color: var(--accent-sage); opacity: 0.07; }
 
 @media (orientation: landscape) and (max-height: 500px) {
   .db-page { height: 100dvh; overflow: hidden; gap: 14px; }
-  .db-grid { overflow: hidden; }
-  .db-right { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+  /* The row must have a fixed height, or the Recent column just grows and is
+     clipped instead of scrolling. */
+  .db-grid { overflow: hidden; grid-template-rows: minmax(0, 1fr); }
+  .db-left { overflow-y: auto; overscroll-behavior: contain; }
+  /* "Recent · See all" stays put; only the list scrolls, inside its card. */
+  .db-right { overflow: hidden; }
+  .db-recent { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .db-new { min-height: 128px; padding: 16px 18px; }
   .db-new-title { font-size: 24px; }
+}
+
+/* Smaller phones in landscape (e.g. 390pt tall): everything on the left fits. */
+@media (orientation: landscape) and (max-height: 410px) {
+  .db-page { gap: 10px; padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .db-left { gap: 10px; }
+  .db-new { min-height: 112px; padding: 14px 16px; gap: 12px; }
+  .db-stats { padding: 10px 0; }
+  .db-form { padding: 9px 12px; }
 }
 
 @media (max-width: 640px) {

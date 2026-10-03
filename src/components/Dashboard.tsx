@@ -168,7 +168,7 @@ export default function Dashboard() {
                   <span key={i} className={`db-form-dot${r === 'W' ? ' is-win' : ''}`}>{r}</span>
                 ))}
               </span>
-              <button type="button" className="db-link" onClick={() => navigate('/stats')}>My stats →</button>
+              <button type="button" className="db-link" onClick={() => navigate('/stats')}>Stats →</button>
             </div>
           )}
         </div>

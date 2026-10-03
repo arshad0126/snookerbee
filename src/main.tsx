@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { repairLocalHistory } from './lib/database';
 import { loadLocalSettings } from './lib/settings';
+import { lockAppFeel } from './lib/appFeel';
 // Old v1 stylesheets first; v2 tokens load last so their :root values win on
 // the handful of shared token names (ball palette, success/warning, radii).
 // The v1 sheets are removed in Phase 5. tokens.css must be the last definer.
@@ -16,6 +17,7 @@ import './styles/accents.css';
 import './styles/v3.css';
 
 repairLocalHistory();
+lockAppFeel();
 
 // Paint the saved theme before React mounts, so there is no flash of the
 // default colours. SettingsProvider keeps it in sync afterwards.

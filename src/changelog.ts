@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.2.1',
+    date: '2026-10-04',
+    title: 'Feels like an app',
+    fixed: [
+      'The whole screen no longer drifts, bounces or scrolls when you drag it — it stays fixed like a real app.',
+      'Pinch-zoom and double-tap zoom are off, so the layout can\'t get stuck zoomed in.',
+      'On iPhone, the gaps around the notch were doubled, leaving wide empty edges. Spacing is even now and the screen uses the full width.',
+      'Recent matches on the home screen scroll in their own card, with the Recent heading staying in place — no need to tap See all.',
+      'The home screen fits smaller phones without the bottom card being cut off.',
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-10-04',
     title: 'New share cards and share screen',

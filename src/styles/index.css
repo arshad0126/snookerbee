@@ -207,6 +207,11 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
+  /* Feel like an app, not a web page: no pinch-zoom, no double-tap zoom,
+     no rubber-band bounce at the edges, no sideways drift. */
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 body {
@@ -217,8 +222,22 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overscroll-behavior: none;
   min-height: 100dvh;
+  /* No text-selection handles or the iOS long-press menu on buttons and
+     scores; typing fields turn it back on below. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
+
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+button, a, [role="button"] { touch-action: manipulation; }
 
 /* Subtle grain texture overlay */
 body::before {
@@ -236,10 +255,19 @@ body::before {
   background-size: 256px 256px;
 }
 
+/* The app is a fixed frame the size of the screen. The page itself never
+   scrolls or bounces — only #root (and the panels inside a screen) scroll,
+   with no rubber-band at the ends. */
+html, body { height: 100%; overflow: hidden; }
+
 #root {
-  position: relative;
+  position: fixed;
+  inset: 0;
   z-index: var(--z-base);
-  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 img {
@@ -401,15 +429,10 @@ ul, ol {
   outline-offset: 2px;
 }
 
-/* Safe area padding for notched devices */
-@supports (padding: env(safe-area-inset-top)) {
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-}
+/* Safe areas (notch, home bar) are handled by each screen's own padding.
+   They used to be added on <body> too, which doubled the side gaps in
+   landscape and made every screen taller than the phone, so the whole app
+   scrolled and bounced. */
 
 /* Floating Theme Toggle button */
 .theme-toggle-floating {
