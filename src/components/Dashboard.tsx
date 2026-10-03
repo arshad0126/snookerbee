@@ -14,6 +14,7 @@ import { loadHistory, guessMyName, toDetails, didWin, type History, type History
 import { summarize } from '../lib/playerStats';
 import { frameLine, modeLabel, relativeDay, shortDuration } from '../lib/results';
 import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
+import { requestLandscape } from '../lib/orientation';
 
 type RecentItem =
   | { kind: 'match'; at: number; m: HistoryMatch }
@@ -116,7 +117,7 @@ export default function Dashboard() {
       <main className="db-grid">
         <div className="db-left">
           {resumable && (
-            <button type="button" onClick={() => navigate('/play')} className="db-resume">
+            <button type="button" onClick={() => { void requestLandscape(); navigate('/play'); }} className="db-resume">
               <Icon name="pass" size={18} />
               <span className="db-resume-copy">
                 <b>Resume match</b>

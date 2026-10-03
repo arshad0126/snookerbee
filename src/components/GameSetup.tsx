@@ -4,6 +4,7 @@ import type { GameSetupConfig, GameMode } from '../engine/types';
 import { useTheme } from '../hooks/useTheme';
 import { Icon, type IconName } from './ui';
 import { CENTURY_RED_VALUES, DEFAULT_RED_VALUE } from '../engine/century';
+import { requestLandscape } from '../lib/orientation';
 
 /** Frames per match. Odd only — an even best-of can end level (issue #10). */
 const MATCH_LENGTHS = [1, 3, 5];
@@ -119,6 +120,8 @@ export default function GameSetup() {
   };
 
   const startMatch = () => {
+    // Called from the tap, so the browser allows the orientation lock.
+    void requestLandscape();
     if (format === 'century') {
       navigate('/century', {
         state: {
