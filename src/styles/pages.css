@@ -2744,3 +2744,86 @@ body.light-theme .summary-page {
 .player-stat-value.milestone {
   color: var(--accent-sage);
 }
+
+/* ============================================================================
+   Roster (2.2.2) — breaker on top, big move buttons, three rows always fit
+   ========================================================================= */
+.roster-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.roster-titles .setup-legend { margin: 0; }
+.roster-sub { font-size: 12px; color: var(--text-muted); }
+.roster-head { align-items: flex-start; }
+
+.roster-list { gap: 8px; }
+.roster-row {
+  min-height: 52px;
+  padding: 6px 6px 6px 8px;
+  gap: 10px;
+}
+.roster-seat { width: 34px; height: 34px; }
+.roster-input { font-size: 16px; }
+
+.roster-controls { flex-direction: row; gap: 6px; }
+.roster-move {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-color-dim);
+  border-radius: 10px;
+  background: var(--bg-elevated, var(--bg-card-solid));
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.roster-move:active:not(:disabled) { transform: scale(0.94); }
+.roster-move:disabled { opacity: 0.28; cursor: default; }
+
+.roster-badge {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent-sage); color: var(--on-accent);
+  font-size: 12px; font-weight: 700;
+}
+.roster-remove { width: 36px; height: 36px; }
+
+/* Three rows (3 × 52 + 2 × 8) never scroll; a 4th and beyond do. */
+@media (orientation: landscape) and (min-width: 700px) {
+  .roster-list { min-height: 172px; }
+  .setup-roster { padding: var(--space-md) var(--space-lg); }
+  .setup-cta { margin-top: var(--space-sm); }
+}
+
+/* New Match header: title + theme button inside the card */
+.setup-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: var(--space-md); }
+.setup-heading-row .setup-heading { margin: 0; }
+.setup-theme {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center;
+  border-radius: 12px; border: 1px solid var(--border-color);
+  background: var(--fill-quaternary); color: var(--text-secondary); cursor: pointer;
+}
+
+/* Roster rows stand out from the card, not just the breaker's */
+.roster-row { background: var(--fill-quaternary); }
+
+/* Short landscape phones: every option on the left fits without scrolling */
+@media (orientation: landscape) and (max-height: 500px) {
+  .setup-config { padding: var(--space-md) var(--space-lg); }
+  .setup-heading-row { margin-bottom: 10px; }
+  .setup-heading { font-size: 22px; }
+  .setup-field { margin-bottom: 12px; }
+  .setup-legend { margin-bottom: 6px; }
+  .tile { min-height: 44px; padding: 6px; flex-direction: row; gap: 7px; }
+  .tile--slim { min-height: 42px; }
+  .tile-grid, .tile-row { gap: 6px; }
+  .setup-hint { margin-top: 4px; }
+}
+@media (orientation: landscape) and (max-height: 410px) {
+  .setup-config { padding: 12px 18px; }
+  .setup-heading-row { margin-bottom: 6px; }
+  .setup-heading { font-size: 20px; }
+  .setup-theme { width: 36px; height: 36px; }
+  .setup-field { margin-bottom: 8px; }
+  .setup-legend { margin-bottom: 4px; }
+  .tile { min-height: 40px; }
+  .tile--slim { min-height: 38px; }
+}

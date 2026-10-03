@@ -104,12 +104,29 @@ export default function GameSetup() {
   const removePlayer = (index: number) => {
     if (gameMode !== 'freeForAll' || playerNames.length <= 2) return;
     setPlayerNames(playerNames.filter((_, i) => i !== index));
-    setBreakingPlayerIndex((b) => (b >= playerNames.length - 1 ? 0 : b));
+    setBreakingPlayerIndex((b) => (breakerFirst || b >= playerNames.length - 1 ? 0 : b));
+  };
+
+  /**
+   * 1 v 1 and free-for-all: the breaker is always seat 1. Picking someone
+   * else turns the order around the table so they come first and everyone
+   * keeps their place after them. Teams keep their seats (moving would swap
+   * people between teams), so there the breaker is only marked.
+   */
+  const breakerFirst = gameMode !== 'team';
+
+  const pickBreaker = (index: number) => {
+    if (!breakerFirst) { setBreakingPlayerIndex(index); return; }
+    if (index === 0) return;
+    setPlayerNames([...playerNames.slice(index), ...playerNames.slice(0, index)]);
+    setBreakingPlayerIndex(0);
   };
 
   const movePlayer = (index: number, direction: 'up' | 'down') => {
     const target = direction === 'up' ? index - 1 : index + 1;
     if (target < 0 || target >= playerNames.length) return;
+    // The breaker's seat is fixed; only the order after them changes.
+    if (breakerFirst && (index === 0 || target === 0)) return;
 
     const next = [...playerNames];
     [next[index], next[target]] = [next[target], next[index]];
@@ -156,6 +173,8 @@ export default function GameSetup() {
   };
 
   const canGrow = gameMode === 'freeForAll' && playerNames.length < 8;
+  // Arrows only help when there is more than one seat after the breaker.
+  const showArrows = breakerFirst ? playerNames.length > 2 : true;
 
   // Chips are a quick-add, so only offer regulars who are not already seated.
   // Showing all three regardless duplicated the roster directly beneath them,
@@ -166,18 +185,16 @@ export default function GameSetup() {
 
   return (
     <div className="setup-page">
-      <button
-        onClick={toggleTheme}
-        className="theme-toggle-floating"
-        aria-label="Toggle theme"
-      >
-        <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-      </button>
-
       <div className="setup-layout">
         {/* ---------------- Left: match configuration ---------------- */}
         <aside className="setup-config">
-          <h1 className="setup-heading">New Match</h1>
+          <div className="setup-heading-row">
+            <h1 className="setup-heading">New Match</h1>
+            {/* In the card, so it can never sit on top of the roster's Add button. */}
+            <button onClick={toggleTheme} className="setup-theme" aria-label="Toggle theme">
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+            </button>
+          </div>
 
           <fieldset className="setup-field">
             <legend className="setup-legend">Mode</legend>
@@ -318,7 +335,12 @@ export default function GameSetup() {
         {/* ---------------- Right: who's playing ---------------- */}
         <section className="setup-roster">
           <div className="roster-head">
-            <h2 className="setup-legend">Players</h2>
+            <div className="roster-titles">
+              <h2 className="setup-legend">Players</h2>
+              <span className="roster-sub">
+                {breakerFirst ? 'Tap a number to pick who breaks' : 'Tap a number to set who breaks'}
+              </span>
+            </div>
             {canGrow && (
               <button type="button" onClick={addPlayer} className="roster-add">
                 <Icon name="plus" size={14} /> Add
@@ -346,6 +368,7 @@ export default function GameSetup() {
           )}
 
           <div className="roster-list" role="radiogroup" aria-label="Who breaks first">
+            {/* 1 v 1 has nothing to reorder once the breaker is on top. */}
             {playerNames.map((name, idx) => {
               const breaking = breakingPlayerIndex === idx;
               const team = gameMode === 'team' ? (idx % 2 === 0 ? 'A' : 'B') : null;
@@ -358,7 +381,7 @@ export default function GameSetup() {
                     type="button"
                     role="radio"
                     aria-checked={breaking}
-                    onClick={() => setBreakingPlayerIndex(idx)}
+                    onClick={() => pickBreaker(idx)}
                     className="roster-seat"
                     aria-label={`${name.trim() || `Player ${idx + 1}`} breaks first`}
                     title="Break first"
@@ -377,26 +400,35 @@ export default function GameSetup() {
                     placeholder={`Player ${idx + 1}`}
                   />
 
-                  <div className="roster-controls">
-                    <button
-                      type="button"
-                      onClick={() => movePlayer(idx, 'up')}
-                      disabled={idx === 0}
-                      className="rotation-arrow-btn"
-                      aria-label="Move up"
-                    >
-                      <Icon name="chevron-up" size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => movePlayer(idx, 'down')}
-                      disabled={idx === playerNames.length - 1}
-                      className="rotation-arrow-btn"
-                      aria-label="Move down"
-                    >
-                      <Icon name="chevron-down" size={14} />
-                    </button>
-                  </div>
+                  {showArrows && (
+                    breakerFirst && idx === 0 ? (
+                      <span className="roster-badge"><Icon name="ball" size={13} /> Breaks</span>
+                    ) : (
+                      <div className="roster-controls">
+                        <button
+                          type="button"
+                          onClick={() => movePlayer(idx, 'up')}
+                          disabled={idx === (breakerFirst ? 1 : 0)}
+                          className="roster-move"
+                          aria-label={`Move ${name.trim() || `player ${idx + 1}`} up`}
+                        >
+                          <Icon name="chevron-up" size={20} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => movePlayer(idx, 'down')}
+                          disabled={idx === playerNames.length - 1}
+                          className="roster-move"
+                          aria-label={`Move ${name.trim() || `player ${idx + 1}`} down`}
+                        >
+                          <Icon name="chevron-down" size={20} />
+                        </button>
+                      </div>
+                    )
+                  )}
+                  {!showArrows && breakerFirst && idx === 0 && (
+                    <span className="roster-badge"><Icon name="ball" size={13} /> Breaks</span>
+                  )}
 
                   {(name.trim() || (gameMode === 'freeForAll' && playerNames.length > 2)) && (
                     <button
@@ -412,10 +444,6 @@ export default function GameSetup() {
               );
             })}
           </div>
-
-          <p className="setup-hint roster-hint">
-            Tap a number to set who breaks.
-          </p>
 
           <div className="setup-cta">
             <button onClick={() => navigate('/dashboard')} className="btn btn-ghost">

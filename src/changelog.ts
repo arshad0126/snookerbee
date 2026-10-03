@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.2.2',
+    date: '2026-10-04',
+    title: 'Easier New Match setup',
+    improved: [
+      'New Match: tap a player\'s number and they move to the top as the breaker, just like the next-frame setup.',
+      'The players after the breaker have big up/down buttons to swap their order.',
+      'Three players always fit, with even spacing; a fourth and more scroll underneath.',
+      'Every option on the left — mode, reds and length — fits on the screen without scrolling.',
+      'The light/dark button sits in the New Match card, so it no longer covers the Add button.',
+    ],
+  },
+  {
     version: '2.2.1',
     date: '2026-10-04',
     title: 'Feels like an app',
