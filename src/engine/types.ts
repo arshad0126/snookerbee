@@ -220,6 +220,12 @@ export interface GameState {
   undoStack: GameState[];
   /** Undos that can be redone, newest last. Cleared by any new action. */
   redoStack?: RedoEntry[];
+  /**
+   * Match-long player figures as they stood when this frame started, so
+   * Reset Frame can drop anything the abandoned frame added. Older saves
+   * lack it.
+   */
+  frameStartStats?: Record<string, { matchHighestBreak: number; centuries: number; halfCenturies: number }>;
 
   // --- Timers ---
   /** ISO-8601 timestamp of when the match started. */
@@ -335,6 +341,14 @@ export interface StartNextFrameAction {
   };
 }
 
+/**
+ * Start the current frame again from 0–0. Nothing from the abandoned frame
+ * is kept: it isn't counted as a frame, and its points don't reach the match.
+ */
+export interface ResetFrameAction {
+  readonly type: 'RESET_FRAME';
+}
+
 /** Tick the match timer. */
 export interface UpdateTimerAction {
   readonly type: 'COMMIT_TURN_TIME';
@@ -358,6 +372,7 @@ export type GameAction =
   | ConcedeFrameAction
   | EndFrameAction
   | StartNextFrameAction
+  | ResetFrameAction
   | UpdateTimerAction
   | SetStateAction;
 

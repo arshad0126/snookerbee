@@ -359,6 +359,15 @@ function areScoresTied(state: GameState): boolean {
 // createInitialState — Build the starting game state from a config
 // ============================================================================
 
+/** Match-long figures per player, for Reset Frame to return to. */
+function snapshotStats(players: Player[]): NonNullable<GameState['frameStartStats']> {
+  const out: NonNullable<GameState['frameStartStats']> = {};
+  for (const p of players) {
+    out[p.id] = { matchHighestBreak: p.matchHighestBreak, centuries: p.centuries, halfCenturies: p.halfCenturies };
+  }
+  return out;
+}
+
 export function createInitialState(config: GameSetupConfig): GameState {
   const now = new Date().toISOString();
 
@@ -449,6 +458,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     completedFrames: [],
     isFreeBall: false,
     winner: null,
+    frameStartStats: snapshotStats(players),
   };
 }
 
@@ -488,16 +498,22 @@ function reduceAction(state: GameState, action: GameAction): GameState {
       const currentPlayer = getCurrentPlayer(state);
       const playerIndex = state.turnOrder[state.currentPlayerIndex];
 
+      // A red can't be nominated as a free ball, so potting an actual red
+      // with a free ball awarded is just a red.
+      const usingFreeBall = state.isFreeBall && ball !== 'red';
+
       // --- Calculate points ---
       let pointsScored: number;
 
-      if (state.isFreeBall) {
-        // Free ball scoring:
-        // - If a red was expected, the free ball scores 1 (as if it were a red)
-        // - If a color was expected, the free ball scores the value of the
-        //   ball actually potted
+      if (usingFreeBall) {
+        // Free ball scores as the ball on:
+        // - red on → 1, as if it were a red
+        // - in the colours → the value of the colour on
+        // - colour on after a red → the value of the colour nominated
         if (state.phase === 'reds' && state.expectedBall === 'red') {
-          pointsScored = 1; // Treated as a red
+          pointsScored = 1;
+        } else if (state.phase === 'colorsInOrder' && state.currentColorTarget) {
+          pointsScored = BALL_VALUES[state.currentColorTarget];
         } else {
           pointsScored = BALL_VALUES[ball];
         }
@@ -533,7 +549,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
 
       switch (state.phase) {
         case 'reds': {
-          if (state.isFreeBall) {
+          if (usingFreeBall) {
             // Free ball in reds phase:
             // - If red was expected: treat as if a red was potted → expect color next
             // - If color was expected: treat as if a color was potted → expect red next
@@ -584,6 +600,9 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         }
 
         case 'colorsInOrder': {
+          // A free ball is re-spotted and the colour on stays on.
+          if (usingFreeBall) break;
+
           // A color was potted in sequence. Advance to the next color.
           // Colors are NOT re-spotted in this phase.
           const nextColor = getNextColorInOrder(state);
@@ -629,7 +648,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         playerName: currentPlayer.name,
         ball,
         points: pointsScored,
-        description: state.isFreeBall
+        description: usingFreeBall
           ? `${currentPlayer.name} potted ${ball} as free ball (+${pointsScored})`
           : `${currentPlayer.name} potted ${ball} (+${pointsScored})`,
       });
@@ -969,6 +988,54 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
+        frameStartStats: snapshotStats(resetPlayers),
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // RESET_FRAME — Start this frame again; the abandoned one never counts
+    // -----------------------------------------------------------------------
+    case 'RESET_FRAME': {
+      const now = new Date().toISOString();
+      // Time at the table was really spent, so it stays in the match total.
+      const banked = commitTurnTime(state).players;
+      const start = state.frameStartStats;
+      const resetPlayers = banked.map((p) => {
+        const s = start?.[p.id];
+        return {
+          ...p,
+          score: 0,
+          currentBreak: 0,
+          highestBreak: 0,
+          foulsCommitted: 0,
+          frameTimeMs: 0,
+          ...(s ?? {}),
+        };
+      });
+
+      return {
+        ...state,
+        phase: 'reds',
+        redsRemaining: state.redsTotal,
+        currentPlayerIndex: 0,
+        players: resetPlayers,
+        teams: state.teams.map((t) => ({ ...t, totalScore: 0 })),
+        expectedBall: 'red',
+        currentColorTarget: null,
+        actionLog: [
+          createLogEntry({
+            type: 'frameStart',
+            playerName: resetPlayers[state.turnOrder[0]]?.name ?? '',
+            description: `Frame ${state.frameNumber} restarted`,
+          }),
+        ],
+        undoStack: [],
+        redoStack: [],
+        frameStartTime: now,
+        turnStartedAt: now,
+        currentFrameDurationMs: 0,
+        isFreeBall: false,
+        frameStartStats: snapshotStats(resetPlayers),
       };
     }
 
@@ -1152,10 +1219,15 @@ function handleFrameEnd(state: GameState): GameState {
     [winnerId]: (state.frameScores[winnerId] ?? 0) + 1,
   };
 
-  // Check if match is over
-  const framesToWin = Math.ceil(state.bestOf / 2);
-  const matchWinner =
-    updatedFrameScores[winnerId] >= framesToWin ? winnerId : null;
+  // The match only finishes once every frame of the best-of is played —
+  // reaching the frames needed early clinches it, but play can go on. The
+  // winner is then whoever won the most frames (none if level).
+  const decided = Object.values(updatedFrameScores).reduce((a, b) => a + b, 0);
+  let matchWinner: string | null = null;
+  if (decided >= state.bestOf) {
+    const ranked = Object.entries(updatedFrameScores).sort((a, b) => b[1] - a[1]);
+    if (ranked.length && (ranked.length < 2 || ranked[0][1] > ranked[1][1])) matchWinner = ranked[0][0];
+  }
 
   const timing = commitTurnTime({
     ...state,

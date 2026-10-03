@@ -6,6 +6,7 @@ import type { BallType, Player } from '../engine/types';
 import {
   BALL_VALUES,
   isFrameOver,
+  isLegalPot,
   getPointsRemaining,
 } from '../engine';
 import { audio } from '../lib/audio';
@@ -135,19 +136,9 @@ export default function ScoringScreen() {
   const activePlayer = state.players[state.turnOrder[state.currentPlayerIndex]];
 
   // Ball Selection Eligibility Helper
-  const isBallEnabled = (ball: BallType): boolean => {
-    if (isPaused) return false;
-    if (state.phase === 'finished') return false;
-    if (state.phase === 'respottedBlack') return ball === 'black';
-    if (state.phase === 'colorsInOrder') return ball === state.currentColorTarget;
-    if (state.phase === 'finalColor') return ball !== 'red';
-    if (state.phase === 'reds') {
-      if (state.expectedBall === 'red') return ball === 'red' && state.redsRemaining > 0;
-      if (state.expectedBall === 'color') return ball !== 'red';
-    }
-    if (state.isFreeBall) return true;
-    return false;
-  };
+  // The engine's rules decide: free ball unlocks the colours, and a red
+  // stays tappable after a red (two can drop in one shot).
+  const isBallEnabled = (ball: BallType): boolean => !isPaused && isLegalPot(state, ball);
 
   // Ball Pot Handler
   const handlePotBall = (ball: BallType) => {
@@ -640,7 +631,7 @@ export default function ScoringScreen() {
             <button
               onClick={() => {
                 if (window.confirm('Reset this frame? All current frame scores will be lost.')) {
-                  dispatch({ type: 'START_NEXT_FRAME' });
+                  dispatch({ type: 'RESET_FRAME' });
                 }
               }}
               className="btn-reset-frame"

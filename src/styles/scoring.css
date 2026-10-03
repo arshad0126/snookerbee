@@ -1968,6 +1968,13 @@ body.light-theme .btn-topbar-icon.active-pause {
   overscroll-behavior: contain;
 }
 
+.summary-clinched {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-sm);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 .summary-actions {
   flex: none;
   position: sticky;

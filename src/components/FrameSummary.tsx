@@ -1,6 +1,6 @@
 import { useEffect, Fragment } from 'react';
 import type { GameState } from '../engine/types';
-import { isMatchOver } from '../engine/validators';
+import { framesDecided, isMatchClinched, isMatchOver } from '../engine/validators';
 import { audio } from '../lib/audio';
 import { Icon } from './ui';
 
@@ -60,7 +60,15 @@ export default function FrameSummary({
     }
   }
 
+  // Every frame played → the match is done. Someone may have clinched it
+  // earlier; the remaining frames can still be played, or the match ended.
   const matchEnded = isMatchOver(gameState);
+  const clinched = !matchEnded && isMatchClinched(gameState);
+  const framesLeft = Math.max(0, gameState.bestOf - framesDecided(gameState));
+  const leaderName = (() => {
+    const [id] = Object.entries(gameState.frameScores).sort((a, b) => b[1] - a[1])[0] ?? [];
+    return teams.find((t) => t.id === id)?.name ?? players.find((p) => p.id === id)?.name ?? '';
+  })();
 
   /** Per-player time within this frame; resets when the next frame starts. */
   const formatFrameTime = (ms: number) => {
@@ -172,6 +180,12 @@ export default function FrameSummary({
           )}
         </div>
         </div>
+
+        {clinched && (
+          <p className="summary-clinched">
+            {leaderName} has won the match. Play the last {framesLeft === 1 ? 'frame' : `${framesLeft} frames`} or end it here.
+          </p>
+        )}
 
         <div className="summary-actions">
           {matchEnded ? (

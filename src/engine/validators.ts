@@ -25,23 +25,28 @@ import { BALL_VALUES, COLORS_IN_ORDER, FOUL_MINIMUM } from './constants';
  * above rules (the referee has nominated it as a free ball).
  */
 export function isLegalPot(state: GameState, ball: BallType): boolean {
-  // Free ball overrides normal rules — any ball may be potted
+  if (state.phase === 'finished') return false;
+
+  // Reds can go down whenever reds are on the table — including straight
+  // after a red, because two reds can drop in one shot (each scores 1).
+  if (ball === 'red') {
+    return state.phase === 'reds' && state.redsRemaining > 0;
+  }
+
+  // Free ball: any colour may be nominated and potted.
   if (state.isFreeBall) {
     return true;
   }
 
   switch (state.phase) {
     case 'reds': {
-      if (state.expectedBall === 'red') {
-        return ball === 'red';
-      }
-      // expectedBall === 'color': any non-red ball is legal
-      return ball !== 'red';
+      // A colour only after a red.
+      return state.expectedBall === 'color';
     }
 
     case 'finalColor': {
       // After the last red, one color may be potted (any color)
-      return ball !== 'red';
+      return true;
     }
 
     case 'colorsInOrder': {
@@ -54,7 +59,6 @@ export function isLegalPot(state: GameState, ball: BallType): boolean {
       return ball === 'black';
     }
 
-    case 'finished':
     default:
       return false;
   }
@@ -203,23 +207,24 @@ export function isFrameOver(state: GameState): boolean {
   return state.phase === 'finished';
 }
 
+/** Frames decided so far in the match. */
+export function framesDecided(state: GameState): number {
+  return Object.values(state.frameScores).reduce((a, b) => a + b, 0);
+}
+
 /**
- * Checks if the match is over based on frame wins vs best-of format.
- *
- * @param state — Current game state.
- * @returns true if any player/team has won enough frames.
+ * The match is over once every frame of the best-of has been played. A
+ * player who reaches the frames needed early has clinched it, but the
+ * remaining frames are still played unless the players end the match.
  */
 export function isMatchOver(state: GameState): boolean {
+  return framesDecided(state) >= state.bestOf;
+}
+
+/** Someone has won enough frames that the match result can't change. */
+export function isMatchClinched(state: GameState): boolean {
   const framesToWin = Math.ceil(state.bestOf / 2);
-
-  // Check each entity's frame wins
-  for (const entityId of Object.keys(state.frameScores)) {
-    if (state.frameScores[entityId] >= framesToWin) {
-      return true;
-    }
-  }
-
-  return false;
+  return Object.values(state.frameScores).some((n) => n >= framesToWin);
 }
 
 // ---------------------------------------------------------------------------

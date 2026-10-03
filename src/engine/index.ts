@@ -48,6 +48,8 @@ export {
   getPointsRemaining,
   isFrameOver,
   isMatchOver,
+  isMatchClinched,
+  framesDecided,
   getNextColorInOrder,
 } from './validators';
 

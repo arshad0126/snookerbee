@@ -304,7 +304,7 @@ export default function GameSetup() {
             <p className="setup-hint">
               {bestOf === 1
                 ? 'Single frame'
-                : `First to ${Math.ceil(bestOf / 2)} wins`}
+                : `First to ${Math.ceil(bestOf / 2)} wins · you can play all ${bestOf}`}
             </p>
           </fieldset>
           </>
