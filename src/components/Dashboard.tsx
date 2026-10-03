@@ -12,7 +12,7 @@ import { loadActiveMatch } from '../lib/matchStorage';
 import { hasUnseenRelease } from '../lib/releaseSeen';
 import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
 import { summarize } from '../lib/playerStats';
-import { modeLabel, relativeDay, shortDuration } from '../lib/results';
+import { frameLine, modeLabel, relativeDay, shortDuration } from '../lib/results';
 import { byFinish, type CenturyDetailsData } from '../lib/centuryHistory';
 
 type RecentItem =
@@ -217,7 +217,7 @@ export default function Dashboard() {
                           );
                         })}
                       {me && didWin(item.m, me) && <span className="db-you-won">You won</span>}
-                      {!item.m.winner && <span className="db-draw">Draw</span>}
+                      {!item.m.winner && <span className="db-draw">Draw · {frameLine(item.m.players)}</span>}
                     </span>
                     <span className="db-row-time">{shortDuration(item.m.durationMs)}</span>
                   </div>

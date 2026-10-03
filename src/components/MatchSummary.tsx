@@ -14,7 +14,7 @@ import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard } from '../lib/shareCard';
 import { Icon } from './ui';
 import { loadPendingMatch, clearPendingMatch } from '../lib/matchStorage';
-import { matchTotals, matchWinnerName, isEmptyGame } from '../lib/results';
+import { matchTotals, matchWinnerName, isEmptyGame, pointsLeader } from '../lib/results';
 
 interface FrameHistoryItem {
   frameNumber: number;
@@ -70,10 +70,23 @@ export default function MatchSummary() {
   const { players, teams, mode, bestOf, matchTimerMs } = gameState;
 
   // Winner: whoever reached the frames-to-win mark, or — for a match ended
-  // early — most frames, then most points. Totals span every frame; the
-  // players' own score/foul fields only hold the last one.
+  // early — most frames. Level on frames is a draw; points never decide it.
+  // Totals span every frame; the players' own score/foul fields only hold
+  // the last one.
   const winnerName = matchWinnerName(gameState);
   const totals = matchTotals(gameState);
+  const drawNote = winnerName === 'Draw'
+    ? pointsLeader(players.map((p) => ({
+        name: p.name,
+        teamName: mode === 'team' ? teams.find((t) => t.playerIds.includes(p.id))?.name : undefined,
+        totalScore: totals.points[p.id] ?? 0,
+        framesWon: 0,
+      })))
+    : null;
+  const drawFrames = (mode === 'team' ? teams.map((t) => t.id) : players.map((p) => p.id))
+    .map((id) => gameState.frameScores[id] || 0)
+    .sort((a, b) => b - a)
+    .join('–');
   const empty = isEmptyGame(gameState);
 
   const formatTime = (ms: number) => {
@@ -287,7 +300,10 @@ export default function MatchSummary() {
             <span className="trophy-large"><Icon name="trophy" size={56} /></span>
             <div className="winner-banner-text">
               <span className="winner-label">{winnerName === 'Draw' ? 'Result' : 'Winner'}</span>
-              <span className="winner-name-highlight">{winnerName}</span>
+              <span className="winner-name-highlight">{winnerName === 'Draw' ? `Draw · ${drawFrames}` : winnerName}</span>
+              {winnerName === 'Draw' && drawNote && (
+                <span className="winner-note">{drawNote.name} scored more ({drawNote.line})</span>
+              )}
             </div>
           </div>
         </div>

@@ -7,8 +7,8 @@
  * left — the LAST frame only. A three-frame match read "66 – 26 – 23" when
  * the real totals were 128 – 115 – 99. Matches that ended before anyone
  * reached the frames-to-win mark were also saved with winner "Unknown".
- * Totals now come from every frame, and the winner from frames won, then
- * points.
+ * Totals now come from every frame, and the winner from frames won only:
+ * level on frames is a draw, whatever the points say (as in real snooker).
  */
 
 import type { ActionLogEntry, GameState } from '../engine/types';
@@ -46,18 +46,45 @@ export interface Contender {
 }
 
 /**
- * Most frames wins; level on frames, most points wins; level on both is a
- * draw (null). A match with no points at all has no winner.
+ * Most frames wins. Level on frames is a draw (null) — points never decide
+ * a match. Awais 1, Suraj 1 with frame 3 unplayed is a draw even if Suraj
+ * scored more. Nobody won a frame: no winner.
  */
 export function pickWinner(contenders: Contender[]): string | null {
   if (contenders.length === 0) return null;
-  const sorted = [...contenders].sort(
-    (a, b) => b.framesWon - a.framesWon || b.points - a.points
-  );
+  const sorted = [...contenders].sort((a, b) => b.framesWon - a.framesWon);
   const [top, next] = sorted;
-  if (top.framesWon === 0 && top.points === 0) return null;
-  if (next && next.framesWon === top.framesWon && next.points === top.points) return null;
+  if (top.framesWon === 0) return null;
+  if (next && next.framesWon === top.framesWon) return null;
   return top.name;
+}
+
+/** Players grouped into the sides that win frames (teams, else players). */
+function sides(players: SavedPlayerLike[]): Contender[] {
+  const byEntity = new Map<string, Contender>();
+  for (const p of players) {
+    const key = p.teamName || p.name;
+    const c = byEntity.get(key) ?? { name: key, framesWon: 0, points: 0 };
+    c.framesWon = p.teamName ? Math.max(c.framesWon, p.framesWon) : p.framesWon;
+    c.points += p.totalScore;
+    byEntity.set(key, c);
+  }
+  return [...byEntity.values()];
+}
+
+/** Frames won by each side, highest first: "1–1", "2–1–0". */
+export function frameLine(players: SavedPlayerLike[]): string {
+  return sides(players).map((c) => c.framesWon).sort((a, b) => b - a).join('–');
+}
+
+/**
+ * For a draw: who scored more points, e.g. { name: 'Suraj', line: '60–40' }.
+ * Null when the top points are shared. Shown as a note, never as the result.
+ */
+export function pointsLeader(players: SavedPlayerLike[]): { name: string; line: string } | null {
+  const ranked = sides(players).sort((a, b) => b.points - a.points);
+  if (ranked.length < 2 || ranked[0].points === ranked[1].points) return null;
+  return { name: ranked[0].name, line: ranked.map((c) => c.points).join('–') };
 }
 
 /** The match winner's name for a finished game state, or 'Draw'. */
@@ -118,20 +145,12 @@ export function isEmptyRecord(players: SavedPlayerLike[]): boolean {
 }
 
 /**
- * Winner of a saved match. Prefers the stored name; for older rows saved as
- * "Unknown" it falls back to frames won, then points.
+ * Winner of a saved match, always from frames won. Older rows saved a
+ * winner picked on points when frames were level (or "Unknown"); this
+ * re-reads every one of them by frames, so those show as draws now.
  */
-export function savedWinner(stored: string | null | undefined, players: SavedPlayerLike[]): string | null {
-  if (stored && stored !== 'Unknown' && stored !== 'Draw') return stored;
-  const byEntity = new Map<string, Contender>();
-  for (const p of players) {
-    const key = p.teamName || p.name;
-    const c = byEntity.get(key) ?? { name: key, framesWon: 0, points: 0 };
-    c.framesWon = p.teamName ? Math.max(c.framesWon, p.framesWon) : p.framesWon;
-    c.points += p.totalScore;
-    byEntity.set(key, c);
-  }
-  return pickWinner([...byEntity.values()]);
+export function savedWinner(_stored: string | null | undefined, players: SavedPlayerLike[]): string | null {
+  return pickWinner(sides(players));
 }
 
 /** Totals rebuilt from saved frame logs (for local guest records). */

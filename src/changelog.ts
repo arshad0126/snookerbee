@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7.1',
+    date: '2026-10-03',
+    title: 'Level on frames is a draw',
+    fixed: [
+      'A match that ends level on frames — say 1–1 with frame 3 not played — now shows "Draw · 1–1" instead of giving it to whoever scored more points.',
+      'Older matches decided on points are re-read the same way, so they show as draws too.',
+    ],
+    improved: [
+      'Drawn matches note who scored more points, e.g. "Suraj scored more (60–40)", without calling it a win.',
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-10-03',
     title: 'Stats count frames, not matches',

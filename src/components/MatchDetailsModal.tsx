@@ -4,6 +4,7 @@ import { getMatchFrames } from '../lib/database';
 import { presentShareCard, cardFilename } from '../lib/shareImage';
 import { drawMatchCard, drawFrameCard } from '../lib/shareCard';
 import { computeFrameResult } from '../lib/frameResult';
+import { frameLine, pointsLeader } from '../lib/results';
 import { Icon } from './ui';
 import PlayerLink from './PlayerLink';
 
@@ -170,6 +171,9 @@ export default function MatchDetailsModal({
     return analysis;
   };
 
+  const isDraw = !matchData.winnerName || matchData.winnerName === 'Draw';
+  const drawNote = isDraw ? pointsLeader(matchData.players) : null;
+
   const handleShareCard = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -259,8 +263,11 @@ export default function MatchDetailsModal({
             <div className="ma-result-top">
               <Icon name="trophy" size={26} className="ma-result-trophy" />
               <div className="ma-result-names">
-                <span className="ma-result-label">Winner</span>
-                <span className="ma-result-name">{matchData.winnerName}</span>
+                <span className="ma-result-label">{isDraw ? 'Result' : 'Winner'}</span>
+                <span className="ma-result-name">{isDraw ? `Draw · ${frameLine(matchData.players)}` : matchData.winnerName}</span>
+                {isDraw && drawNote && (
+                  <span className="ma-result-note">{drawNote.name} scored more ({drawNote.line})</span>
+                )}
               </div>
             </div>
 

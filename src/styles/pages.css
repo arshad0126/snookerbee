@@ -1094,6 +1094,8 @@
   color: var(--text-primary);
 }
 
+.winner-note { font-size: 0.85rem; color: var(--text-muted); }
+
 .summary-section {
   display: flex;
   flex-direction: column;
@@ -1841,6 +1843,8 @@ body.light-theme .summary-page {
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
+
+.ma-result-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
 
 .ma-meta-row {
   display: flex;
