@@ -304,6 +304,15 @@ export default function PlayerStats() {
                       <div><span>Played together (same team)</span><b>{pr.vsMe.together} · {pr.vsMe.togetherWins} won</b></div>
                     )}
                   </div>
+                  {me && subject && (
+                    <button
+                      type="button"
+                      className="db-link"
+                      onClick={() => navigate(`/together?p=${encodeURIComponent(me)}&p=${encodeURIComponent(subject)}`)}
+                    >
+                      Just you and {subject} →
+                    </button>
+                  )}
                 </div>
               )}
             </section>

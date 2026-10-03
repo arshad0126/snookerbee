@@ -14,6 +14,7 @@ import MatchSummary from './components/MatchSummary';
 import MatchHistory from './components/MatchHistory';
 import UIDemo from './components/dev/UIDemo';
 import PlayerStats from './components/PlayerStats';
+import PlayedTogether from './components/PlayedTogether';
 import Settings from './components/Settings';
 import WhatsNew from './components/WhatsNew';
 
@@ -141,6 +142,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PlayerStats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/together"
+        element={
+          <ProtectedRoute>
+            <PlayedTogether />
           </ProtectedRoute>
         }
       />

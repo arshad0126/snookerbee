@@ -32,6 +32,7 @@ const PRIMARY: Item[] = [
   { icon: 'chart', label: 'Player stats', to: '/players' },
   { icon: 'history', label: 'Match history', to: '/history' },
   { icon: 'users', label: 'Head-to-head', to: '/players#head-to-head' },
+  { icon: 'duo', label: 'Played together', to: '/together' },
   { icon: 'trophy', label: 'Records & milestones', to: '/players#breaks' },
 ];
 

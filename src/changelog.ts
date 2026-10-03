@@ -22,6 +22,17 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6.0',
+    date: '2026-10-03',
+    title: 'Played together',
+    added: [
+      'Played together: pick two or three players, tap Calculate, and see stats from only the games where exactly that group played.',
+      'Pick Arshad, Awais and Suraj and you get your three-way games only — no 1 v 1s between any two of you, and no games where someone else joined.',
+      'Leaderboard, side-by-side numbers with the best in each row highlighted, frame finishes (1st, 2nd, 3rd), who won lately, and Century games together.',
+      'Find it in the profile menu, or tap "Just you and …" on a player\'s stats.',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-10-02',
     title: 'Safer undo, with Redo',
