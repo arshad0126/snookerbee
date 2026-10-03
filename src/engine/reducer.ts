@@ -459,6 +459,7 @@ export function createInitialState(config: GameSetupConfig): GameState {
     isFreeBall: false,
     winner: null,
     frameStartStats: snapshotStats(players),
+    frameStartTurn: startingTurnIndex >= 0 ? startingTurnIndex : 0,
   };
 }
 
@@ -514,6 +515,8 @@ function reduceAction(state: GameState, action: GameAction): GameState {
           pointsScored = 1;
         } else if (state.phase === 'colorsInOrder' && state.currentColorTarget) {
           pointsScored = BALL_VALUES[state.currentColorTarget];
+        } else if (state.phase === 'respottedBlack') {
+          pointsScored = BALL_VALUES.black;
         } else {
           pointsScored = BALL_VALUES[ball];
         }
@@ -989,6 +992,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         isFreeBall: false,
         winner: null,
         frameStartStats: snapshotStats(resetPlayers),
+        frameStartTurn: newStartIndex,
       };
     }
 
@@ -1013,11 +1017,13 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         };
       });
 
+      // The same player breaks the restarted frame.
+      const breaker = state.frameStartTurn ?? 0;
       return {
         ...state,
         phase: 'reds',
         redsRemaining: state.redsTotal,
-        currentPlayerIndex: 0,
+        currentPlayerIndex: breaker,
         players: resetPlayers,
         teams: state.teams.map((t) => ({ ...t, totalScore: 0 })),
         expectedBall: 'red',
@@ -1025,7 +1031,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         actionLog: [
           createLogEntry({
             type: 'frameStart',
-            playerName: resetPlayers[state.turnOrder[0]]?.name ?? '',
+            playerName: resetPlayers[state.turnOrder[breaker]]?.name ?? '',
             description: `Frame ${state.frameNumber} restarted`,
           }),
         ],

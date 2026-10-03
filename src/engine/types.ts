@@ -226,6 +226,8 @@ export interface GameState {
    * lack it.
    */
   frameStartStats?: Record<string, { matchHighestBreak: number; centuries: number; halfCenturies: number }>;
+  /** Index into turnOrder of who broke this frame, for Reset Frame. Older saves lack it. */
+  frameStartTurn?: number;
 
   // --- Timers ---
   /** ISO-8601 timestamp of when the match started. */

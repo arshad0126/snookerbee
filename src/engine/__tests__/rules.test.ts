@@ -66,6 +66,14 @@ describe('reset frame', () => {
   });
 });
 
+describe('reset frame keeps the breaker', () => {
+  it('the player who broke breaks again', () => {
+    const s0 = createInitialState({ mode: '1v1', redsCount: 10, bestOf: 3, players: [{ name: 'Awais' }, { name: 'Suraj' }], breakingPlayerIndex: 1 });
+    const s = run(s0, pot('red'), { type: 'MISS' }, { type: 'RESET_FRAME' });
+    expect(s.players[s.turnOrder[s.currentPlayerIndex]].name).toBe('Suraj');
+  });
+});
+
 describe('play all frames', () => {
   it('reaching the frames needed clinches the match but does not end it', () => {
     let s = winFrameFor(start(3), 'Awais');
