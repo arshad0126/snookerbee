@@ -675,6 +675,7 @@ button.pd-version {
 .ps-recent-day { color: var(--v3-ink-2); font-size: 12.5px; }
 .ps-recent-opp { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ps-recent-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ps-recent-frames { width: auto; min-width: 36px; padding: 0 6px; font-variant-numeric: tabular-nums; }
 
 .ps-thisisme { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 

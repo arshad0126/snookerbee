@@ -99,7 +99,7 @@ export default function ProfileDrawer({ open, onClose, stats, firstPlayedAt }: P
         {stats && (
           <div className="pd-chips">
             <span className="pd-chip"><b>{stats.matches}</b>matches</span>
-            <span className="pd-chip"><b>{stats.wins}</b>wins</span>
+            <span className="pd-chip"><b>{stats.wins}</b>frames won</span>
             <span className="pd-chip pd-chip--accent"><b>{stats.bestBreak}</b>best break</span>
           </div>
         )}

@@ -113,7 +113,6 @@ export default function PlayedTogether() {
   };
 
   const rows: { label: string; get: (p: GroupPlayer) => number | null; fmt?: (v: number) => string; lowWins?: boolean; hint?: string }[] = [
-    { label: 'Matches won', get: (p) => p.matchesWon },
     { label: 'Frames won', get: (p) => p.framesWon },
     { label: 'Frame win %', get: (p) => p.frameWinRate, fmt: (v) => `${v}%` },
     { label: 'Avg points / frame', get: (p) => p.avgPointsPerFrame },
@@ -127,7 +126,7 @@ export default function PlayedTogether() {
     { label: 'Time at the table', get: (p) => p.tableMs, fmt: (v) => hours(v), hint: 'no-best' },
   ];
 
-  const ranked = stats ? [...stats.players].sort((a, b) => b.framesWon - a.framesWon || b.matchesWon - a.matchesWon) : [];
+  const ranked = stats ? [...stats.players].sort((a, b) => b.framesWon - a.framesWon || (b.frameWinRate ?? 0) - (a.frameWinRate ?? 0)) : [];
   const n = stats?.group.length ?? 0;
   const hasPlaces = !!stats && stats.players.some((p) => p.places);
 
@@ -193,10 +192,10 @@ export default function PlayedTogether() {
             {stats.matches.length > 0 && (
               <>
                 <section className="ms-card ms-kpis pt-kpis" aria-label="Overview">
-                  <div className="ms-kpi"><b>{stats.matches.length}</b><span>Matches</span><small>{stats.draws ? `${stats.draws} drawn` : 'together'}</small></div>
+                  <div className="ms-kpi"><b>{stats.matches.length}</b><span>Matches</span><small>together</small></div>
                   <div className="ms-kpi"><b>{stats.frames}</b><span>Frames</span><small>{stats.matches.length ? `${Math.round((stats.frames / stats.matches.length) * 10) / 10} per match` : ''}</small></div>
                   <div className="ms-kpi"><b>{hours(stats.tableMs)}</b><span>Played</span><small>{stats.firstAt ? `since ${relativeDay(stats.firstAt)}` : ''}</small></div>
-                  <div className="ms-kpi"><b>{stats.lastAt ? relativeDay(stats.lastAt) : '–'}</b><span>Last game</span><small>{stats.streak && stats.streak.n > 1 ? `${stats.streak.name} won ${stats.streak.n} in a row` : ' '}</small></div>
+                  <div className="ms-kpi"><b>{stats.lastAt ? relativeDay(stats.lastAt) : '–'}</b><span>Last game</span><small>{stats.streak && stats.streak.n > 1 ? `${stats.streak.name} won ${stats.streak.n} frames in a row` : ' '}</small></div>
                 </section>
 
                 <section className="ms-card" aria-labelledby="pt-board">
@@ -208,7 +207,7 @@ export default function PlayedTogether() {
                     {ranked.map((p, i) => (
                       <li key={p.name} className={i === 0 && p.framesWon > 0 ? 'is-top' : ''}>
                         <span className="ms-opp-avatar">{p.name.charAt(0).toUpperCase()}</span>
-                        <span className="pt-board-name"><b>{label(p.name)}</b><small>{p.matchesWon} match{p.matchesWon === 1 ? '' : 'es'} won</small></span>
+                        <span className="pt-board-name"><b>{label(p.name)}</b><small>{p.framesWon} of {stats.frames} frames won</small></span>
                         <span className="pt-board-frames"><b>{p.framesWon}</b><small>{p.frameWinRate ?? 0}%</small></span>
                         <span className="ms-split pt-board-bar" aria-hidden="true">
                           <span className="ms-split-win" style={{ width: `${p.frameWinRate ?? 0}%` }} />
@@ -277,7 +276,7 @@ export default function PlayedTogether() {
                   <section className="ms-card" aria-labelledby="pt-form">
                     <div className="ms-card-head">
                       <h2 id="pt-form" className="ms-h2">Who won lately</h2>
-                      <span className="ms-meta">last {stats.form.length}, oldest → newest</span>
+                      <span className="ms-meta">last {stats.form.length} frames, oldest → newest</span>
                     </div>
                     <div className="ms-form">
                       {stats.form.map((w, i) => (
@@ -288,7 +287,7 @@ export default function PlayedTogether() {
                     </div>
                     {stats.streak && (
                       <p className="ms-insight">
-                        <b>{stats.streak.name}</b> won the last {stats.streak.n === 1 ? 'match' : `${stats.streak.n} matches`}.
+                        <b>{stats.streak.name}</b> won the last {stats.streak.n === 1 ? 'frame' : `${stats.streak.n} frames`}.
                       </p>
                     )}
                   </section>

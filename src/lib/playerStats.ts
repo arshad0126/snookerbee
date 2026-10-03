@@ -2,11 +2,17 @@
  * playerStats — everything the dashboard and My Stats show about one player,
  * computed from saved history. No extra tables: matches, their frame logs,
  * and Century games are enough.
+ *
+ * Results are counted FRAME BY FRAME, never by match. Awais wins frame 1,
+ * Suraj wins frame 2, frame 3 never played: Awais is 1 won / 1 lost, Suraj
+ * is 1 won / 1 lost, and nobody "won the match". Win rate, form, streaks,
+ * the monthly chart, by-format and head-to-head all work this way.
  */
 
 import type { ActionLogEntry, BallType } from '../engine/types';
 import type { CenturyDetailsData } from './centuryHistory';
-import { didWin, type HistoryMatch } from './history';
+import { computeFrameResult } from './frameResult';
+import type { HistoryMatch } from './history';
 
 export type Range = 'week' | 'month' | 'all';
 
@@ -18,11 +24,73 @@ export function inRange<T extends { at: number }>(items: T[], range: Range, now 
   return items.filter((x) => x.at >= from);
 }
 
+/** Frame logs by match id, each match's frames in play order. */
+export type LogsById = Map<string, ActionLogEntry[][]> | null | undefined;
+
+/** The side a player scores for: their team in team mode, else themselves. */
+const sideOf = (m: HistoryMatch, name: string): string | null => {
+  const p = m.players.find((x) => x.name === name);
+  return p ? p.teamName || p.name : null;
+};
+
+/**
+ * Winner (team or player name) of every finished frame in a match, in the
+ * order played. Read from the frame logs when they agree with the saved
+ * frame counts; otherwise null (the order can't be known).
+ */
+export function frameWinners(m: HistoryMatch, logs?: LogsById): string[] | null {
+  const frames = logs?.get(m.id) ?? m.frames?.map((f) => f.actionLog ?? []) ?? [];
+  if (frames.length === 0) return null;
+  const players = m.players.map((p) => ({ name: p.name, teamName: p.teamName }));
+  const winners = frames
+    .map((log) => computeFrameResult(log, players).winnerName)
+    .filter((w): w is string => w !== null);
+  if (winners.length !== framesPlayed(m)) return null;
+  // Every side's count must match what was saved, or the logs are suspect.
+  const ok = m.players.every((p) => {
+    const side = p.teamName || p.name;
+    return winners.filter((w) => w === side).length === p.framesWon;
+  });
+  return ok ? winners : null;
+}
+
+/**
+ * One player's frames in one match, in the order played: true = won.
+ * Without usable logs the order inside the match is unknown, so losses are
+ * listed before wins (totals are still exact).
+ */
+export function frameRecord(m: HistoryMatch, name: string, logs?: LogsById): boolean[] {
+  const side = sideOf(m, name);
+  const p = m.players.find((x) => x.name === name);
+  if (!side || !p) return [];
+  const winners = frameWinners(m, logs);
+  if (winners) return winners.map((w) => w === side);
+  const played = framesPlayed(m);
+  const won = Math.min(p.framesWon, played);
+  return [...Array<boolean>(played - won).fill(false), ...Array<boolean>(won).fill(true)];
+}
+
+/** Frames won and played by one player in one match. */
+export function frameCount(m: HistoryMatch, name: string): { won: number; played: number } {
+  const p = m.players.find((x) => x.name === name);
+  if (!p) return { won: 0, played: 0 };
+  const played = framesPlayed(m);
+  return { won: Math.min(p.framesWon, played), played };
+}
+
+/** Every frame result for a player, NEWEST FIRST (matches newest first). */
+export function frameTimeline(matches: HistoryMatch[], name: string, logs?: LogsById): boolean[] {
+  return matches.flatMap((m) => frameRecord(m, name, logs).reverse());
+}
+
 export interface Summary {
   matches: number;
+  /** Frames won. */
   wins: number;
+  /** Frames won ÷ frames played, as a percentage. */
   winRate: number;
   framesWon: number;
+  framesPlayed: number;
   avgPoints: number;
   tableMs: number;
   avgMatchMs: number;
@@ -30,15 +98,17 @@ export interface Summary {
   bestBreakAt: number | null;
   avgBestBreak: number;
   thisWeek: number;
-  /** Oldest first. */
+  /** Last frames, oldest first. */
   form: ('W' | 'L')[];
   firstAt: number | null;
 }
 
-export function summarize(all: HistoryMatch[], me: string, formLength = 10, now = Date.now()): Summary {
+export function summarize(all: HistoryMatch[], me: string, formLength = 10, now = Date.now(), logs?: LogsById): Summary {
   const mine = all.filter((m) => m.players.some((p) => p.name === me));
   const rows = mine.map((m) => ({ m, p: m.players.find((p) => p.name === me)! }));
-  const wins = mine.filter((m) => didWin(m, me)).length;
+  let framesWon = 0;
+  let framesPlayedTotal = 0;
+  mine.forEach((m) => { const c = frameCount(m, me); framesWon += c.won; framesPlayedTotal += c.played; });
   let bestBreak = 0;
   let bestBreakAt: number | null = null;
   // Newest first, so the first time the best is reached is the latest one.
@@ -48,9 +118,10 @@ export function summarize(all: HistoryMatch[], me: string, formLength = 10, now 
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + f(r), 0);
   return {
     matches: mine.length,
-    wins,
-    winRate: mine.length ? Math.round((wins / mine.length) * 100) : 0,
-    framesWon: sum((r) => r.p.framesWon),
+    wins: framesWon,
+    winRate: framesPlayedTotal ? Math.round((framesWon / framesPlayedTotal) * 100) : 0,
+    framesWon,
+    framesPlayed: framesPlayedTotal,
     avgPoints: rows.length ? Math.round(sum((r) => r.p.totalScore) / rows.length) : 0,
     tableMs: sum((r) => r.p.timeSpentMs),
     avgMatchMs: rows.length ? sum((r) => r.m.durationMs) / rows.length : 0,
@@ -58,14 +129,15 @@ export function summarize(all: HistoryMatch[], me: string, formLength = 10, now 
     bestBreakAt,
     avgBestBreak: rows.length ? Math.round((sum((r) => r.p.highestBreak) / rows.length) * 10) / 10 : 0,
     thisWeek: mine.filter((m) => m.at >= now - 7 * DAY).length,
-    form: mine.slice(0, formLength).map((m) => (didWin(m, me) ? 'W' : 'L') as 'W' | 'L').reverse(),
+    form: frameTimeline(mine, me, logs).slice(0, formLength).map((w) => (w ? 'W' : 'L') as 'W' | 'L').reverse(),
     firstAt: mine.length ? mine[mine.length - 1].at : null,
   };
 }
 
+/** `games` = frames played that month, `wins` = frames won. */
 export interface MonthBar { key: string; label: string; games: number; wins: number }
 
-/** The last `count` months, oldest first, including months with no games. */
+/** The last `count` months, oldest first, counted in frames. */
 export function byMonth(all: HistoryMatch[], me: string, count = 6, now = new Date()): MonthBar[] {
   const bars: MonthBar[] = [];
   for (let i = count - 1; i >= 0; i -= 1) {
@@ -82,8 +154,9 @@ export function byMonth(all: HistoryMatch[], me: string, count = 6, now = new Da
     const d = new Date(m.at);
     const bar = bars.find((b) => b.key === `${d.getFullYear()}-${d.getMonth()}`);
     if (!bar) return;
-    bar.games += 1;
-    if (didWin(m, me)) bar.wins += 1;
+    const c = frameCount(m, me);
+    bar.games += c.played;
+    bar.wins += c.won;
   });
   // Drop leading empty months so a new player's chart starts where they did.
   while (bars.length > 1 && bars[0].games === 0) bars.shift();
@@ -111,23 +184,22 @@ export function breakBuckets(all: HistoryMatch[], me: string): Bucket[] {
   return counts.slice(0, last + 1);
 }
 
+/** `n` = matches together, `w` = frames I won, `l` = frames they won. */
 export interface HeadToHead { name: string; n: number; w: number; l: number; myAvg: number; theirAvg: number }
 
-/** Who finished higher (frames, then points) in every non-team match together. */
+/** Frames each of us won, in every non-team match we both played. */
 export function headToHead(all: HistoryMatch[], me: string, min = 2): HeadToHead[] {
   const map = new Map<string, { n: number; w: number; l: number; mine: number; theirs: number }>();
   all.forEach((m) => {
     if (m.mode === 'team') return;
-    const ranked = [...m.players].sort((a, b) => b.framesWon - a.framesWon || b.totalScore - a.totalScore);
-    const myIdx = ranked.findIndex((p) => p.name === me);
-    if (myIdx < 0) return;
-    const myP = ranked[myIdx];
-    ranked.forEach((o, i) => {
+    const myP = m.players.find((p) => p.name === me);
+    if (!myP) return;
+    m.players.forEach((o) => {
       if (o.name === me || /^Player \d+$/.test(o.name)) return;
       const e = map.get(o.name) ?? { n: 0, w: 0, l: 0, mine: 0, theirs: 0 };
       e.n += 1;
-      const level = o.framesWon === myP.framesWon && o.totalScore === myP.totalScore;
-      if (!level) { if (myIdx < i) e.w += 1; else e.l += 1; }
+      e.w += myP.framesWon;
+      e.l += o.framesWon;
       e.mine += myP.totalScore;
       e.theirs += o.totalScore;
       map.set(o.name, e);
@@ -284,13 +356,16 @@ const sameSide = (m: HistoryMatch, a: string, b: string): boolean => {
   return !!pa?.teamName && pa.teamName === pb?.teamName;
 };
 
+/** In frames: `games` = frames played in this format, `wins` = frames won. */
 export interface FormatLine { mode: string; games: number; wins: number; winRate: number }
 
+/** All counts are frames, except `matches` and `together`. */
 export interface VsMe {
   matches: number;
   myWins: number;
   theirWins: number;
   othersWins: number;
+  /** Always 0 — every frame has a winner. Kept for older callers. */
   draws: number;
   myFrames: number;
   theirFrames: number;
@@ -298,9 +373,12 @@ export interface VsMe {
   theirBestBreak: number;
   /** Team matches where we were on the same side. */
   together: number;
+  /** Frames our team won in those matches. */
   togetherWins: number;
+  togetherFrames: number;
 }
 
+/** `wins`, `losses`, `winRate`, form and streaks are all counted in frames. */
 export interface PlayerProfile {
   name: string;
   games: number;
@@ -310,9 +388,9 @@ export interface PlayerProfile {
   framesWon: number;
   framesPlayed: number;
   frameWinRate: number | null;
-  /** Newest first. */
+  /** Last frames, newest first. */
   form: ('W' | 'L')[];
-  /** e.g. "W3", "L2"; null with no games. */
+  /** e.g. "W3", "L2" in frames; null with no frames. */
   streak: string | null;
   bestWinStreak: number;
   highestBreak: number;
@@ -340,17 +418,17 @@ const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : null)
  * first (as loadHistory returns them). Pass `me` to get head-to-head numbers
  * when `name` is someone else.
  */
-export function computePlayerStats(name: string, all: HistoryMatch[], me: string | null): PlayerProfile {
+export function computePlayerStats(name: string, all: HistoryMatch[], me: string | null, logs?: LogsById): PlayerProfile {
   const mine = all.filter((m) => m.players.some((p) => p.name === name));
   const rows = mine.map((m) => ({ m, p: m.players.find((p) => p.name === name)! }));
-  const results = mine.map((m) => didWin(m, name));
-  const wins = results.filter(Boolean).length;
 
   let framesWonTotal = 0;
   let framesPlayedTotal = 0;
-  rows.forEach(({ m, p }) => { framesWonTotal += p.framesWon; framesPlayedTotal += framesPlayed(m); });
+  mine.forEach((m) => { const c = frameCount(m, name); framesWonTotal += c.won; framesPlayedTotal += c.played; });
 
-  // Streaks: results are newest first.
+  // Frame results, newest first.
+  const results = frameTimeline(mine, name, logs);
+
   let streak: string | null = null;
   if (results.length) {
     const first = results[0];
@@ -368,10 +446,12 @@ export function computePlayerStats(name: string, all: HistoryMatch[], me: string
   const tableMs = sum((r) => r.p.timeSpentMs);
 
   const formats = new Map<string, { games: number; wins: number }>();
-  mine.forEach((m, i) => {
+  mine.forEach((m) => {
+    const c = frameCount(m, name);
+    if (c.played === 0) return;
     const f = formats.get(m.mode) ?? { games: 0, wins: 0 };
-    f.games += 1;
-    if (results[i]) f.wins += 1;
+    f.games += c.played;
+    f.wins += c.won;
     formats.set(m.mode, f);
   });
   const ORDER = ['1v1', 'freeForAll', 'team'];
@@ -383,22 +463,25 @@ export function computePlayerStats(name: string, all: HistoryMatch[], me: string
   if (me && me !== name) {
     const v: VsMe = {
       matches: 0, myWins: 0, theirWins: 0, othersWins: 0, draws: 0,
-      myFrames: 0, theirFrames: 0, myBestBreak: 0, theirBestBreak: 0, together: 0, togetherWins: 0,
+      myFrames: 0, theirFrames: 0, myBestBreak: 0, theirBestBreak: 0,
+      together: 0, togetherWins: 0, togetherFrames: 0,
     };
     mine.forEach((m) => {
       const meP = m.players.find((p) => p.name === me);
       if (!meP) return;
+      const mc = frameCount(m, me);
       if (sameSide(m, me, name)) {
         v.together += 1;
-        if (didWin(m, me)) v.togetherWins += 1;
+        v.togetherWins += mc.won;
+        v.togetherFrames += mc.played;
         return;
       }
       const them = m.players.find((p) => p.name === name)!;
+      const tc = frameCount(m, name);
       v.matches += 1;
-      if (!m.winner) v.draws += 1;
-      else if (didWin(m, me)) v.myWins += 1;
-      else if (didWin(m, name)) v.theirWins += 1;
-      else v.othersWins += 1;
+      v.myWins += mc.won;
+      v.theirWins += tc.won;
+      v.othersWins += Math.max(0, mc.played - mc.won - tc.won);
       v.myFrames += meP.framesWon;
       v.theirFrames += them.framesWon;
       v.myBestBreak = Math.max(v.myBestBreak, meP.highestBreak);
@@ -410,9 +493,9 @@ export function computePlayerStats(name: string, all: HistoryMatch[], me: string
   return {
     name,
     games: mine.length,
-    wins,
-    losses: mine.length - wins,
-    winRate: pct(wins, mine.length),
+    wins: framesWonTotal,
+    losses: framesPlayedTotal - framesWonTotal,
+    winRate: pct(framesWonTotal, framesPlayedTotal),
     framesWon: framesWonTotal,
     framesPlayed: framesPlayedTotal,
     frameWinRate: pct(framesWonTotal, framesPlayedTotal),

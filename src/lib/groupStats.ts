@@ -13,7 +13,7 @@ import type { ActionLogEntry } from '../engine/types';
 import type { CenturyDetailsData } from './centuryHistory';
 import { computeFrameResult } from './frameResult';
 import { didWin, type HistoryMatch } from './history';
-import { framesPlayed } from './playerStats';
+import { frameWinners, framesPlayed } from './playerStats';
 
 /** "  Suraj " and "suraj" are the same person. */
 export function normName(name: string): string {
@@ -31,6 +31,7 @@ export function isExactGroup(names: string[], group: string[]): boolean {
 
 export interface GroupPlayer {
   name: string;
+  /** Matches where this player won the most frames. Kept for reference; stats lead with frames. */
   matchesWon: number;
   framesWon: number;
   /** Frames won ÷ frames played by the group. Null with no frames. */
@@ -61,9 +62,9 @@ export interface GroupStats {
   firstAt: number | null;
   lastAt: number | null;
   players: GroupPlayer[];
-  /** Winner of each match, oldest first; null for a draw. Last 10. */
+  /** Winner of each of the last 10 frames, oldest first. */
   form: (string | null)[];
-  /** Who's on a run right now, e.g. { name: 'Awais', n: 3 }. */
+  /** Who has won the most recent frames in a row, e.g. { name: 'Awais', n: 3 }. */
   streak: { name: string; n: number } | null;
 }
 
@@ -161,10 +162,17 @@ export function computeGroupStats(
     };
   });
 
-  // Winner of each match, mapped to the selected spelling.
-  const winners = matches.map((m) => {
-    const w = selected.find((n) => { const p = nameIn(m, n); return !!p && didWin(m, p.name); });
-    return w ?? null;
+  // Winner of every frame, newest first, in the selected spelling. From the
+  // frame logs when they line up with the saved counts; otherwise each
+  // player's frames are listed together (order inside the match unknown).
+  const toSelected = (playerName: string) =>
+    selected.find((n) => normName(n) === normName(playerName)) ?? null;
+  const winners: (string | null)[] = matches.flatMap((m) => {
+    const ordered = frameWinners(m, logsById);
+    const inOrder = ordered
+      ? ordered.map((w) => toSelected(w))
+      : m.players.flatMap((p) => Array<string | null>(p.framesWon).fill(toSelected(p.name)));
+    return inOrder.reverse();
   });
   let streak: GroupStats['streak'] = null;
   if (winners.length && winners[0]) {

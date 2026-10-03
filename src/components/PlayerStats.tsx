@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import { loadHistory, guessMyName, toDetails, didWin, type History, type HistoryMatch } from '../lib/history';
+import { loadHistory, guessMyName, toDetails, type History, type HistoryMatch } from '../lib/history';
 import { getFramesForMatches } from '../lib/database';
 import type { ActionLogEntry, BallType } from '../engine/types';
 import {
-  inRange, summarize, byMonth, breakBuckets, headToHead, byWeekday, potStats, centuryStats, hours,
+  inRange, summarize, frameCount, byMonth, breakBuckets, headToHead, byWeekday, potStats, centuryStats, hours,
   listPlayers, computePlayerStats, MIN_GAMES_FOR_LIST,
   type Range,
 } from '../lib/playerStats';
@@ -53,6 +53,8 @@ export default function PlayerStats() {
         h.matches.forEach((m) => map.set(m.id, (m.frames ?? []).map((f) => f.actionLog ?? [])));
       } else {
         const rows = await getFramesForMatches(h.matches.map((m) => m.id));
+        // Frames in play order, so form and streaks read frame by frame.
+        rows.sort((a, b) => (a.frame_number ?? 0) - (b.frame_number ?? 0));
         rows.forEach((r) => {
           const list = map.get(r.match_id ?? '') ?? [];
           list.push((r.action_log as ActionLogEntry[]) ?? []);
@@ -98,15 +100,15 @@ export default function PlayerStats() {
       ? matches.filter((m) => m.players.some((p) => p.name === me)).flatMap((m) => logsById.get(m.id) ?? [])
       : [];
     return {
-      summary: summarize(matches, me),
-      allTime: summarize(history.matches, me),
+      summary: summarize(matches, me, 10, Date.now(), logsById),
+      allTime: summarize(history.matches, me, 10, Date.now(), logsById),
       months: byMonth(history.matches, me),
       breaks: breakBuckets(matches, me),
       h2h: headToHead(matches, me),
       days: byWeekday(matches, me),
       pots: logsById ? potStats(logs, me) : undefined,
       century: centuryStats(centuries, me),
-      profile: computePlayerStats(me, matches, isMe ? null : (meName ?? null)),
+      profile: computePlayerStats(me, matches, isMe ? null : (meName ?? null), logsById),
     };
   }, [history, subject, isMe, meName, range, logsById]);
 
@@ -191,10 +193,10 @@ export default function PlayerStats() {
       ) : (
         <main className="ms-body">
           <section id="overview" className="ms-card ms-kpis" aria-label="Overview">
-            <div className="ms-kpi"><b>{s.matches}</b><span>Matches</span><small>{pr?.wins ?? 0} won · {pr?.losses ?? 0} lost</small></div>
-            <div className="ms-kpi"><b>{dash(pr?.winRate, '%')}</b><span>Win rate</span><small>{s.thisWeek} this week</small></div>
-            <div className="ms-kpi"><b>{pr ? `${pr.framesWon}/${pr.framesPlayed}` : '–'}</b><span>Frames</span><small>{dash(pr?.frameWinRate, '%')} of frames won</small></div>
-            <div className="ms-kpi"><b>{pr?.streak ?? '–'}</b><span>Streak</span><small>best run W{pr?.bestWinStreak ?? 0}</small></div>
+            <div className="ms-kpi"><b>{pr?.framesPlayed ?? 0}</b><span>Frames</span><small>{pr?.wins ?? 0} won · {pr?.losses ?? 0} lost</small></div>
+            <div className="ms-kpi"><b>{dash(pr?.winRate, '%')}</b><span>Win rate</span><small>of frames played</small></div>
+            <div className="ms-kpi"><b>{s.matches}</b><span>Matches</span><small>{s.thisWeek} this week</small></div>
+            <div className="ms-kpi"><b>{pr?.streak ?? '–'}</b><span>Streak</span><small>frames · best W{pr?.bestWinStreak ?? 0}</small></div>
             <div className="ms-kpi"><b>{dash(pr?.avgPointsPerMatch)}</b><span>Avg points</span><small>{dash(pr?.avgPointsPerFrame)} per frame</small></div>
           </section>
 
@@ -202,18 +204,18 @@ export default function PlayerStats() {
             <section id="form" className="ms-card" aria-labelledby="ms-form">
               <div className="ms-card-head">
                 <h2 id="ms-form" className="ms-h2">Form</h2>
-                <span className="ms-meta">last {s.form.length}, oldest → newest</span>
+                <span className="ms-meta">last {s.form.length} frames, oldest → newest</span>
               </div>
-              <div className="ms-form" aria-label={`Results oldest first: ${s.form.map((r) => (r === 'W' ? 'win' : 'loss')).join(', ')}`}>
+              <div className="ms-form" aria-label={`Frame results oldest first: ${s.form.map((r) => (r === 'W' ? 'win' : 'loss')).join(', ')}`}>
                 {s.form.map((r, i) => <span key={i} className={`db-form-dot${r === 'W' ? ' is-win' : ''}`}>{r}</span>)}
               </div>
               <div className="ms-legend">
-                <span><i className="ms-key ms-key--games" />Matches</span>
-                <span><i className="ms-key ms-key--wins" />Wins</span>
+                <span><i className="ms-key ms-key--games" />Frames played</span>
+                <span><i className="ms-key ms-key--wins" />Frames won</span>
               </div>
               <div className="ms-cols" role="img" aria-label={view.months.map((m) => `${m.label}: ${m.wins} of ${m.games}`).join('; ')}>
                 {view.months.map((m) => (
-                  <div key={m.key} className="ms-col" title={`${m.label}: ${m.wins} wins from ${m.games} matches`}>
+                  <div key={m.key} className="ms-col" title={`${m.label}: ${m.wins} frames won of ${m.games}`}>
                     <span className="ms-col-val">{m.games ? `${m.wins}/${m.games}` : '–'}</span>
                     <span className="ms-col-bar" style={{ height: `${(m.games / maxMonth) * 100}%` }}>
                       <span className="ms-col-fill" style={{ height: m.games ? `${(m.wins / m.games) * 100}%` : 0 }} />
@@ -256,7 +258,7 @@ export default function PlayerStats() {
             <section id="head-to-head" className="ms-card" aria-labelledby="ms-h2h">
             <div className="ms-card-head">
               <h2 id="ms-h2h" className="ms-h2">Head to head</h2>
-              <span className="ms-meta">who finished higher, every match you both played</span>
+              <span className="ms-meta">frames won, every match you both played</span>
             </div>
             {view.h2h.length === 0 ? (
               <p className="ms-insight">Play at least two matches against someone to see your record.</p>
@@ -270,7 +272,7 @@ export default function PlayerStats() {
                     </div>
                     <span className="ms-opp-score">{h.w}<i> – </i>{h.l}</span>
                     <span className="ms-split" aria-hidden="true">
-                      <span className="ms-split-win" style={{ width: `${(h.w / h.n) * 100}%` }} />
+                      <span className="ms-split-win" style={{ width: `${(h.w / Math.max(1, h.w + h.l)) * 100}%` }} />
                     </span>
                     <small className="ms-meta">Avg points {h.myAvg} vs {h.theirAvg}</small>
                   </div>
@@ -282,7 +284,7 @@ export default function PlayerStats() {
             <section id="head-to-head" className="ms-card" aria-labelledby="ms-vs">
               <div className="ms-card-head">
                 <h2 id="ms-vs" className="ms-h2">You vs {subject}</h2>
-                <span className="ms-meta">{pr.vsMe.matches} match{pr.vsMe.matches === 1 ? '' : 'es'} against each other</span>
+                <span className="ms-meta">frames won in {pr.vsMe.matches} match{pr.vsMe.matches === 1 ? '' : 'es'} against each other</span>
               </div>
               {pr.vsMe.matches === 0 ? (
                 <p className="ms-insight">You haven't played against {subject} yet.</p>
@@ -292,16 +294,15 @@ export default function PlayerStats() {
                     <div><b className="ms-accent">{pr.vsMe.myWins}</b><span>{me} won</span></div>
                     <div><b>{pr.vsMe.theirWins}</b><span>{subject} won</span></div>
                     {pr.vsMe.othersWins > 0 && <div><b>{pr.vsMe.othersWins}</b><span>someone else won</span></div>}
-                    {pr.vsMe.draws > 0 && <div><b>{pr.vsMe.draws}</b><span>drawn</span></div>}
                   </div>
                   <span className="ms-split" aria-hidden="true">
                     <span className="ms-split-win" style={{ width: `${(pr.vsMe.myWins / Math.max(1, pr.vsMe.myWins + pr.vsMe.theirWins)) * 100}%` }} />
                   </span>
                   <div className="ps-vs-rows">
-                    <div><span>Frames won</span><b>{pr.vsMe.myFrames} – {pr.vsMe.theirFrames}</b></div>
+                    <div><span>Frames played</span><b>{pr.vsMe.myWins + pr.vsMe.theirWins + pr.vsMe.othersWins}</b></div>
                     <div><span>Best break in these matches</span><b>{pr.vsMe.myBestBreak} – {pr.vsMe.theirBestBreak}</b></div>
                     {pr.vsMe.together > 0 && (
-                      <div><span>Played together (same team)</span><b>{pr.vsMe.together} · {pr.vsMe.togetherWins} won</b></div>
+                      <div><span>Played together (same team)</span><b>{pr.vsMe.together} · {pr.vsMe.togetherWins}/{pr.vsMe.togetherFrames} frames won</b></div>
                     )}
                   </div>
                   {me && subject && (
@@ -449,7 +450,7 @@ export default function PlayerStats() {
                   <div key={f.mode} className="ps-format">
                     <span className={`db-tag db-tag--${f.mode}`}>{modeLabel(f.mode)}</span>
                     <b>{f.wins}/{f.games}</b>
-                    <span className="ms-meta">{f.winRate}% won</span>
+                    <span className="ms-meta">{f.winRate}% of frames</span>
                   </div>
                 ))}
               </div>
@@ -464,8 +465,8 @@ export default function PlayerStats() {
               <h2 id="ms-recent" className="ms-h2">Recent matches</h2>
               <ul className="ps-recent">
                 {pr?.recent.map((m) => {
-                  const won = !!subject && didWin(m, subject);
                   const p = m.players.find((x) => x.name === subject);
+                  const fc = subject ? frameCount(m, subject) : { won: 0, played: 0 };
                   const opp = m.players.filter((x) => x.name !== subject && (!p?.teamName || x.teamName !== p.teamName)).map((x) => x.name);
                   return (
                     <li key={m.id}>
@@ -473,7 +474,7 @@ export default function PlayerStats() {
                         <span className="ps-recent-day">{relativeDay(m.at)}</span>
                         <span className="ps-recent-opp">vs {opp.join(', ') || '—'}</span>
                         <span className="ps-recent-score">{p?.totalScore ?? 0}</span>
-                        <span className={`db-form-dot${won ? ' is-win' : ''}`}>{won ? 'W' : 'L'}</span>
+                        <span className={`db-form-dot ps-recent-frames${fc.won * 2 > fc.played ? ' is-win' : ''}`} title={`${fc.won} of ${fc.played} frames won`}>{fc.won}–{fc.played - fc.won}</span>
                       </button>
                     </li>
                   );

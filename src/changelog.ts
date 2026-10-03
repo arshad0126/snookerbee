@@ -22,6 +22,20 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7.0',
+    date: '2026-10-03',
+    title: 'Stats count frames, not matches',
+    improved: [
+      'Win rate is now frames won out of frames played. Win frame 1 and lose frame 2, and you are 1 won, 1 lost — nobody gets a whole match win for it.',
+      'Form, streaks, the monthly chart, By format, Head to head and You vs … all count frames too.',
+      'Played together: the form strip and streak follow frames; "Matches won" is gone from the comparison.',
+      'Recent matches on Player Stats show your frames won–lost instead of W or L.',
+    ],
+    fixed: [
+      'A drawn match no longer counts as a loss in your win rate — frames always have a winner.',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-10-03',
     title: 'Played together',

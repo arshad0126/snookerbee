@@ -149,7 +149,7 @@ export default function Dashboard() {
             <div className="db-stat">
               <span className="db-stat-value">{summary ? `${summary.winRate}%` : '–'}</span>
               <span className="db-stat-label">Win rate</span>
-              <span className="db-stat-note">{summary ? `${summary.wins} win${summary.wins === 1 ? '' : 's'}` : ''}</span>
+              <span className="db-stat-note">{summary ? `${summary.wins} of ${summary.framesPlayed} frames` : ''}</span>
             </div>
             <div className="db-stat">
               <span className="db-stat-value db-stat-value--accent">{summary?.bestBreak ?? '–'}</span>
@@ -160,10 +160,10 @@ export default function Dashboard() {
 
           {summary && summary.form.length > 0 && (
             <div className="db-form">
-              <span className="db-form-label">Last {summary.form.length}</span>
+              <span className="db-form-label">Last {summary.form.length} frames</span>
               <span
                 className="db-form-dots"
-                aria-label={`Last ${summary.form.length} results, oldest first: ${summary.form.map((r) => (r === 'W' ? 'win' : 'loss')).join(', ')}`}
+                aria-label={`Last ${summary.form.length} frames, oldest first: ${summary.form.map((r) => (r === 'W' ? 'win' : 'loss')).join(', ')}`}
               >
                 {summary.form.map((r, i) => (
                   <span key={i} className={`db-form-dot${r === 'W' ? ' is-win' : ''}`}>{r}</span>
