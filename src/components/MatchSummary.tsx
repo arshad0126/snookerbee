@@ -108,6 +108,42 @@ export default function MatchSummary() {
     return `${mins}:${String(secs).padStart(2, '0')}`;
   };
 
+  // Each frame's winner and points by player (or team), saved with the
+  // frame so stats never have to replay the shot log to know who won.
+  const sideScores = (byPlayer: { playerId: string; score: number }[]): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const { playerId, score } of byPlayer) {
+      const p = players.find((x) => x.id === playerId);
+      if (!p) continue;
+      const key = mode === 'team' ? (teams.find((t) => t.playerIds.includes(p.id))?.name ?? p.name) : p.name;
+      out[key] = (out[key] ?? 0) + score;
+    }
+    return out;
+  };
+  const currentFrameScores = sideScores(players.map((p) => ({ playerId: p.id, score: p.score })));
+  const currentFrameWinner = (() => {
+    // Only a frame that was actually finished has a winner.
+    if (gameState.phase !== 'finished') return null;
+    const ranked = Object.entries(currentFrameScores).sort((a, b) => b[1] - a[1]);
+    return ranked.length > 1 && ranked[0][1] > ranked[1][1] ? ranked[0][0] : null;
+  })();
+  const savedFrames = [
+    ...(gameState.completedFrames || []).map((f) => ({
+      frameNumber: f.frameNumber,
+      durationMs: f.durationMs,
+      actionLog: f.actionLog,
+      winnerName: f.winnerName,
+      scores: sideScores(f.playerStats),
+    })),
+    {
+      frameNumber: gameState.frameNumber,
+      durationMs: gameState.currentFrameDurationMs,
+      actionLog: gameState.actionLog,
+      winnerName: currentFrameWinner,
+      scores: currentFrameScores,
+    },
+  ];
+
   const handleSave = async () => {
     // A match where nothing was scored is not worth a history row.
     if (empty) {
@@ -152,18 +188,7 @@ export default function MatchSummary() {
               halfCenturies: p.halfCenturies,
             };
           }),
-          frames: [
-            ...(gameState.completedFrames || []).map(f => ({
-              frameNumber: f.frameNumber,
-              durationMs: f.durationMs,
-              actionLog: f.actionLog,
-            })),
-            {
-              frameNumber: gameState.frameNumber,
-              durationMs: gameState.currentFrameDurationMs,
-              actionLog: gameState.actionLog,
-            }
-          ],
+          frames: savedFrames,
         };
         if (!saveMatchLocally(localRecord)) {
           setSaveStatus('error');
@@ -208,18 +233,13 @@ export default function MatchSummary() {
         });
 
         // Frame records with action log
-        const frameRecs: MatchFrameRecord[] = [
-          ...(gameState.completedFrames || []).map(f => ({
-            frame_number: f.frameNumber,
-            duration_ms: f.durationMs,
-            action_log: f.actionLog,
-          })),
-          {
-            frame_number: gameState.frameNumber,
-            duration_ms: gameState.currentFrameDurationMs,
-            action_log: gameState.actionLog,
-          }
-        ];
+        const frameRecs: MatchFrameRecord[] = savedFrames.map((f) => ({
+          frame_number: f.frameNumber,
+          duration_ms: f.durationMs,
+          action_log: f.actionLog,
+          winner_name: f.winnerName,
+          scores: f.scores,
+        }));
 
         const result = await saveMatch(matchRec, playerRecs, frameRecs);
         if (result.success) {

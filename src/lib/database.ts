@@ -39,7 +39,7 @@ function isUnknownColumnError(error: unknown): boolean {
   if (!e) return false;
   if (e.code === 'PGRST204') return true;
   const message = e.message ?? '';
-  return OPTIONAL_PLAYER_COLUMNS.some(
+  return [...OPTIONAL_PLAYER_COLUMNS, ...OPTIONAL_FRAME_COLUMNS].some(
     (c) => message.includes(c) && /column|schema/i.test(message)
   );
 }
@@ -60,7 +60,14 @@ export interface MatchFrameRecord {
   frame_number: number;
   duration_ms: number;
   action_log: unknown[];
+  /** Who won the frame (player or team); null if unfinished or level. Added in 2.0. */
+  winner_name?: string | null;
+  /** Frame points by player or team name. Added in 2.0. */
+  scores?: Record<string, number> | null;
 }
+
+/** Frame columns added in 2.0, which an un-migrated database will not have. */
+const OPTIONAL_FRAME_COLUMNS = ['winner_name', 'scores'] as const;
 
 /**
  * Save a completed match to Supabase
@@ -105,11 +112,23 @@ export async function saveMatch(
 
     if (playersError) throw playersError;
 
-    // Insert frames
+    // Insert frames. Winner and scores per frame came in 2.0; without the
+    // migration, save the frames without them rather than lose the match.
     const framesWithMatchId = frames.map(f => ({ ...f, match_id: matchId }));
-    const { error: framesError } = await supabase
+    let { error: framesError } = await supabase
       .from('match_frames')
       .insert(framesWithMatchId);
+
+    if (framesError && isUnknownColumnError(framesError)) {
+      console.warn('match_frames is missing winner_name/scores — saving without them.');
+      ({ error: framesError } = await supabase
+        .from('match_frames')
+        .insert(framesWithMatchId.map((f) => {
+          const copy: Record<string, unknown> = { ...f };
+          for (const column of OPTIONAL_FRAME_COLUMNS) delete copy[column];
+          return copy;
+        })));
+    }
 
     if (framesError) throw framesError;
 
@@ -172,6 +191,33 @@ export async function getAllMatches(): Promise<(MatchRecord & { players: MatchPl
     console.error('Error fetching all matches:', error);
     return [];
   }
+}
+
+/**
+ * Each match's frame winners in play order, by match id — light enough for
+ * the dashboard (no action logs). Frames saved before 2.0 have no winner.
+ */
+export async function getFrameWinners(matchIds: string[]): Promise<Map<string, (string | null)[]>> {
+  const out = new Map<string, (string | null)[]>();
+  try {
+    for (let i = 0; i < matchIds.length; i += 100) {
+      const { data, error } = await supabase
+        .from('match_frames')
+        .select('match_id, frame_number, winner_name')
+        .in('match_id', matchIds.slice(i, i + 100))
+        .order('frame_number', { ascending: true });
+      if (error) throw error;
+      for (const r of (data || []) as { match_id: string; winner_name: string | null }[]) {
+        const list = out.get(r.match_id) ?? [];
+        list.push(r.winner_name ?? null);
+        out.set(r.match_id, list);
+      }
+    }
+  } catch (error) {
+    // Before the migration the column doesn't exist; stats fall back to logs.
+    console.warn('Frame winners unavailable:', error);
+  }
+  return out;
 }
 
 /** Frame logs for many matches at once (for stats). */
@@ -296,6 +342,9 @@ export interface LocalMatchRecord {
     frameNumber: number;
     durationMs: number;
     actionLog: any[];
+    /** Added in 2.0; older records lack it. */
+    winnerName?: string | null;
+    scores?: Record<string, number>;
   }[];
 }
 

@@ -8,6 +8,7 @@ import type { MatchDetailsData } from '../components/MatchDetailsModal';
 import {
   getAllMatches,
   getCenturyHistory,
+  getFrameWinners,
   getLocalCenturyHistory,
   getLocalMatchHistory,
 } from './database';
@@ -37,7 +38,12 @@ export interface HistoryMatch {
   winner: string | null;
   players: HistoryPlayer[];
   /** Present for guest matches; signed-in frames load on demand. */
-  frames?: { frameNumber: number; durationMs: number; actionLog: ActionLogEntry[] }[];
+  frames?: { frameNumber: number; durationMs: number; actionLog: ActionLogEntry[]; winnerName?: string | null }[];
+  /**
+   * Winner (player or team) of each saved frame, in play order; null for a
+   * frame with no stored winner. Saved since 2.0.
+   */
+  frameWinners?: (string | null)[];
 }
 
 export interface History {
@@ -58,12 +64,14 @@ export async function loadHistory(isGuest: boolean): Promise<History> {
         winner: savedWinner(m.winnerName, m.players),
         players: m.players,
         frames: m.frames as HistoryMatch['frames'],
+        frameWinners: m.frames?.length ? m.frames.map((f) => f.winnerName ?? null) : undefined,
       }))
       .filter((m) => !isEmptyRecord(m.players));
     return { matches, centuries: getLocalCenturyHistory().map(fromLocalCentury) };
   }
 
   const [rows, centuries] = await Promise.all([getAllMatches(), getCenturyHistory()]);
+  const winners = await getFrameWinners(rows.map((m) => m.id || '').filter(Boolean));
   const matches = rows
     .map((m): HistoryMatch => {
       const players = m.players.map((p) => ({
@@ -86,6 +94,7 @@ export async function loadHistory(isGuest: boolean): Promise<History> {
         durationMs: m.duration_ms,
         winner: savedWinner(m.winner_name, players),
         players,
+        frameWinners: winners.get(m.id || ''),
       };
     })
     .filter((m) => !isEmptyRecord(m.players))

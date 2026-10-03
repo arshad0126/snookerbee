@@ -45,3 +45,20 @@ describe('stats count frames, not matches', () => {
     expect(computePlayerStats('Suraj', one, null)).toMatchObject({ wins: 1, losses: 1, winRate: 50 });
   });
 });
+
+describe('stored frame winners', () => {
+  it('give the real frame order without any shot logs', () => {
+    const m: HistoryMatch = {
+      ...match('x', 3, [P('Awais', 1, 40), P('Suraj', 2, 60)]),
+      // Last frame unfinished: no winner saved for it.
+      frameWinners: ['Suraj', 'Awais', 'Suraj', null],
+    };
+    expect(summarize([m], 'Awais').form.join('')).toBe('LWL');
+  });
+
+  it('are ignored when they disagree with the saved frame counts', () => {
+    const m: HistoryMatch = { ...match('y', 3, [P('Awais', 2, 40), P('Suraj', 0, 60)]), frameWinners: ['Suraj', 'Awais'] };
+    // Falls back to totals: losses first, then wins.
+    expect(summarize([m], 'Awais').form.join('')).toBe('WW');
+  });
+});

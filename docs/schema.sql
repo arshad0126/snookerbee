@@ -149,3 +149,18 @@ alter table user_settings enable row level security;
 drop policy if exists "Users manage their own settings" on user_settings;
 create policy "Users manage their own settings" on user_settings
   for all using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+
+-- ============================================================================
+-- PART 4 — Frame results (2.0)
+-- ----------------------------------------------------------------------------
+-- Each saved frame keeps who won it and the points by player (or team), so
+-- stats and the dashboard don't have to replay shot logs. Null winner = the
+-- frame wasn't finished (match ended mid-frame) or was level.
+--
+-- Until this runs, the app saves frames without these two values.
+-- ============================================================================
+
+alter table match_frames
+  add column if not exists winner_name text,
+  add column if not exists scores jsonb;

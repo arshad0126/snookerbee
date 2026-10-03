@@ -39,19 +39,23 @@ const sideOf = (m: HistoryMatch, name: string): string | null => {
  * frame counts; otherwise null (the order can't be known).
  */
 export function frameWinners(m: HistoryMatch, logs?: LogsById): string[] | null {
+  // Every side's count must match what was saved, or the order is suspect.
+  const consistent = (winners: string[]) =>
+    winners.length === framesPlayed(m) &&
+    m.players.every((p) => winners.filter((w) => w === (p.teamName || p.name)).length === p.framesWon);
+
+  // Saved with the match since 2.0 — no log replay needed.
+  const stored = (m.frameWinners ?? []).filter((w): w is string => !!w);
+  if (stored.length && consistent(stored)) return stored;
+
+  // Older matches: rebuild each frame's result from its log.
   const frames = logs?.get(m.id) ?? m.frames?.map((f) => f.actionLog ?? []) ?? [];
   if (frames.length === 0) return null;
   const players = m.players.map((p) => ({ name: p.name, teamName: p.teamName }));
   const winners = frames
     .map((log) => computeFrameResult(log, players).winnerName)
     .filter((w): w is string => w !== null);
-  if (winners.length !== framesPlayed(m)) return null;
-  // Every side's count must match what was saved, or the logs are suspect.
-  const ok = m.players.every((p) => {
-    const side = p.teamName || p.name;
-    return winners.filter((w) => w === side).length === p.framesWon;
-  });
-  return ok ? winners : null;
+  return consistent(winners) ? winners : null;
 }
 
 /**
