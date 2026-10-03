@@ -115,7 +115,7 @@ export default function FrameSummary({
           )}
         </h2>
 
-        <div className="summary-scores">
+        <div className={`summary-scores${mode !== 'team' && players.length > 2 ? ' summary-scores--many' : ''}`}>
           {mode === 'team' ? (
             <>
               <div className="summary-player-score">

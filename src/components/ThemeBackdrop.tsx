@@ -2,9 +2,9 @@ import { useSettings } from '../hooks/useSettings';
 import type { Backdrop } from '../lib/settings';
 
 /**
- * Faint background art behind the dashboard and other non-playing screens,
- * drawn in the chosen accent. Never on the scoring screens: nothing should
- * compete with the table.
+ * Faint background art behind every screen, drawn in the chosen accent. On
+ * the scoring screens it sits under the felt's content at the same faint
+ * strength, so it never competes with the balls and scores.
  *
  * Pure SVG, painted once, no animation — it costs nothing on battery.
  */

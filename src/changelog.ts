@@ -22,6 +22,21 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.0.1',
+    date: '2026-10-03',
+    title: 'Popups in the middle, easier next-frame setup',
+    improved: [
+      'Next frame setup: the breaker is always on top. Tap any player to make them the breaker, and move the others with big up/down buttons.',
+      'Next frame setup now has Cancel and a close button — go back to the frame result without changing anything, and tap Next Frame again when ready.',
+      'Your chosen background art now shows on the scoring screens too.',
+      'The frame result with three or more players is a tidy list instead of a jumbled row.',
+    ],
+    fixed: [
+      'Popups during a game — foul, match options, next frame and the Century foul picker — now open in the middle of the screen instead of the top-left corner.',
+      'Opening Next Frame and backing out no longer records the frame twice.',
+    ],
+  },
+  {
     version: '2.0.0',
     date: '2026-10-03',
     title: 'SnookerBee 2.0 — frames first',

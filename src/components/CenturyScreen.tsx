@@ -30,6 +30,7 @@ import {
   saveCenturyGameLocally,
 } from '../lib/database';
 import { useAuth } from '../hooks/useAuth';
+import ThemeBackdrop from './ThemeBackdrop';
 
 const BALLS: BallType[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
@@ -174,6 +175,7 @@ export default function CenturyScreen() {
 
   return (
     <div className="century-screen">
+      <ThemeBackdrop />
       <header className="century-topbar">
         <div className="century-topbar-side">
           <span className="century-target">{state.target}</span>

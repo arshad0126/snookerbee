@@ -15,6 +15,8 @@ import { useUndoControls } from '../hooks/useUndoControls';
 import { describeUndo } from '../engine/reducer';
 import ActionLogDrawer from './ActionLogDrawer';
 import FrameSummary from './FrameSummary';
+import NextFrameSetup from './NextFrameSetup';
+import ThemeBackdrop from './ThemeBackdrop';
 import PreviousFramesModal from './PreviousFramesModal';
 import { Icon } from './ui';
 import { CENTURY_THRESHOLD, HALF_CENTURY_THRESHOLD } from '../engine/constants';
@@ -40,8 +42,7 @@ export default function ScoringScreen() {
   const [isNextFrameSetupOpen, setIsNextFrameSetupOpen] = useState(false);
   const [isPreviousFramesOpen, setIsPreviousFramesOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [nextFrameBreakerId, setNextFrameBreakerId] = useState('');
-  const [nextFramePlayersOrder, setNextFramePlayersOrder] = useState<Player[]>([]);
+  const [nextFrameOrder, setNextFrameOrder] = useState<Player[]>([]);
 
   // Score pop animations
   const [poppingPlayerId, setPoppingPlayerId] = useState<string | null>(null);
@@ -175,8 +176,19 @@ export default function ScoringScreen() {
 
 
   // Frame transition handlers
+  // Next Frame only opens the setup. Nothing about the match changes until
+  // Start frame is tapped, so Cancel goes back to the frame summary as it was.
   const handleNextFrame = () => {
-    // Save current scores to frameHistory before resetting
+    const order = state.turnOrder.map((i) => state.players[i]).filter(Boolean);
+    // The player after this frame's breaker breaks next, by default.
+    const thisBreaker = state.frameStartTurn ?? 0;
+    const next = order.length ? (thisBreaker + 1) % order.length : 0;
+    setNextFrameOrder([...order.slice(next), ...order.slice(0, next)]);
+    setIsNextFrameSetupOpen(true);
+  };
+
+  const handleConfirmNextFrameSetup = (order: Player[]) => {
+    // Record this frame's scores now that the next one is really starting.
     const currentScores: Record<string, number> = {};
     if (state.mode === 'team') {
       state.teams.forEach(t => {
@@ -187,30 +199,17 @@ export default function ScoringScreen() {
         currentScores[p.name] = p.score;
       });
     }
-
     setFrameHistory(prev => [
       ...prev,
       { frameNumber: state.frameNumber, scores: currentScores },
     ]);
 
-    // Initialize next frame player order
-    setNextFramePlayersOrder([...state.players]);
-    
-    // Default selected breaker is standard rotation index
-    const autoNextBreakerIdx = state.frameNumber % state.turnOrder.length;
-    const defaultBreakerId = state.players[state.turnOrder[autoNextBreakerIdx]]?.id || state.players[0].id;
-    setNextFrameBreakerId(defaultBreakerId);
-
-    setIsNextFrameSetupOpen(true);
-  };
-
-  const handleConfirmNextFrameSetup = () => {
     setIsNextFrameSetupOpen(false);
     dispatch({
       type: 'START_NEXT_FRAME',
       payload: {
-        breakingPlayerId: nextFrameBreakerId,
-        turnOrderIds: nextFramePlayersOrder.map(p => p.id),
+        breakingPlayerId: order[0].id,
+        turnOrderIds: order.map(p => p.id),
       }
     });
   };
@@ -431,6 +430,7 @@ export default function ScoringScreen() {
 
   return (
     <div className="scoring-screen felt-bg">
+      <ThemeBackdrop />
 
       {/* Top Bar */}
       <header className="scoring-topbar">
@@ -673,8 +673,8 @@ export default function ScoringScreen() {
 
       {/* Menu Overlay / Sidebar */}
       {isMenuOpen && (
-        <div className="modal-backdrop" onClick={() => setIsMenuOpen(false)}>
-          <div className="menu-overlay-card card" onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop modal-centered" onClick={() => setIsMenuOpen(false)}>
+          <div className="menu-overlay-card card" role="dialog" aria-modal="true" aria-label="Match options" onClick={e => e.stopPropagation()}>
             <h3 className="menu-title">Match Options</h3>
             <div className="menu-options-list">
               <button
@@ -729,115 +729,15 @@ export default function ScoringScreen() {
         />
       )}
 
-      {/* Next Frame Configuration Dialog */}
+      {/* Next frame setup — cancelable; nothing changes until Start */}
       {isNextFrameSetupOpen && (
-        <div className="modal-backdrop modal-centered" style={{ zIndex: 9999 }}>
-          <div className="menu-overlay-card card" style={{ maxWidth: '440px', padding: 'var(--space-md)' }} onClick={e => e.stopPropagation()}>
-            <header style={{ marginBottom: 'var(--space-md)' }}>
-              <h3 className="menu-title" style={{ margin: 0, fontSize: 'var(--text-lg)' }}>Frame {state.frameNumber + 1} Configuration</h3>
-            </header>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', margin: '0 0 var(--space-sm) 0', lineHeight: '1.4' }}>
-                Set the breaking player and turn rotation order for the upcoming frame.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {nextFramePlayersOrder.map((player, idx) => {
-                  const isBreaker = nextFrameBreakerId === player.id;
-                  return (
-                    <div
-                      key={player.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: 'var(--space-sm)',
-                        borderRadius: 'var(--radius-md)',
-                        background: isBreaker ? 'rgba(78, 149, 255, 0.1)' : 'var(--bg-secondary)',
-                        border: `1px solid ${isBreaker ? 'var(--accent-sage)' : 'var(--border-color)'}`
-                      }}
-                    >
-                      {/* Arrows for rearrangement in FFA mode */}
-                      {state.mode === 'freeForAll' ? (
-                        <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
-                          <button
-                            onClick={() => {
-                              if (idx === 0) return;
-                              const rearranged = [...nextFramePlayersOrder];
-                              const temp = rearranged[idx];
-                              rearranged[idx] = rearranged[idx - 1];
-                              rearranged[idx - 1] = temp;
-                              setNextFramePlayersOrder(rearranged);
-                            }}
-                            disabled={idx === 0}
-                            style={{
-                              padding: '2px 6px',
-                              background: 'none',
-                              border: 'none',
-                              color: idx === 0 ? 'var(--text-muted)' : 'var(--text-secondary)',
-                              cursor: idx === 0 ? 'not-allowed' : 'pointer'
-                            }}
-                          >
-                            <Icon name="chevron-up" size={16} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (idx === nextFramePlayersOrder.length - 1) return;
-                              const rearranged = [...nextFramePlayersOrder];
-                              const temp = rearranged[idx];
-                              rearranged[idx] = rearranged[idx + 1];
-                              rearranged[idx + 1] = temp;
-                              setNextFramePlayersOrder(rearranged);
-                            }}
-                            disabled={idx === nextFramePlayersOrder.length - 1}
-                            style={{
-                              padding: '2px 6px',
-                              background: 'none',
-                              border: 'none',
-                              color: idx === nextFramePlayersOrder.length - 1 ? 'var(--text-muted)' : 'var(--text-secondary)',
-                              cursor: idx === nextFramePlayersOrder.length - 1 ? 'not-allowed' : 'pointer'
-                            }}
-                          >
-                            <Icon name="chevron-down" size={16} />
-                          </button>
-                        </div>
-                      ) : null}
-
-                      <span style={{ flex: 1, fontWeight: '600', color: 'var(--text-primary)', fontSize: 'var(--text-sm)' }}>
-                        {idx + 1}. {player.name}
-                      </span>
-
-                      <button
-                        onClick={() => setNextFrameBreakerId(player.id)}
-                        className={`btn-breaker ${isBreaker ? 'active' : ''}`}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          border: `1px solid ${isBreaker ? 'var(--accent-sage-dark)' : 'var(--border-color)'}`,
-                          cursor: 'pointer',
-                          fontSize: 'var(--text-xs)',
-                          fontWeight: '700',
-                          background: isBreaker ? 'var(--accent-sage)' : 'var(--bg-btn-secondary)',
-                          color: isBreaker ? '#ffffff' : 'var(--text-secondary)'
-                        }}
-                      >
-                        {isBreaker ? 'Breaker' : 'Set Breaker'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button
-                className="btn btn-primary"
-                onClick={handleConfirmNextFrameSetup}
-                style={{ width: '100%', marginTop: 'var(--space-md)', padding: '12px', fontWeight: 'bold' }}
-              >
-                Start Frame <Icon name="ball" size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
+        <NextFrameSetup
+          frameNumber={state.frameNumber + 1}
+          initialOrder={nextFrameOrder}
+          canReorder={state.mode === 'freeForAll' && nextFrameOrder.length > 2}
+          onStart={handleConfirmNextFrameSetup}
+          onCancel={() => setIsNextFrameSetupOpen(false)}
+        />
       )}
     </div>
   );
