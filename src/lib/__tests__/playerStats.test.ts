@@ -58,7 +58,7 @@ describe('stored frame winners', () => {
 
   it('are ignored when they disagree with the saved frame counts', () => {
     const m: HistoryMatch = { ...match('y', 3, [P('Awais', 2, 40), P('Suraj', 0, 60)]), frameWinners: ['Suraj', 'Awais'] };
-    // Falls back to totals: losses first, then wins.
+    // Falls back to the saved totals.
     expect(summarize([m], 'Awais').form.join('')).toBe('WW');
   });
 });

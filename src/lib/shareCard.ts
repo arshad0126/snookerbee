@@ -10,6 +10,8 @@
  * columns line up, and a lot of deliberate whitespace.
  */
 
+import { frameLine } from './results';
+
 /** Card palette. Canvas can't read CSS variables, so it lives here. */
 export const CARD = {
   bg:       '#272727',                      /* Shadow Grey — same as the app */
@@ -201,8 +203,14 @@ export function drawMatchCard(canvas: HTMLCanvasElement, d: MatchCardData): void
   if (!ctx) return;
 
   drawHeader(ctx, `${d.mode.toUpperCase()} · BEST OF ${d.bestOf}`);
-  drawEyebrow(ctx, 'WINNER', 138);
-  drawHero(ctx, d.winnerName);
+  // Matches are decided on frames, so the card says the frame score. Level
+  // on frames is a draw — "Draw · 1–1" — never a winner picked on points.
+  const frames = frameLine(d.players.map((p) => ({
+    name: p.name, teamName: p.teamName, totalScore: p.score, framesWon: p.framesWon,
+  })));
+  const isDraw = !d.winnerName || d.winnerName === 'Draw';
+  drawEyebrow(ctx, isDraw ? 'RESULT' : `WINNER · ${frames} IN FRAMES`, 138);
+  drawHero(ctx, isDraw ? `Draw · ${frames}` : d.winnerName);
 
   const cols = [448, 544, 640, R];
   const heads = ['SCORE', 'FRAMES', 'BREAK', 'FOULS'];
