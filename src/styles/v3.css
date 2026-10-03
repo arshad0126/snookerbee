@@ -1037,3 +1037,52 @@ body.light-theme .mp-page {
   .sh-screen { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
   .sh-preview img { max-height: 55dvh; }
 }
+
+/* =============================================================== opening
+   (2.3) Plays once at launch, then fades into the app. Colours follow the
+   theme and accent; sizes scale with the screen (container units).
+   ========================================================================== */
+.sp-root {
+  position: fixed; inset: 0; z-index: 30000;
+  background: var(--bg-primary); color: var(--text-primary);
+  container-type: size; overflow: hidden; pointer-events: none;
+  font-family: var(--font-ui, system-ui, -apple-system, sans-serif);
+}
+.sp-rack { position: absolute; inset: 0; }
+.sp-ball { position: absolute; border-radius: 50%; background: var(--accent-sage); }
+.sp-center { position: absolute; inset: 0; display: grid; place-items: center; }
+.sp-word { display: flex; align-items: center; gap: 2.4cqw; font-weight: 800; font-size: min(9.2cqw, 20cqh); letter-spacing: -0.035em; line-height: 1; opacity: 0; }
+.sp-mark { width: 0.48em; height: 0.48em; border-radius: 0.13em; background: var(--accent-sage); flex: none; }
+.sp-txt { display: inline-block; }
+.sp-credit {
+  position: absolute; left: 0; right: 0; bottom: max(8cqh, env(safe-area-inset-bottom));
+  text-align: center; font-size: clamp(13px, 1.8cqw, 18px); font-weight: 500; letter-spacing: 0.02em;
+  color: var(--text-secondary); opacity: 0;
+}
+.sp-credit b { color: var(--text-primary); font-weight: 700; }
+
+/* =================================================================== about */
+.ab-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; align-items: start; position: relative; z-index: 1; }
+.ab-maker, .ab-app { display: flex; flex-direction: column; gap: 14px; }
+.ab-who { display: flex; align-items: center; gap: 14px; }
+.ab-avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: var(--accent-sage); background: color-mix(in srgb, var(--accent-sage) 16%, transparent); }
+.ab-who-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ab-name { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.ab-role { font-size: 14px; color: var(--v3-ink-2); }
+.ab-blurb { margin: 0; font-size: 15px; line-height: 1.5; color: var(--v3-ink-2); max-width: 46ch; }
+.ab-chip {
+  align-self: flex-start; min-height: 36px; padding: 0 14px; display: inline-flex; align-items: center;
+  border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none;
+  color: var(--accent-sage); background: color-mix(in srgb, var(--accent-sage) 14%, transparent);
+}
+.ab-k { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--v3-ink-2); }
+.ab-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 48px; padding: 0 2px; border: none; border-bottom: 1px solid var(--v3-line-soft);
+  background: none; color: var(--v3-ink); font: inherit; font-size: 15px; text-align: left; text-decoration: none;
+}
+.ab-row:last-child { border-bottom: none; }
+.ab-row b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ab-link { cursor: pointer; }
+.ab-link svg { color: var(--v3-ink-2); }
+@media (max-width: 640px) { .ab-grid { grid-template-columns: 1fr; } }

@@ -17,6 +17,8 @@ import PlayerStats from './components/PlayerStats';
 import PlayedTogether from './components/PlayedTogether';
 import MatchPage from './components/MatchPage';
 import ShareSheet from './components/ShareSheet';
+import Splash from './components/Splash';
+import About from './components/About';
 import Settings from './components/Settings';
 import WhatsNew from './components/WhatsNew';
 
@@ -164,6 +166,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/about"
+        element={
+          <ProtectedRoute>
+            <About />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
@@ -198,6 +208,7 @@ export default function App() {
           </SettingsProvider>
         </AuthProvider>
         <OrientationWarning />
+        <Splash />
         <LayoutDebug />
       </ToastProvider>
     </BrowserRouter>

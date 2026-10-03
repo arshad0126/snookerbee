@@ -238,9 +238,9 @@ export default function Settings() {
             <button type="button" className="st-btn st-btn--ghost" onClick={() => navigate('/whats-new')}>
               <Icon name="star" size={18} /> What's new in v{__APP_VERSION__}
             </button>
-            <a className="st-btn st-btn--ghost" href="https://github.com/arshad0126/snookerbee/issues/new" target="_blank" rel="noreferrer">
-              <Icon name="info" size={18} /> Report a problem or suggest something
-            </a>
+            <button type="button" className="st-btn st-btn--ghost" onClick={() => navigate('/about')}>
+              <Icon name="info" size={18} /> About SnookerBee &amp; send feedback
+            </button>
           </div>
         </section>
       </main>

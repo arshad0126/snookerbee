@@ -40,7 +40,7 @@ const SECONDARY: Item[] = [
   { icon: 'settings', label: 'Settings', to: '/settings', hint: 'Theme, colours, name' },
   { icon: 'download', label: 'Export & backup', to: '/settings#data' },
   { icon: 'star', label: "What's new", to: '/whats-new', hint: `v${CURRENT_VERSION}`, dot: true },
-  { icon: 'info', label: 'About & feedback', to: '/settings#about' },
+  { icon: 'info', label: 'About & feedback', to: '/about' },
 ];
 
 export default function ProfileDrawer({ open, onClose, stats, firstPlayedAt }: Props) {

@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.3.0',
+    date: '2026-10-04',
+    title: 'Opening screen and About',
+    added: [
+      'A short opening animation when you open the app — the rack builds, blooms, gathers or ripples in, then fades away into the app by itself. A different one each time.',
+      'About page in the profile menu: who made SnookerBee, the version, and a button to send feedback on WhatsApp.',
+    ],
+    improved: [
+      'With Reduce Motion turned on in your phone settings, the opening is a quick plain fade.',
+    ],
+  },
+  {
     version: '2.2.2',
     date: '2026-10-04',
     title: 'Easier New Match setup',
