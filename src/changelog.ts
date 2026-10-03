@@ -22,6 +22,25 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.0.0',
+    date: '2026-10-03',
+    title: 'SnookerBee 2.0 — frames first',
+    added: [
+      'Play every frame: winning the frames you need no longer ends the match. Play the rest, or tap End Match whenever you like.',
+      'Every frame now saves who won it and the score, so stats and your form are exact — including your older matches.',
+      'Starting or resuming a match turns the phone to landscape on Android.',
+    ],
+    improved: [
+      'Pot two reds in one shot: the red stays tappable straight after a red.',
+      'Share cards show the frame score — "Winner · 2–1 in frames" — and a level match reads "Draw · 1–1".',
+      'Your Last 5 frames on the home screen are now in the real order they were played.',
+    ],
+    fixed: [
+      'Reset Frame really starts the frame again. Before, the reset frame still counted as played and its points went into the match total.',
+      'Free ball now unlocks the colours on the scoring screen, and scores as the ball on.',
+    ],
+  },
+  {
     version: '1.7.1',
     date: '2026-10-03',
     title: 'Level on frames is a draw',
