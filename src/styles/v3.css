@@ -1043,7 +1043,8 @@ body.light-theme .mp-page {
    theme and accent; sizes scale with the screen (container units).
    ========================================================================== */
 .sp-root {
-  position: fixed; inset: 0; z-index: 30000;
+  /* Under the rotate prompt (9999), so turning back to portrait shows it. */
+  position: fixed; inset: 0; z-index: 9990;
   background: var(--bg-primary); color: var(--text-primary);
   container-type: size; overflow: hidden; pointer-events: none;
   font-family: var(--font-ui, system-ui, -apple-system, sans-serif);

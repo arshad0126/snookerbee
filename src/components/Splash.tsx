@@ -5,6 +5,11 @@ import { useEffect, useRef, useState } from 'react';
  * whatever screen is underneath. One of four "Racking up" animations is
  * picked at random, never the same one twice in a row.
  *
+ * iPhones open web apps in portrait, so it waits until the phone has been
+ * turned to landscape (the rotate prompt shows meanwhile), lets the rotation
+ * settle, and only then plays. It holds on the finished logo for a moment
+ * before fading out.
+ *
  * Shown once per launch (a reload after Google sign-in doesn't replay it).
  * With Reduce Motion on, it's a short plain fade.
  */
@@ -49,14 +54,41 @@ const RACK: [number, number][] = [];
 [1, 2, 3, 4, 5].forEach((n, row) => { for (let i = 0; i < n; i += 1) RACK.push([row, i - (n - 1) / 2]); });
 
 const EASE_OUT = 'cubic-bezier(.16,1,.3,1)';
+/** Everything plays this much slower than the raw timings (1.4 = 40% slower). */
+const PACE = 1.4;
+/** How long the finished logo stays before fading. */
+const HOLD = 700;
+/** Let the rotation animation finish before starting. */
+const SETTLE = 350;
+
+const isLandscape = () => window.innerWidth > window.innerHeight;
 
 export default function Splash() {
   const [show] = useState(shouldShow);
+  const [ready, setReady] = useState(false);
   const [done, setDone] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Wait for landscape, then a beat for the rotation to settle.
   useEffect(() => {
-    if (!show) return;
+    if (!show || ready) return;
+    let timer = 0;
+    const check = () => {
+      window.clearTimeout(timer);
+      if (isLandscape()) timer = window.setTimeout(() => { if (isLandscape()) setReady(true); }, SETTLE);
+    };
+    check();
+    window.addEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
+  }, [show, ready]);
+
+  useEffect(() => {
+    if (!show || !ready) return;
     const root = rootRef.current;
     if (!root) return;
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -68,7 +100,11 @@ export default function Splash() {
     const SOFT = spring(140, 17), SNAPPY = spring(240, 20), GLIDE = spring(90, 16);
 
     const anim = (el: Element, kf: Keyframe[], o: KeyframeAnimationOptions) =>
-      el.animate(kf, { fill: 'both', ...o });
+      el.animate(kf, {
+        fill: 'both', ...o,
+        duration: Number(o.duration ?? 0) * (reduce ? 1 : PACE),
+        delay: (o.delay ?? 0) * (reduce ? 1 : PACE),
+      });
     const fadeUp = (el: Element, delay: number) => anim(el,
       [{ opacity: 0, transform: 'translateY(6px)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }],
       { duration: 620, delay, easing: EASE_OUT });
@@ -158,12 +194,15 @@ export default function Splash() {
     // Same exit for all four: fade, a touch of zoom and blur, into the app.
     const out = root.animate(
       [{ opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }, { opacity: 0, transform: 'scale(1.04)', filter: 'blur(6px)' }],
-      { duration: reduce ? 250 : 520, delay: end, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },
+      { duration: reduce ? 250 : 700, delay: reduce ? end : end * PACE + HOLD, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },
     );
     out.finished.then(() => setDone(true)).catch(() => setDone(true));
     return () => { root.getAnimations({ subtree: true }).forEach((a) => a.cancel()); };
-  }, [show]);
+  }, [show, ready]);
 
+  // Rendered (blank, in the app's colour) from the start so the home screen
+  // never flashes; in portrait the rotate prompt sits on top of it. The
+  // animation itself only begins once `ready`.
   if (!show || done) return null;
 
   return (

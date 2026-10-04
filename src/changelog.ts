@@ -22,6 +22,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.3.1',
+    date: '2026-10-04',
+    title: 'Smoother opening',
+    fixed: [
+      'The opening animation waits until your phone is turned sideways, so it no longer starts in portrait and jumps when the screen rotates.',
+      'It plays a little slower and holds on the logo for a moment before fading into the app.',
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-10-04',
     title: 'Opening screen and About',
