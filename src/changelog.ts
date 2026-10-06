@@ -22,6 +22,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.3.2',
+    date: '2026-10-07',
+    title: 'Kinder to your battery',
+    improved: [
+      'Sound now rests between shots: after a few quiet seconds, or when you switch away from the app, it powers down and wakes again on your next pot. Sounds play just as before.',
+    ],
+  },
+  {
     version: '2.3.1',
     date: '2026-10-04',
     title: 'Smoother opening',

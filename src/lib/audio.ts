@@ -1,12 +1,31 @@
 /**
  * Audio Manager for Snooker Counter
  * Uses Web Audio API with OscillatorNode for zero-dependency sound effects
+ *
+ * Battery: a running AudioContext keeps the phone's audio hardware awake even
+ * in silence. So the context is put on standby (suspend) after IDLE_MS with no
+ * sound, and straight away when the app goes to the background. Every play
+ * wakes it first (resume). Sounds are scheduled on the context's own clock,
+ * which stands still while suspended, so a sound requested during wake-up
+ * simply starts the moment the context is running again.
  */
+
+/** Longest sound (victory fanfare) is under 2s; 10s leaves ample room. */
+const IDLE_MS = 10_000;
 
 class AudioManager {
   private context: AudioContext | null = null;
   private initialized = false;
   private _muted = false;
+  private idleTimer: number | undefined;
+
+  constructor() {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) this.standby();
+      });
+    }
+  }
 
   get muted() {
     return this._muted;
@@ -18,9 +37,11 @@ class AudioManager {
    */
   async init(): Promise<void> {
     if (this.initialized && this.context) {
-      if (this.context.state === 'suspended') {
+      // 'interrupted' is WebKit-only (calls, Siri, backgrounding) and not in the TS type.
+      if ((this.context.state as string) !== 'running') {
         await this.context.resume();
       }
+      this.armIdle();
       return;
     }
 
@@ -30,8 +51,36 @@ class AudioManager {
         await this.context.resume();
       }
       this.initialized = true;
+      this.armIdle();
     } catch (e) {
       console.warn('Web Audio API not available:', e);
+    }
+  }
+
+  /**
+   * Wake the context for a sound and restart the idle countdown.
+   * Returns null when muted or not yet initialised (nothing should play).
+   */
+  private wake(): AudioContext | null {
+    if (this._muted || !this.context) return null;
+    if ((this.context.state as string) !== 'running') {
+      this.context.resume().catch(() => {});
+    }
+    this.armIdle();
+    return this.context;
+  }
+
+  private armIdle(): void {
+    if (typeof window === 'undefined') return;
+    window.clearTimeout(this.idleTimer);
+    this.idleTimer = window.setTimeout(() => this.standby(), IDLE_MS);
+  }
+
+  /** Put the audio hardware to sleep; the next sound wakes it. */
+  private standby(): void {
+    if (typeof window !== 'undefined') window.clearTimeout(this.idleTimer);
+    if (this.context && this.context.state === 'running') {
+      this.context.suspend().catch(() => {});
     }
   }
 
@@ -51,9 +100,8 @@ class AudioManager {
    * Play a satisfying "pot" sound
    */
   playPot(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -127,9 +175,8 @@ class AudioManager {
    * Play a foul/warning buzz
    */
   playFoul(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -177,9 +224,8 @@ class AudioManager {
    * Play an ascending chime for break milestones
    */
   playBreakMilestone(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -230,9 +276,8 @@ class AudioManager {
    * Play a victory fanfare for frame/match wins
    */
   playVictory(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -284,9 +329,8 @@ class AudioManager {
    * Play a subtle button tap sound
    */
   playTap(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -327,9 +371,8 @@ class AudioManager {
    * Play undo sound — descending notes
    */
   playUndo(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
@@ -372,9 +415,8 @@ class AudioManager {
    * Play miss sound — soft thud
    */
   playMiss(): void {
-    if (this._muted || !this.context) return;
-
-    const ctx = this.context;
+    const ctx = this.wake();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     const isLightMode = typeof document !== 'undefined' && document.body.classList.contains('light-theme');
