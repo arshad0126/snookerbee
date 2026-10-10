@@ -6,6 +6,7 @@
 
 [**▶ Open the app**](https://snookerbee.vercel.app) · installs to your home screen · works offline
 
+[![CI](https://github.com/arshad0126/snookerbee/actions/workflows/ci.yml/badge.svg)](https://github.com/arshad0126/snookerbee/actions/workflows/ci.yml)
 [![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
@@ -124,6 +125,7 @@ A few decisions that aren't obvious from the outside:
 | Backend | Supabase (Postgres + Google OAuth, Row Level Security) |
 | Testing | Vitest — rules engine, results, frame analysis, player stats |
 | Lint | oxlint |
+| CI | GitHub Actions — lint, test and build on every push and PR |
 | Hosting | Vercel, gated by a release-notes check |
 
 ---

@@ -1,0 +1,45 @@
+name: CI
+
+# Vercel only runs `npm run build` on deploy, so lint and the Vitest suite
+# never ran automatically. This runs all three on every push and PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Also runs scripts/check-release.mjs (prebuild), so a version without
+      # release notes fails here before it reaches Vercel.
+      - name: Build
+        run: npm run build
