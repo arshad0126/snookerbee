@@ -22,6 +22,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.0',
+    date: '2026-10-16',
+    title: 'A clearer frame log',
+    improved: [
+      'The frame log now opens in the middle of the screen as a simple scoresheet: one line per visit, the running score down the left, and the balls each player potted.',
+      'Your highest break and every foul stand out, and the player at the table is shown live at the bottom.',
+      'Works the same in team, free-for-all and Century games, in light and dark.',
+    ],
+  },
+  {
     version: '2.3.2',
     date: '2026-10-07',
     title: 'Kinder to your battery',
