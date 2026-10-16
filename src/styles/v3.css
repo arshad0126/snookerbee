@@ -741,9 +741,7 @@ div.db-row:focus-visible { outline: 2px solid var(--accent-sage); outline-offset
 }
 
 /* Undone steps stay in the timeline, struck through. */
-.action-log-entry.is-undone .action-log-desc,
 .ma-event.is-undone .ma-event-what { text-decoration: line-through; opacity: 0.6; }
-.action-log-entry.is-undone .action-log-desc .log-undone-tag,
 .ma-event.is-undone .log-undone-tag { text-decoration: none; display: inline-block; }
 .log-undone-tag {
   margin-left: 8px; padding: 1px 6px; border-radius: 5px;

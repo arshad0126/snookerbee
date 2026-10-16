@@ -224,8 +224,8 @@ export function buildFrameVisits({
       stillOpen.live = true;
     } else {
       close();
-      const v = start(currentPlayerName);
-      v.live = true;
+      open = start(currentPlayerName);
+      open.live = true;
     }
   }
   close();

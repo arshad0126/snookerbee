@@ -128,6 +128,17 @@ describe('buildFrameVisits — snooker', () => {
     expect(visits[visits.length - 1]).toMatchObject({ player: 'Arshad', live: true, points: 1 });
     expectTotalsMatch(s);
   });
+
+  it('an empty live row still carries the running totals', () => {
+    const s0 = game({
+      mode: 'freeForAll',
+      players: [{ name: 'Arshad' }, { name: 'Awais' }, { name: 'Suraj' }],
+    });
+    const s = run(s0, pot('red'), pot('black'), miss, miss, miss);
+    const live = visitsOf(s).visits.at(-1)!;
+    expect(live).toMatchObject({ player: 'Arshad', live: true, balls: [] });
+    expect(live.totals.Arshad).toBe(8);
+  });
 });
 
 describe('buildFrameVisits — Century', () => {

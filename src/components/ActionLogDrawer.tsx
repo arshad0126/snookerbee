@@ -1,116 +1,214 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ActionLogEntry } from '../engine/types';
+import { buildFrameVisits } from '../lib/frameVisits';
+import type { FrameSide, FrameVisit, VisitBall } from '../lib/frameVisits';
 import { Icon } from './ui';
+
+/**
+ * The frame log: a centred scoresheet with one row per visit. The running
+ * score runs down the left, the player and the balls they potted sit in the
+ * middle, and the points for the visit on the right.
+ */
 
 interface ActionLogDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   actionLog: ActionLogEntry[];
-  frameStartTime: number;
+  /** Scoring sides, in turn order (players, or teams in team mode). */
+  sides: FrameSide[];
+  /** Player at the table now; null once the frame is over. */
+  currentPlayerName: string | null;
+  isOver: boolean;
+  /** "Frame 2", "Century · 50" */
+  title: string;
+}
+
+const MAX_CHIPS = 10;
+
+function Chips({ balls }: { balls: VisitBall[] }) {
+  const shown = balls.length > MAX_CHIPS ? balls.slice(0, MAX_CHIPS - 1) : balls;
+  const rest = balls.length - shown.length;
+  return (
+    <span className="flog-chips" aria-label={balls.map((b) => b.ball).join(', ')}>
+      {shown.map((b, i) => (
+        <span
+          key={i}
+          className={`flog-chip flog-chip--${b.ball}${b.freeBall ? ' is-free' : ''}`}
+          title={b.freeBall ? `${b.ball} (free ball)` : b.ball}
+        />
+      ))}
+      {rest > 0 && <span className="flog-chip-more">+{rest}</span>}
+    </span>
+  );
+}
+
+const minus = (n: number) => `−${Math.abs(n)}`;
+
+function foulText(v: FrameVisit): string {
+  const f = v.foul;
+  if (!f) return '';
+  if (v.note) return v.note;
+  const what = f.inOff ? 'In-off' : f.ball ? `Foul on ${f.ball}` : 'Foul';
+  if (f.to.length === 0) return what;
+  const who = f.to.length > 1 ? 'each opponent' : f.to[0];
+  return `${what} · ${f.penalty} to ${who}`;
 }
 
 export default function ActionLogDrawer({
   isOpen,
   onClose,
   actionLog,
-  frameStartTime,
+  sides,
+  currentPlayerName,
+  isOver,
+  title,
 }: ActionLogDrawerProps) {
-  const listEndRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  const { visits, visitCount } = useMemo(
+    () => buildFrameVisits({ actionLog, sides, currentPlayerName, isOver }),
+    [actionLog, sides, currentPlayerName, isOver],
+  );
+
+  // Newest row in view on open and whenever one is added.
+  useEffect(() => {
+    const el = listRef.current;
+    if (isOpen && el) el.scrollTop = el.scrollHeight;
+  }, [isOpen, visits]);
 
   useEffect(() => {
-    if (isOpen && listEndRef.current) {
-      listEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [isOpen, actionLog]);
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const formatRelativeTime = (timestamp: string) => {
-    const elapsedMs = Math.max(0, new Date(timestamp).getTime() - frameStartTime);
-    const seconds = Math.floor(elapsedMs / 1000);
-    const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const ss = String(seconds % 60).padStart(2, '0');
-    return `${mm}:${ss}`;
+  const headToHead = sides.length === 2;
+  const meta = headToHead
+    ? `${sides[0].name} – ${sides[1].name}`
+    : `${sides.length} players · ${visitCount} ${visitCount === 1 ? 'visit' : 'visits'}`;
+
+  const score = (v: FrameVisit) => {
+    const quiet = v.live || v.kind === 'end' || v.changed.length === 0;
+    if (headToHead) {
+      return (
+        <span className={`flog-score${quiet ? ' is-quiet' : ''}`}>
+          {sides.map((s, i) => (
+            <span key={s.name}>
+              {i > 0 && '–'}
+              <span
+                className={
+                  !quiet && v.changed.includes(s.name)
+                    ? v.highest && s.name === v.side
+                      ? 'is-moved is-high'
+                      : 'is-moved'
+                    : undefined
+                }
+              >
+                {v.totals[s.name] ?? 0}
+              </span>
+            </span>
+          ))}
+        </span>
+      );
+    }
+    if (v.kind === 'end') return <span className="flog-score is-quiet" />;
+    return (
+      <span className={`flog-score${quiet ? ' is-quiet' : ''}${v.highest ? ' is-high' : ''}`}>
+        {v.totals[v.side] ?? 0}
+      </span>
+    );
   };
 
-  const getLogClass = (type: string) => {
-    switch (type) {
-      case 'pot':
-        return 'log-pot';
-      case 'foul':
-      case 'in_off':
-      case 'inOff':
-        return 'log-foul';
-      case 'undo':
-      case 'redo':
-        return 'log-undo';
-      case 'frame_end':
-      case 'frameEnd':
-      case 'concede':
-        return 'log-frame';
-      default:
-        return 'log-turn';
+  const points = (v: FrameVisit) => {
+    if (v.foul && v.foul.to.length > 0 && v.points <= 0) {
+      return <span className="flog-pts is-foul">{v.foul.penalty}</span>;
     }
+    if (v.points < 0) return <span className="flog-pts is-foul">{minus(v.points)}</span>;
+    if (v.points > 0) {
+      return <span className={`flog-pts${v.highest ? ' is-high' : ''}`}>+{v.points}</span>;
+    }
+    return <span className="flog-pts" />;
   };
 
-  const getLogIcon = (type: string) => {
-    switch (type) {
-      case 'pot':
-        return <Icon name="dot" className="log-icon log-icon--pot" />;
-      case 'foul':
-      case 'in_off':
-      case 'inOff':
-        return <Icon name="alert" className="log-icon log-icon--foul" />;
-      case 'undo':
-        return <Icon name="arrow-left" className="log-icon log-icon--undo" />;
-      case 'redo':
-        return <Icon name="arrow-right" className="log-icon log-icon--undo" />;
-      case 'frame_end':
-      case 'frameEnd':
-      case 'concede':
-        return <Icon name="flag" className="log-icon log-icon--frame" />;
-      default:
-        return <Icon name="dot" className="log-icon" />;
+  const body = (v: FrameVisit) => {
+    if (v.kind === 'end') {
+      return <span className="flog-line2">{v.note}</span>;
     }
+    const empty = v.live && v.balls.length === 0 && !v.foul;
+    if (empty) {
+      return (
+        <>
+          <span className="flog-name is-live">
+            {v.player} {visitCount === 0 ? 'to break' : 'at the table'}
+          </span>
+          {visitCount === 0 && (
+            <span className="flog-line2">Each visit will appear here as you score.</span>
+          )}
+        </>
+      );
+    }
+    return (
+      <>
+        <span className="flog-name">
+          {v.player}
+          {v.side !== v.player && <span className="flog-team">{v.side}</span>}
+          {v.highest && <span className="flog-tag">Highest break</span>}
+          {v.live && <span className="flog-tag">At the table</span>}
+        </span>
+        {v.balls.length > 0 && <Chips balls={v.balls} />}
+        {v.foul && <span className="flog-line2 is-foul">{foulText(v)}</span>}
+        {!v.foul && v.missed && (
+          <span className="flog-line2">{v.number === 1 ? 'Break-off, missed' : 'Missed'}</span>
+        )}
+        {!v.foul && v.note && <span className="flog-line2">{v.note}</span>}
+      </>
+    );
   };
+
+  const ruleClass = (v: FrameVisit) =>
+    v.live ? ' is-live' : v.foul ? ' is-foul' : v.highest ? ' is-high' : '';
 
   return (
-    <div className="action-log-overlay" onClick={onClose}>
-      <div className="action-log-drawer card" onClick={(e) => e.stopPropagation()}>
-        <div className="action-log-header">
-          <h3 className="action-log-title">TIMELINE & LOG</h3>
-          <button onClick={onClose} className="btn-close" aria-label="Close action log">
+    <div className="modal-backdrop modal-centered flog-backdrop" onClick={onClose}>
+      <div
+        className="flog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${title} log`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flog-head">
+          <h3 className="flog-title">{title}</h3>
+          <span className="flog-meta">{meta}</span>
+          <button type="button" onClick={onClose} className="flog-close" aria-label="Close frame log">
             <Icon name="close" size={18} />
           </button>
+        </header>
+
+        <div className="flog-row flog-cols" aria-hidden="true">
+          <span>{headToHead ? 'Score' : 'Total'}</span>
+          <span className="flog-cols-visit">Visit</span>
+          <span className="flog-cols-pts">Pts</span>
         </div>
 
-        <div className="action-log-subbar">
-          <div className="action-log-subbar-left">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px', opacity: 0.7, verticalAlign: 'middle'}}>
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span>ACTIVE TIMELINE & AUDIT LOG</span>
-          </div>
-          <span className="events-count-badge">{actionLog.length} Events</span>
-        </div>
-
-        <div className="action-log-list">
-          {actionLog.length === 0 ? (
-            <div className="action-log-empty">Waiting for break-off shot...</div>
-          ) : (
-            actionLog.map((entry, index) => (
-              <div key={index} className={`action-log-entry ${getLogClass(entry.type)}${entry.undone ? ' is-undone' : ''}`}>
-                <span className="action-log-time">{formatRelativeTime(entry.timestamp)}</span>
-                <span className="action-log-icon">{getLogIcon(entry.type)}</span>
-                <span className="action-log-desc">
-                  {entry.description}
-                  {entry.undone && <span className="log-undone-tag">undone</span>}
-                </span>
-              </div>
-            ))
-          )}
-          <div ref={listEndRef} />
+        <div
+          ref={listRef}
+          className={`flog-list${scrolled ? ' is-scrolled' : ''}`}
+          onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 4)}
+        >
+          {visits.map((v, i) => (
+            <div key={i} className={`flog-row${v.kind === 'end' ? ' is-end' : ''}`}>
+              {score(v)}
+              <div className={`flog-visit${ruleClass(v)}`}>{body(v)}</div>
+              {v.kind === 'end' ? <span className="flog-pts" /> : points(v)}
+            </div>
+          ))}
         </div>
       </div>
     </div>

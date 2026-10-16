@@ -407,7 +407,10 @@ export default function CenturyScreen() {
         isOpen={logOpen}
         onClose={() => setLogOpen(false)}
         actionLog={toActionLog(state.actionLog)}
-        frameStartTime={Date.parse(state.startedAt)}
+        sides={state.turnOrder.map((i) => ({ name: state.players[i].name, members: [state.players[i].name] }))}
+        currentPlayerName={state.finished ? null : player.name}
+        isOver={state.finished}
+        title={`Century · ${state.target}`}
       />
 
       {undoBar}
