@@ -74,13 +74,26 @@ describe('buildFrameVisits — snooker', () => {
     expectTotalsMatch(s);
   });
 
-  it('undone shots drop out; redone shots come back', () => {
+  it('undone shots drop out but the undo stays on the timeline; redo brings them back', () => {
     let s = run(two(), pot('red'), pot('black'), pot('red'), { type: 'UNDO' });
-    expect(visitsOf(s).visits[0].balls.map((b) => b.ball)).toEqual(['red', 'black']);
-    expect(visitsOf(s).visits[0].live).toBe(true);
+    let v = visitsOf(s).visits[0];
+    expect(v.balls.map((b) => b.ball)).toEqual(['red', 'black']);
+    expect(v.live).toBe(true);
+    expect(v.marks).toEqual([{ kind: 'undo', text: 'Arshad potted red (+1)' }]);
     expectTotalsMatch(s);
     s = run(s, { type: 'REDO' });
-    expect(visitsOf(s).visits[0].balls).toHaveLength(3);
+    v = visitsOf(s).visits[0];
+    expect(v.balls).toHaveLength(3);
+    expect(v.marks.map((m) => m.kind)).toEqual(['undo', 'redo']);
+    expectTotalsMatch(s);
+  });
+
+  it('undoing a miss reopens that visit and notes it there', () => {
+    const s = run(two(), pot('red'), miss, { type: 'UNDO' }, pot('black'));
+    const { visits } = visitsOf(s);
+    expect(visits).toHaveLength(1);
+    expect(visits[0]).toMatchObject({ player: 'Arshad', points: 8, live: true });
+    expect(visits[0].marks[0].kind).toBe('undo');
     expectTotalsMatch(s);
   });
 

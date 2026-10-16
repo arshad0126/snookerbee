@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.1',
+    date: '2026-10-16',
+    title: 'Undo is back in the timeline',
+    improved: [
+      'The timeline shows every Undo and Redo again, on the visit where it happened, so you can see what was taken back.',
+      'Its heading now reads "Timeline · Frame 1".',
+    ],
+    fixed: [
+      'On iPhone the scroll bar no longer sits on top of the points column.',
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-10-16',
     title: 'A clearer frame log',

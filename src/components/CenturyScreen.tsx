@@ -410,7 +410,7 @@ export default function CenturyScreen() {
         sides={state.turnOrder.map((i) => ({ name: state.players[i].name, members: [state.players[i].name] }))}
         currentPlayerName={state.finished ? null : player.name}
         isOver={state.finished}
-        title={`Century · ${state.target}`}
+        title={`Century ${state.target}`}
       />
 
       {undoBar}

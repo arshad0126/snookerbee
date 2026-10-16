@@ -7,8 +7,9 @@
  * it arrives at match the engine's own scores.
  *
  * Rules:
- *  - Undone entries, and the undo / redo / free-ball / frame-start markers,
- *    are skipped: the sheet shows what counts.
+ *  - Undone entries are left out of the scores and balls: the sheet shows
+ *    what counts. Each Undo / Redo is kept as a note on the visit it
+ *    happened in, so the history stays visible.
  *  - A new visit starts when the player changes, or after a miss, foul,
  *    in-off, frame end or concession.
  *  - A pot adds its points to the player who potted. A foul with
@@ -63,6 +64,12 @@ export interface VisitFoul {
 
 export type VisitKind = 'visit' | 'end';
 
+export interface VisitMark {
+  kind: 'undo' | 'redo';
+  /** What was taken back or put back: "Awais potted red (+1)". */
+  text: string;
+}
+
 export interface FrameVisit {
   kind: VisitKind;
   /** 1-based visit number. End rows carry the number they follow. */
@@ -73,6 +80,8 @@ export interface FrameVisit {
   /** Points this visit put on the player's own side (signed). */
   points: number;
   foul?: VisitFoul;
+  /** Undos and redos during this visit, in order. */
+  marks: VisitMark[];
   /** Short text for the second line: "Missed", "Frame 1 ended", … */
   note?: string;
   /** Visit ended by a miss with nothing potted. */
@@ -104,7 +113,8 @@ export interface FrameVisits {
   visitCount: number;
 }
 
-const SKIPPED = new Set(['undo', 'redo', 'freeBall', 'frameStart']);
+const SKIPPED = new Set(['freeBall', 'frameStart']);
+const MARKS = new Set(['undo', 'redo']);
 const ENDS_VISIT = new Set(['miss', 'foul', 'inOff']);
 const ENDS_FRAME = new Set(['frameEnd', 'concede']);
 
@@ -149,6 +159,7 @@ export function buildFrameVisits({
       side: sideOf(player),
       balls: [],
       points: 0,
+      marks: [],
       missed: false,
       live: false,
       highest: false,
@@ -162,6 +173,16 @@ export function buildFrameVisits({
   for (const e of actionLog) {
     if (e.undone || SKIPPED.has(e.type)) continue;
 
+    // Undo / Redo: a note on the visit in progress (or the one it reopened).
+    if (MARKS.has(e.type)) {
+      if (!open) open = start(e.playerName);
+      open.marks.push({
+        kind: e.type === 'undo' ? 'undo' : 'redo',
+        text: e.description.replace(/^(Undid|Redid):\s*/i, ''),
+      });
+      continue;
+    }
+
     if (ENDS_FRAME.has(e.type)) {
       close();
       visits.push({
@@ -171,6 +192,7 @@ export function buildFrameVisits({
         side: sideOf(e.playerName),
         balls: [],
         points: 0,
+        marks: [],
         note: e.description,
         missed: false,
         live: false,
@@ -239,7 +261,7 @@ export function buildFrameVisits({
   }
 
   const visitCount = visits.filter(
-    (v) => v.kind === 'visit' && !(v.live && v.balls.length === 0 && !v.foul),
+    (v) => v.kind === 'visit' && !(v.live && v.balls.length === 0 && !v.foul && v.marks.length === 0),
   ).length;
 
   return { visits, totals: { ...totals }, visitCount };

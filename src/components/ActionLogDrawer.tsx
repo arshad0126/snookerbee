@@ -19,7 +19,7 @@ interface ActionLogDrawerProps {
   /** Player at the table now; null once the frame is over. */
   currentPlayerName: string | null;
   isOver: boolean;
-  /** "Frame 2", "Century · 50" */
+  /** "Frame 2", "Century 50" — shown as "Timeline · Frame 2". */
   title: string;
 }
 
@@ -140,7 +140,7 @@ export default function ActionLogDrawer({
     if (v.kind === 'end') {
       return <span className="flog-line2">{v.note}</span>;
     }
-    const empty = v.live && v.balls.length === 0 && !v.foul;
+    const empty = v.live && v.balls.length === 0 && !v.foul && v.marks.length === 0;
     if (empty) {
       return (
         <>
@@ -167,6 +167,14 @@ export default function ActionLogDrawer({
           <span className="flog-line2">{v.number === 1 ? 'Break-off, missed' : 'Missed'}</span>
         )}
         {!v.foul && v.note && <span className="flog-line2">{v.note}</span>}
+        {v.marks.map((m, i) => (
+          <span key={i} className={`flog-mark flog-mark--${m.kind}`}>
+            <Icon name={m.kind === 'undo' ? 'arrow-left' : 'arrow-right'} size={11} />
+            <span>
+              {m.kind === 'undo' ? 'Undo' : 'Redo'} · {m.text}
+            </span>
+          </span>
+        ))}
       </>
     );
   };
@@ -180,13 +188,15 @@ export default function ActionLogDrawer({
         className="flog"
         role="dialog"
         aria-modal="true"
-        aria-label={`${title} log`}
+        aria-label={`Timeline, ${title}`}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flog-head">
-          <h3 className="flog-title">{title}</h3>
+          <h3 className="flog-title">
+            Timeline <span className="flog-title-sep">·</span> {title}
+          </h3>
           <span className="flog-meta">{meta}</span>
-          <button type="button" onClick={onClose} className="flog-close" aria-label="Close frame log">
+          <button type="button" onClick={onClose} className="flog-close" aria-label="Close timeline">
             <Icon name="close" size={18} />
           </button>
         </header>
