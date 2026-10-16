@@ -24,9 +24,9 @@ export const CHANGELOG: Release[] = [
   {
     version: '2.4.4',
     date: '2026-10-17',
-    title: 'Visit counts',
+    title: 'Behind the scenes',
     improved: [
-      'SnookerBee now counts visits anonymously, so we can see how many people use the app. No cookies and nothing personal is collected.',
+      'Small behind-the-scenes update. Nothing changes in how you score or play.',
     ],
   },
   {
