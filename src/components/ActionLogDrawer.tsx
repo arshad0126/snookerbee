@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ActionLogEntry } from '../engine/types';
 import { buildFrameVisits } from '../lib/frameVisits';
-import type { FrameSide, FrameVisit, VisitBall } from '../lib/frameVisits';
+import type { FrameSide, FrameVisit, VisitBall, VisitMark } from '../lib/frameVisits';
 import { Icon } from './ui';
 
 /**
@@ -42,6 +42,57 @@ function Chips({ balls }: { balls: VisitBall[] }) {
   );
 }
 
+function MarkLine({ mark }: { mark: VisitMark }) {
+  return (
+    <span className={`flog-mark flog-mark--${mark.kind}`}>
+      <Icon name={mark.kind === 'undo' ? 'arrow-left' : 'arrow-right'} size={11} />
+      <span>
+        {mark.kind === 'undo' ? 'Undo' : 'Redo'} · {mark.text}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Undo / Redo notes for a visit. One shows as its own line; two or more fold
+ * into "2 undos · 1 redo", tap to show them all.
+ */
+function Marks({
+  marks,
+  open,
+  onToggle,
+}: {
+  marks: VisitMark[];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (marks.length === 0) return null;
+  if (marks.length === 1) return <MarkLine mark={marks[0]} />;
+
+  const undos = marks.filter((m) => m.kind === 'undo').length;
+  const redos = marks.length - undos;
+  const parts = [
+    undos ? `${undos} ${undos === 1 ? 'undo' : 'undos'}` : '',
+    redos ? `${redos} ${redos === 1 ? 'redo' : 'redos'}` : '',
+  ].filter(Boolean);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="flog-mark flog-mark-toggle"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        <Icon name="arrow-left" size={11} />
+        <span>{parts.join(' · ')}</span>
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={11} />
+      </button>
+      {open && marks.map((m, i) => <MarkLine key={i} mark={m} />)}
+    </>
+  );
+}
+
 const minus = (n: number) => `−${Math.abs(n)}`;
 
 function foulText(v: FrameVisit): string {
@@ -65,6 +116,15 @@ export default function ActionLogDrawer({
 }: ActionLogDrawerProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  // Visits whose undo / redo list is expanded, by visit number.
+  const [openMarks, setOpenMarks] = useState<Set<number>>(() => new Set());
+  const toggleMarks = (n: number) =>
+    setOpenMarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) next.delete(n);
+      else next.add(n);
+      return next;
+    });
 
   const { visits, visitCount } = useMemo(
     () => buildFrameVisits({ actionLog, sides, currentPlayerName, isOver }),
@@ -167,14 +227,11 @@ export default function ActionLogDrawer({
           <span className="flog-line2">{v.number === 1 ? 'Break-off, missed' : 'Missed'}</span>
         )}
         {!v.foul && v.note && <span className="flog-line2">{v.note}</span>}
-        {v.marks.map((m, i) => (
-          <span key={i} className={`flog-mark flog-mark--${m.kind}`}>
-            <Icon name={m.kind === 'undo' ? 'arrow-left' : 'arrow-right'} size={11} />
-            <span>
-              {m.kind === 'undo' ? 'Undo' : 'Redo'} · {m.text}
-            </span>
-          </span>
-        ))}
+        <Marks
+          marks={v.marks}
+          open={openMarks.has(v.number)}
+          onToggle={() => toggleMarks(v.number)}
+        />
       </>
     );
   };

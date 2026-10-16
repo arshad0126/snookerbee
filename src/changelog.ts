@@ -22,6 +22,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.2',
+    date: '2026-10-16',
+    title: 'Tidier undo history',
+    improved: [
+      'When a visit has more than one Undo or Redo, the timeline folds them into one line, like "2 undos · 1 redo". Tap it to see each one.',
+    ],
+  },
+  {
     version: '2.4.1',
     date: '2026-10-16',
     title: 'Undo is back in the timeline',
