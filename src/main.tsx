@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 import App from './App';
 import { repairLocalHistory } from './lib/database';
 import { loadLocalSettings } from './lib/settings';
@@ -33,5 +34,7 @@ lockAppFeel();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
+    {/* Visit counts only: no cookies, no personal data. Needs Web Analytics on in Vercel. */}
+    <Analytics />
   </StrictMode>
 );

@@ -22,6 +22,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.4',
+    date: '2026-10-17',
+    title: 'Visit counts',
+    improved: [
+      'SnookerBee now counts visits anonymously, so we can see how many people use the app. No cookies and nothing personal is collected.',
+    ],
+  },
+  {
     version: '2.4.3',
     date: '2026-10-16',
     title: 'Clearer undos',
