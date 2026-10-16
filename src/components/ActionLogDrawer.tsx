@@ -29,12 +29,15 @@ function Chips({ balls }: { balls: VisitBall[] }) {
   const shown = balls.length > MAX_CHIPS ? balls.slice(0, MAX_CHIPS - 1) : balls;
   const rest = balls.length - shown.length;
   return (
-    <span className="flog-chips" aria-label={balls.map((b) => b.ball).join(', ')}>
+    <span
+      className="flog-chips"
+      aria-label={balls.map((b) => (b.undone ? `${b.ball} (undone)` : b.ball)).join(', ')}
+    >
       {shown.map((b, i) => (
         <span
           key={i}
-          className={`flog-chip flog-chip--${b.ball}${b.freeBall ? ' is-free' : ''}`}
-          title={b.freeBall ? `${b.ball} (free ball)` : b.ball}
+          className={`flog-chip flog-chip--${b.ball}${b.freeBall ? ' is-free' : ''}${b.undone ? ' is-undone' : ''}`}
+          title={`${b.ball}${b.freeBall ? ' (free ball)' : ''}${b.undone ? ' (undone)' : ''}`}
         />
       ))}
       {rest > 0 && <span className="flog-chip-more">+{rest}</span>}
@@ -47,7 +50,7 @@ function MarkLine({ mark }: { mark: VisitMark }) {
     <span className={`flog-mark flog-mark--${mark.kind}`}>
       <Icon name={mark.kind === 'undo' ? 'arrow-left' : 'arrow-right'} size={11} />
       <span>
-        {mark.kind === 'undo' ? 'Undo' : 'Redo'} · {mark.text}
+        {mark.kind === 'undo' ? 'Undone' : 'Redone'} · {mark.text}
       </span>
     </span>
   );

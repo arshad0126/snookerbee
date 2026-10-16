@@ -3,7 +3,7 @@ import { createInitialState, gameReducer } from '../../engine/reducer';
 import { centuryReducer, createCenturyState, toActionLog } from '../../engine/century';
 import type { CenturyAction, CenturyState } from '../../engine/century';
 import type { BallType, GameAction, GameSetupConfig, GameState } from '../../engine/types';
-import { buildFrameVisits, sidesForGame } from '../frameVisits';
+import { buildFrameVisits, describeMark, sidesForGame } from '../frameVisits';
 
 const run = (s: GameState, ...actions: GameAction[]) => actions.reduce(gameReducer, s);
 const pot = (ball: BallType): GameAction => ({ type: 'POT_BALL', ball });
@@ -77,14 +77,18 @@ describe('buildFrameVisits — snooker', () => {
   it('undone shots drop out but the undo stays on the timeline; redo brings them back', () => {
     let s = run(two(), pot('red'), pot('black'), pot('red'), { type: 'UNDO' });
     let v = visitsOf(s).visits[0];
-    expect(v.balls.map((b) => b.ball)).toEqual(['red', 'black']);
+    expect(v.balls.map((b) => [b.ball, b.undone])).toEqual([['red', false], ['black', false], ['red', true]]);
+    expect(v.points).toBe(8);
     expect(v.live).toBe(true);
-    expect(v.marks).toEqual([{ kind: 'undo', text: 'Arshad potted red (+1)' }]);
+    expect(v.marks).toEqual([{ kind: 'undo', text: 'red, +1 not counted' }]);
     expectTotalsMatch(s);
     s = run(s, { type: 'REDO' });
     v = visitsOf(s).visits[0];
-    expect(v.balls).toHaveLength(3);
-    expect(v.marks.map((m) => m.kind)).toEqual(['undo', 'redo']);
+    expect(v.balls.map((b) => b.undone)).toEqual([false, false, false]);
+    expect(v.marks).toEqual([
+      { kind: 'undo', text: 'red, +1 not counted' },
+      { kind: 'redo', text: 'red' },
+    ]);
     expectTotalsMatch(s);
   });
 
@@ -100,7 +104,7 @@ describe('buildFrameVisits — snooker', () => {
   it('marks a free-ball pot', () => {
     const s = run(two(), miss, { type: 'FREE_BALL' }, pot('blue'));
     const v = visitsOf(s).visits[1];
-    expect(v.balls[0]).toEqual({ ball: 'blue', freeBall: true });
+    expect(v.balls[0]).toEqual({ ball: 'blue', freeBall: true, undone: false });
     expectTotalsMatch(s);
   });
 
@@ -151,6 +155,17 @@ describe('buildFrameVisits — snooker', () => {
     const live = visitsOf(s).visits.at(-1)!;
     expect(live).toMatchObject({ player: 'Arshad', live: true, balls: [] });
     expect(live.totals.Arshad).toBe(8);
+  });
+});
+
+describe('describeMark', () => {
+  it('says what an undo no longer counts', () => {
+    expect(describeMark('undo', 'Awais missed — turn passes')).toBe('miss');
+    expect(describeMark('undo', 'Awais fouled on blue. 5 pts to Suraj')).toBe('foul on blue, 5 not given');
+    expect(describeMark('undo', 'Awais potted the cue ball (in-off on red). 4 pts to Suraj')).toBe('in-off on red, 4 not given');
+    expect(describeMark('undo', 'Awais potted blue as free ball (+1)')).toBe('blue (free ball), +1 not counted');
+    expect(describeMark('undo', 'Awais missed the red (\u221210) \u2014 40')).toBe('missed red, \u221210 cancelled');
+    expect(describeMark('redo', 'Awais potted pink (+6)')).toBe('pink');
   });
 });
 

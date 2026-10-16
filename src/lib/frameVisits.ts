@@ -7,9 +7,9 @@
  * it arrives at match the engine's own scores.
  *
  * Rules:
- *  - Undone entries are left out of the scores and balls: the sheet shows
- *    what counts. Each Undo / Redo is kept as a note on the visit it
- *    happened in, so the history stays visible.
+ *  - Undone entries never count: no points, and they don't end a visit. An
+ *    undone pot stays in the row as a struck-through ball, and each Undo /
+ *    Redo is a note on the visit it happened in, so the history is visible.
  *  - A new visit starts when the player changes, or after a miss, foul,
  *    in-off, frame end or concession.
  *  - A pot adds its points to the player who potted. A foul with
@@ -51,6 +51,8 @@ export interface FrameSide {
 export interface VisitBall {
   ball: BallType;
   freeBall: boolean;
+  /** Taken back with Undo: shown struck through, worth nothing. */
+  undone: boolean;
 }
 
 export interface VisitFoul {
@@ -66,8 +68,38 @@ export type VisitKind = 'visit' | 'end';
 
 export interface VisitMark {
   kind: 'undo' | 'redo';
-  /** What was taken back or put back: "Awais potted red (+1)". */
+  /** What was taken back or put back: "red, +1 not counted", "miss". */
   text: string;
+}
+
+/**
+ * Short wording for what an Undo took back (or a Redo put back), from the
+ * shot's own log text. Undo says what no longer counts; Redo just names it.
+ */
+export function describeMark(kind: 'undo' | 'redo', label: string): string {
+  const undo = kind === 'undo';
+  let m: RegExpMatchArray | null;
+
+  if ((m = label.match(/potted the cue ball \(in-off on (\w+)\)\. (\d+) pts/i))) {
+    return undo ? `in-off on ${m[1]}, ${m[2]} not given` : `in-off on ${m[1]}`;
+  }
+  if ((m = label.match(/fouled on (\w+)\. (\d+) pts/i))) {
+    return undo ? `foul on ${m[1]}, ${m[2]} not given` : `foul on ${m[1]}`;
+  }
+  if ((m = label.match(/fouled on (\w+) \((\u2212|-)(\d+)\)/i))) {
+    return undo ? `foul on ${m[1]}, \u2212${m[3]} cancelled` : `foul on ${m[1]}`;
+  }
+  if ((m = label.match(/missed the red \((\u2212|-)(\d+)\)/i))) {
+    return undo ? `missed red, \u2212${m[2]} cancelled` : 'missed red';
+  }
+  if ((m = label.match(/potted (\w+)( as free ball)? \(\+(\d+)\)/i))) {
+    const what = m[2] ? `${m[1]} (free ball)` : m[1];
+    return undo ? `${what}, +${m[3]} not counted` : what;
+  }
+  if (/went past/i.test(label)) return 'went past the target';
+  if (/free ball (awarded|cancelled)/i.test(label)) return 'free ball';
+  if (/missed/i.test(label)) return 'miss';
+  return label.charAt(0).toLowerCase() + label.slice(1);
 }
 
 export interface FrameVisit {
@@ -171,14 +203,31 @@ export function buildFrameVisits({
   };
 
   for (const e of actionLog) {
-    if (e.undone || SKIPPED.has(e.type)) continue;
+    if (SKIPPED.has(e.type)) continue;
+
+    // Undone shots: a struck-through ball for pots, otherwise nothing.
+    if (e.undone) {
+      if (e.type === 'pot' && e.ball) {
+        if (!open || open.player !== e.playerName) {
+          close();
+          open = start(e.playerName);
+        }
+        open.balls.push({
+          ball: e.ball,
+          freeBall: /free ball/i.test(e.description),
+          undone: true,
+        });
+      }
+      continue;
+    }
 
     // Undo / Redo: a note on the visit in progress (or the one it reopened).
     if (MARKS.has(e.type)) {
       if (!open) open = start(e.playerName);
+      const kind = e.type === 'undo' ? 'undo' : 'redo';
       open.marks.push({
-        kind: e.type === 'undo' ? 'undo' : 'redo',
-        text: e.description.replace(/^(Undid|Redid):\s*/i, ''),
+        kind,
+        text: describeMark(kind, e.description.replace(/^(Undid|Redid):\s*/i, '')),
       });
       continue;
     }
@@ -214,7 +263,7 @@ export function buildFrameVisits({
       add(v.side, pts);
       v.points += pts;
       if (e.ball) {
-        v.balls.push({ ball: e.ball, freeBall: /free ball/i.test(e.description) });
+        v.balls.push({ ball: e.ball, freeBall: /free ball/i.test(e.description), undone: false });
       }
     } else if (e.type === 'foul' || e.type === 'inOff') {
       const pts = e.points ?? 0;
@@ -230,7 +279,7 @@ export function buildFrameVisits({
     } else if (e.type === 'miss') {
       if (e.ball && /went past/i.test(e.description)) {
         v.note = `Went past the target on ${e.ball}`;
-      } else if (v.balls.length === 0) {
+      } else if (!v.balls.some((b) => !b.undone)) {
         v.missed = true;
       }
     }

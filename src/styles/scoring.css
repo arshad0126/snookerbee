@@ -2582,6 +2582,20 @@ body.light-theme .btn-topbar-icon.active-pause {
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--separator);
 }
+.flog-chip { position: relative; }
+.flog-chip.is-undone { opacity: 0.35; }
+.flog-chip.is-undone::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 1.5px;
+  margin-top: -0.75px;
+  background: var(--label-primary);
+  transform: rotate(-45deg);
+  border-radius: 1px;
+}
 .flog-chip.is-free { outline: 1px dashed var(--label-secondary); outline-offset: 1px; }
 .flog-chip--red    { background: var(--ball-red); }
 .flog-chip--yellow { background: var(--ball-yellow); }

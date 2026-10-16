@@ -22,6 +22,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.3',
+    date: '2026-10-16',
+    title: 'Clearer undos',
+    improved: [
+      'A ball you undo now stays in the timeline, faded and struck through, so you can see exactly which shot was taken back.',
+      'Undo notes say what no longer counts, like "Undone · red, +1 not counted" or "Undone · foul on blue, 5 not given". The score column always shows the real score.',
+    ],
+  },
+  {
     version: '2.4.2',
     date: '2026-10-16',
     title: 'Tidier undo history',
