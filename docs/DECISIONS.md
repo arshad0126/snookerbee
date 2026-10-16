@@ -67,7 +67,7 @@ Format: **Decision** — why. *(where it lives, version)*
 - **Phased, small commits that can each be rolled back.**
 
 ### Not done (on purpose, for now)
-These were in the v2 plan (`MIGRATION_NOTES.md`) but the shipped code works
+These were in the v2 plan (`docs/archive/v2-plan.md`) but the shipped code works
 differently. Don't "finish" them without asking:
 - Event-sourced engine. The engine still uses a state reducer with an undo
   stack.

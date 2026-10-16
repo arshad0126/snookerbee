@@ -11,7 +11,7 @@ Postgres), hosted on Vercel. Works signed in or as a guest (localStorage).
 | anything that re-opens a settled choice (share flow, stats, orientation, audio, undo) | `docs/DECISIONS.md` |
 | any screen, CSS or colour | `docs/DESIGN.md` |
 
-`MIGRATION_NOTES.md` is the original v2 plan, not a description of the code.
+`docs/archive/v2-plan.md` is the original v2 plan, not a description of the code.
 Large parts of it were never built (event-sourced engine, free-tap balls,
 deleting the old CSS). When it disagrees with the code, the code wins.
 

@@ -1,3 +1,6 @@
+> **Old plan, not current. Do not build from this.** Kept for reference only.
+> Parts of it were never built; the code is the source of truth. See `docs/DECISIONS.md`.
+
 # SnookerBee v2 — Migration Notes (Phase 0)
 
 > Audit of the current codebase and the disposition of every module under the v2 brief.
