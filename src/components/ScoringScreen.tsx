@@ -8,6 +8,8 @@ import {
   isFrameOver,
   isLegalPot,
   getPointsRemaining,
+  needsRespotToss,
+  respotContenders,
 } from '../engine';
 import { audio } from '../lib/audio';
 import FoulDialog from './FoulDialog';
@@ -22,6 +24,7 @@ import PreviousFramesModal from './PreviousFramesModal';
 import { Icon } from './ui';
 import { CENTURY_THRESHOLD, HALF_CENTURY_THRESHOLD } from '../engine/constants';
 import WallClock from './WallClock';
+import RespotToss from './RespotToss';
 import { saveActiveMatch, loadActiveMatch, clearActiveMatch, savePendingMatch } from '../lib/matchStorage';
 
 interface FrameHistoryItem {
@@ -44,6 +47,8 @@ export default function ScoringScreen() {
   const [isPreviousFramesOpen, setIsPreviousFramesOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [nextFrameOrder, setNextFrameOrder] = useState<Player[]>([]);
+  // Re-spotted black: keep the toss result on screen until Play is tapped.
+  const [showTossResult, setShowTossResult] = useState(false);
 
   // Score pop animations
   const [poppingPlayerId, setPoppingPlayerId] = useState<string | null>(null);
@@ -253,6 +258,18 @@ export default function ScoringScreen() {
   };
 
   const showFrameSummary = isFrameOver(state) || state.phase === 'finished';
+
+  // Re-spotted black toss (1v1 and free-for-all; teams have no toss).
+  const tossPending = needsRespotToss(state);
+  const showToss = tossPending || (showTossResult && state.phase === 'respottedBlack');
+  const tossContenders = showToss
+    ? respotContenders(state)
+        .map((id) => state.players.find((p) => p.id === id))
+        .filter((p): p is Player => !!p)
+    : [];
+  const lastLog = state.actionLog[state.actionLog.length - 1];
+  const canSwapToss =
+    !tossPending && tossContenders.length === 2 && lastLog?.type === 'toss' && !lastLog.undone;
 
   const ballsList: BallType[] = ['red', 'yellow', 'green', 'brown', 'blue', 'pink', 'black'];
 
@@ -723,6 +740,23 @@ export default function ScoringScreen() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Re-spotted black: toss for who plays first */}
+      {showToss && (
+        <RespotToss
+          contenders={tossContenders}
+          striker={tossPending ? null : activePlayer}
+          canSwap={canSwapToss}
+          canUndo={state.undoStack.length > 0}
+          onToss={(winnerId) => {
+            setShowTossResult(true);
+            dispatch({ type: 'RESPOT_TOSS', winnerId });
+          }}
+          onSwap={() => dispatch({ type: 'RESPOT_SWAP' })}
+          onPlay={() => setShowTossResult(false)}
+          onUndo={handleUndo}
+        />
       )}
 
       {/* Frame Summary Overlay */}

@@ -105,7 +105,8 @@ export type ActionLogType =
   | 'frameEnd'
   | 'frameStart'
   | 'undo'
-  | 'redo';
+  | 'redo'
+  | 'toss';
 
 export interface ActionLogEntry {
   /** ISO-8601 timestamp of when the action occurred. */
@@ -260,6 +261,14 @@ export interface GameState {
    * Null while the match is in progress.
    */
   winner: string | null;
+
+  /**
+   * Toss for who plays first at the re-spotted black (1v1 and free-for-all).
+   * Set when the frame goes to the re-spotted black; `winnerId` is null until
+   * the toss is made. Stored so a resumed match keeps the same result. Team
+   * games have no toss. Older saves lack it.
+   */
+  respotToss?: { winnerId: string | null } | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -356,6 +365,21 @@ export interface UpdateTimerAction {
   readonly type: 'COMMIT_TURN_TIME';
 }
 
+/**
+ * The toss for the re-spotted black. The UI picks the winner at random and
+ * sends it here, so the reducer stays deterministic and the result is saved.
+ */
+export interface RespotTossAction {
+  readonly type: 'RESPOT_TOSS';
+  /** ID of the tied player who won the toss and shoots first. */
+  winnerId: string;
+}
+
+/** Toss winner hands the first shot to the other tied player (two-way tie only). */
+export interface RespotSwapAction {
+  readonly type: 'RESPOT_SWAP';
+}
+
 /** Replace the entire state (for hydration / debugging). */
 export interface SetStateAction {
   readonly type: 'SET_STATE';
@@ -376,6 +400,8 @@ export type GameAction =
   | StartNextFrameAction
   | ResetFrameAction
   | UpdateTimerAction
+  | RespotTossAction
+  | RespotSwapAction
   | SetStateAction;
 
 // ---------------------------------------------------------------------------

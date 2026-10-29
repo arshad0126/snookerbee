@@ -26,6 +26,8 @@ export type {
   EndFrameAction,
   StartNextFrameAction,
   UpdateTimerAction,
+  RespotTossAction,
+  RespotSwapAction,
   SetStateAction,
   PlayerSetup,
   GameSetupConfig,
@@ -51,6 +53,8 @@ export {
   isMatchClinched,
   framesDecided,
   getNextColorInOrder,
+  respotContenders,
+  needsRespotToss,
 } from './validators';
 
 // --- Reducer ---

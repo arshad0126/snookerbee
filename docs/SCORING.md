@@ -61,11 +61,28 @@ Colours are re-spotted while reds remain.
     add up).
 - A red potted during a foul removes that red from the table. If it was the
   last red, play moves to colours in order, starting at yellow.
-- A foul on the re-spotted black ends the frame.
+- A foul on the re-spotted black ends the frame (unless three or more were
+  level; see End of frame).
 
 ### End of frame
-- After the final black, if scores are level the black is re-spotted. The
+- After the final black, if the lead is shared the black is re-spotted. The
   next pot or foul ends the frame.
+- **Only the players (or teams) level at the top play the re-spotted black.**
+  Everyone else is skipped. In free-for-all this includes the player who
+  potted the last black if that pot didn't leave them level.
+- **Who plays first:**
+  - `1v1` and `freeForAll`: a toss. The app picks one of the tied players at
+    random (`RESPOT_TOSS`) and nothing can be played until it's made. The
+    result is saved with the match, so resuming never tosses again. Straight
+    after the toss, in a two-way tie, the winner can hand the first shot to
+    the other player (`RESPOT_SWAP`); once a shot is played it can't change.
+  - `team`: no toss. The side at the table carries on.
+- The toss starts a fresh visit: the break that ended with the last black
+  doesn't carry on into the re-spotted black.
+- Undo takes the toss back like any other step.
+- Three or more level (free-for-all): a pot wins the frame. A foul gives the
+  penalty to every other player as usual, so the fouler drops out and the
+  rest, still level, play on. The frame ends once only one leads.
 - A player can concede the frame.
 - **Reset Frame** wipes the current frame completely: it isn't counted, its
   points and breaks don't reach the match, and the same player breaks again.

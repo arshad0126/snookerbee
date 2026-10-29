@@ -19,7 +19,8 @@ export type IconName =
   | 'minus' | 'plus' | 'check' | 'alert' | 'save' | 'star'
   | 'flag' | 'exit' | 'users' | 'duo' | 'target' | 'rotate'
   | 'bee' | 'pass' | 'dot' | 'sun' | 'moon' | 'chart'
-  | 'menu' | 'settings' | 'download' | 'info' | 'history' | 'logout';
+  | 'menu' | 'settings' | 'download' | 'info' | 'history' | 'logout'
+  | 'shuffle';
 
 /** Stroked paths on a 24px grid. `dot` is the only filled glyph. */
 const PATHS: Record<IconName, string[]> = {
@@ -57,6 +58,7 @@ const PATHS: Record<IconName, string[]> = {
   'info':         ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M12 11v6', 'M12 7.5v.01'],
   'history':      ['M3.5 12a8.5 8.5 0 1 0 2.5-6', 'M3.5 4v4h4', 'M12 7.5V12l3 2'],
   'logout':       ['M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3', 'm10 16-4-4 4-4', 'M6 12h10'],
+  'shuffle':      ['M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22', 'm18 2 4 4-4 4', 'M2 6h1.9c1.5 0 2.9.9 3.6 2.2', 'M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8', 'm18 14 4 4-4 4'],
 };
 
 /** Glyphs drawn as fills rather than strokes. */
