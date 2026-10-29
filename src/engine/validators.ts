@@ -26,6 +26,8 @@ import { BALL_VALUES, COLORS_IN_ORDER, FOUL_MINIMUM } from './constants';
  */
 export function isLegalPot(state: GameState, ball: BallType): boolean {
   if (state.phase === 'finished') return false;
+  // Nobody shoots at the re-spotted black until the toss is made.
+  if (needsRespotToss(state)) return false;
 
   // Reds can go down whenever reds are on the table — including straight
   // after a red, because two reds can drop in one shot (each scores 1).
@@ -62,6 +64,37 @@ export function isLegalPot(state: GameState, ball: BallType): boolean {
     default:
       return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Re-spotted black
+// ---------------------------------------------------------------------------
+
+/**
+ * Who plays the re-spotted black: the players (or, in team mode, the teams)
+ * level on the highest score. Everyone else sits it out. Returns IDs.
+ *
+ * Read from the live scores, so after a foul in a three-way tie the fouler
+ * (no longer level at the top) drops out automatically.
+ */
+export function respotContenders(state: GameState): string[] {
+  if (state.mode === 'team') {
+    if (state.teams.length === 0) return [];
+    const top = Math.max(...state.teams.map((t) => t.totalScore));
+    return state.teams.filter((t) => t.totalScore === top).map((t) => t.id);
+  }
+  if (state.players.length === 0) return [];
+  const top = Math.max(...state.players.map((p) => p.score));
+  return state.players.filter((p) => p.score === top).map((p) => p.id);
+}
+
+/** True while the frame is on the re-spotted black and the toss hasn't been made yet. */
+export function needsRespotToss(state: GameState): boolean {
+  return (
+    state.phase === 'respottedBlack' &&
+    state.mode !== 'team' &&
+    !state.respotToss?.winnerId
+  );
 }
 
 // ---------------------------------------------------------------------------

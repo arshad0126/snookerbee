@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.4.5',
+    date: '2026-10-30',
+    title: 'Re-spotted black, done properly',
+    added: [
+      'When scores are level after the last black, a toss now decides who plays the re-spotted black first. Tap Toss and one of the tied players is picked at random. The winner can hand the first shot to the other player if they prefer.',
+    ],
+    fixed: [
+      'In games with three or more players, only the players tied for the lead now play the re-spotted black. Everyone else sits it out.',
+      'The re-spotted black now starts a fresh visit, so a break no longer carries on from the last black.',
+    ],
+  },
+  {
     version: '2.4.4',
     date: '2026-10-17',
     title: 'Behind the scenes',

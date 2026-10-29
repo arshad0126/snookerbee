@@ -36,6 +36,13 @@ Format: **Decision** — why. *(where it lives, version)*
   blocking it forced players to fake a foul. *(2.0.0)*
 - **Reset Frame drops the frame completely and the same player breaks.**
   A restarted frame isn't a played frame. *(2.0.0)*
+- **Re-spotted black: only the tied players play it, and a toss decides who
+  goes first** (1v1 and free-for-all). Mirrors "which hand is the ball in" at
+  the table. The toss winner plays first by default, with a Swap for a winner
+  who'd rather not (the official rule lets the winner choose). Teams have no
+  toss and the side at the table carries on. The random pick is made in the
+  UI and saved through the reducer, so the engine stays deterministic and a
+  resume never re-tosses. *(`components/RespotToss.tsx`, 2.4.5)*
 - **Century is its own reducer.** The snooker rules took real work to get
   right; mixing in a different game would put them at risk.
   *(`engine/century.ts`)*

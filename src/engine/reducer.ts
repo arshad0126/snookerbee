@@ -11,7 +11,8 @@
 // 3. After last red + final color → colorsInOrder (yellow→black ascending)
 // 4. Foul penalty = max(4, ball-on value, ball-involved value)
 // 5. Foul points awarded to ALL opponents in freeForAll mode
-// 6. Re-spotted black when tied after final black
+// 6. Re-spotted black when tied after final black — only the tied players
+//    (or teams) play it; in 1v1 and free-for-all a toss picks who goes first
 // 7. Free ball: next pot scores as if it were the expected ball
 // 8. Break tracking (current + highest per player)
 // 9. Undo stack capped at 10 entries
@@ -40,6 +41,8 @@ import {
   isLegalPot,
   calculateFoulPenalty,
   getNextColorInOrder,
+  respotContenders,
+  needsRespotToss,
 } from './validators';
 
 // ---------------------------------------------------------------------------
@@ -216,8 +219,38 @@ function commitTurnTime(state: GameState): Pick<GameState, 'players' | 'turnStar
 // Helper: Advance to next player in turn order
 // ---------------------------------------------------------------------------
 
+/**
+ * Next seat in the turn order. On the re-spotted black, only players level at
+ * the top (or on a team level at the top) play it, so everyone else is
+ * skipped. Pass a state with the scores as they stand after the shot.
+ */
 function advanceTurn(state: GameState): number {
-  return (state.currentPlayerIndex + 1) % state.turnOrder.length;
+  const n = state.turnOrder.length;
+  if (state.phase !== 'respottedBlack' || n === 0) {
+    return (state.currentPlayerIndex + 1) % n;
+  }
+  for (let step = 1; step <= n; step += 1) {
+    const seat = (state.currentPlayerIndex + step) % n;
+    if (playsRespot(state, seat)) return seat;
+  }
+  return (state.currentPlayerIndex + 1) % n;
+}
+
+/** Does the player in this seat play the re-spotted black? */
+function playsRespot(state: GameState, seat: number): boolean {
+  const player = state.players[state.turnOrder[seat]];
+  if (!player) return false;
+  const contenders = respotContenders(state);
+  if (state.mode === 'team') {
+    const team = findTeamForPlayer(state.teams, player.id);
+    return !!team && contenders.includes(team.id);
+  }
+  return contenders.includes(player.id);
+}
+
+/** Seat (index into turnOrder) of a player, by ID. -1 if not found. */
+function seatOf(state: GameState, playerId: string): number {
+  return state.turnOrder.findIndex((i) => state.players[i]?.id === playerId);
 }
 
 // ---------------------------------------------------------------------------
@@ -479,7 +512,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   return next;
 }
 
+/** Shots that wait for the re-spotted black toss. */
+const WAITS_FOR_TOSS = new Set<GameAction['type']>([
+  'POT_BALL', 'FOUL', 'IN_OFF', 'MISS', 'FREE_BALL', 'CONCEDE_FRAME', 'END_FRAME',
+]);
+
 function reduceAction(state: GameState, action: GameAction): GameState {
+  if (WAITS_FOR_TOSS.has(action.type) && needsRespotToss(state)) return state;
+
   switch (action.type) {
     // -----------------------------------------------------------------------
     // POT_BALL — Player pots a ball
@@ -672,6 +712,17 @@ function reduceAction(state: GameState, action: GameAction): GameState {
       // If frame just ended, handle frame scoring
       if (newPhase === 'finished') {
         return handleFrameEnd(newState);
+      }
+
+      // Just went to the re-spotted black: only the tied players play it.
+      if (newPhase === 'respottedBlack' && state.phase !== 'respottedBlack') {
+        if (state.mode === 'team') {
+          // No toss for teams: the side at the table carries on if it's tied.
+          return playsRespot(newState, newState.currentPlayerIndex)
+            ? newState
+            : { ...newState, currentPlayerIndex: advanceTurn(newState) };
+        }
+        return { ...newState, respotToss: { winnerId: null } };
       }
 
       return newState;
@@ -991,6 +1042,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         completedFrames: [...state.completedFrames, completedFrame],
         isFreeBall: false,
         winner: null,
+        respotToss: null,
         frameStartStats: snapshotStats(resetPlayers),
         frameStartTurn: newStartIndex,
       };
@@ -1041,6 +1093,7 @@ function reduceAction(state: GameState, action: GameAction): GameState {
         turnStartedAt: now,
         currentFrameDurationMs: 0,
         isFreeBall: false,
+        respotToss: null,
         frameStartStats: snapshotStats(resetPlayers),
       };
     }
@@ -1051,6 +1104,75 @@ function reduceAction(state: GameState, action: GameAction): GameState {
     case 'COMMIT_TURN_TIME': {
       if (state.phase === 'finished' || state.players.length === 0) return state;
       return { ...state, ...commitTurnTime(state) };
+    }
+
+    // -----------------------------------------------------------------------
+    // RESPOT_TOSS — The toss for who plays first at the re-spotted black
+    // -----------------------------------------------------------------------
+    case 'RESPOT_TOSS': {
+      if (!needsRespotToss(state)) return state;
+      if (!respotContenders(state).includes(action.winnerId)) return state;
+      const seat = seatOf(state, action.winnerId);
+      if (seat < 0) return state;
+
+      const undoStack = pushUndo(state);
+      const winner = state.players[state.turnOrder[seat]];
+      const atTable = state.turnOrder[state.currentPlayerIndex];
+
+      // The re-spotted black is a fresh visit: whatever break was running
+      // when the last black went down ends here.
+      const timing = commitTurnTime({
+        ...state,
+        players: state.players.map((p, i) => (i === atTable ? finaliseBreak(p) : p)),
+      });
+
+      return {
+        ...state,
+        ...timing,
+        currentPlayerIndex: seat,
+        respotToss: { winnerId: winner.id },
+        actionLog: [
+          ...state.actionLog,
+          createLogEntry({
+            type: 'toss',
+            playerName: winner.name,
+            description: `${winner.name} won the toss and plays the re-spotted black`,
+          }),
+        ],
+        undoStack,
+      };
+    }
+
+    // -----------------------------------------------------------------------
+    // RESPOT_SWAP — Toss winner gives the first shot to the other player
+    // -----------------------------------------------------------------------
+    case 'RESPOT_SWAP': {
+      // Only straight after the toss, before anyone has played, in a two-way tie.
+      if (state.phase !== 'respottedBlack' || !state.respotToss?.winnerId) return state;
+      const last = state.actionLog[state.actionLog.length - 1];
+      if (!last || last.type !== 'toss' || last.undone) return state;
+      const contenders = respotContenders(state);
+      if (contenders.length !== 2) return state;
+
+      const current = getCurrentPlayer(state);
+      const otherId = contenders.find((id) => id !== current.id);
+      const seat = otherId ? seatOf(state, otherId) : -1;
+      if (seat < 0) return state;
+      const other = state.players[state.turnOrder[seat]];
+
+      return {
+        ...state,
+        currentPlayerIndex: seat,
+        turnStartedAt: new Date().toISOString(),
+        actionLog: [
+          ...state.actionLog,
+          createLogEntry({
+            type: 'toss',
+            playerName: other.name,
+            description: `${current.name} gave the first shot to ${other.name}`,
+          }),
+        ],
+      };
     }
 
     // -----------------------------------------------------------------------
@@ -1142,10 +1264,13 @@ function handleFoul(
     updatedTeams = recalcTeamScores(updatedPlayers, state.teams);
   }
 
-  // --- Handle re-spotted black phase: foul ends the frame ---
+  // --- Handle re-spotted black phase: a foul ends the frame ---
+  // Unless three or more were level: the fouler drops out and the rest, still
+  // level, play on (turns then skip the fouler, who is no longer at the top).
   let newPhase = state.phase;
   if (state.phase === 'respottedBlack') {
-    newPhase = 'finished';
+    const stillTied = respotContenders({ ...state, players: updatedPlayers, teams: updatedTeams }).length > 1;
+    newPhase = stillTied ? 'respottedBlack' : 'finished';
   }
 
   // --- Reset expected ball on foul in reds phase ---
@@ -1186,7 +1311,9 @@ function handleFoul(
   const newState: GameState = {
     ...state,
     phase: newPhase,
-    currentPlayerIndex: advanceTurn(state),
+    // Turn passes using the scores after the penalty, so on the re-spotted
+    // black it goes to the next player still level at the top.
+    currentPlayerIndex: advanceTurn({ ...state, players: updatedPlayers, teams: updatedTeams }),
     players: foulTiming.players,
     turnStartedAt: foulTiming.turnStartedAt,
     teams: updatedTeams,

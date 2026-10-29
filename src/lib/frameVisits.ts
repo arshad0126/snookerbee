@@ -221,6 +221,12 @@ export function buildFrameVisits({
       continue;
     }
 
+    // Re-spotted black toss: the next shot is a new visit.
+    if (e.type === 'toss') {
+      close();
+      continue;
+    }
+
     // Undo / Redo: a note on the visit in progress (or the one it reopened).
     if (MARKS.has(e.type)) {
       if (!open) open = start(e.playerName);

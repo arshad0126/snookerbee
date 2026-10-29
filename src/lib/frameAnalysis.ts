@@ -52,7 +52,7 @@ export function frameStats(log: ActionLogEntry[], players: FramePlayer[]): Recor
       at(e.playerName).fouls += 1;
       for (const r of e.penaltyTo ?? []) at(r).points += e.points ?? 0;
       breakOf = ''; run = 0;
-    } else if (e.type === 'miss' || e.type === 'concede' || e.type === 'frameEnd') {
+    } else if (e.type === 'miss' || e.type === 'concede' || e.type === 'frameEnd' || e.type === 'toss') {
       breakOf = ''; run = 0;
     }
   }
@@ -96,7 +96,7 @@ export function frameVisits(log: ActionLogEntry[]): Visit[] {
     } else if (e.type === 'concede') {
       close();
       out.push({ kind: 'note', player: e.playerName, text: `${e.playerName} conceded the frame` });
-    } else if (e.type === 'freeBall') {
+    } else if (e.type === 'freeBall' || e.type === 'toss') {
       close();
       out.push({ kind: 'note', player: e.playerName, text: e.description });
     }
