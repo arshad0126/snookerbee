@@ -41,7 +41,8 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  mode: 'dark',
+  // Follow the phone until the player picks a mode themselves.
+  mode: 'auto',
   accent: 'blue',
   backdrop: 'rack',
   playerName: null,
@@ -53,6 +54,16 @@ const LEGACY_THEME_KEY = 'theme';
 
 const isAccent = (v: unknown): v is Accent => ACCENTS.some((a) => a.id === v);
 const isBackdrop = (v: unknown): v is Backdrop => BACKDROPS.some((b) => b.id === v);
+/** Left-to-right order of the three-way theme switch. */
+export const SWITCH_MODES: readonly ColorMode[] = ['dark', 'auto', 'light'];
+
+/** One step along the switch (arrow keys). Stops at the ends, never wraps. */
+export function stepMode(mode: ColorMode, dir: -1 | 1): ColorMode {
+  const i = SWITCH_MODES.indexOf(mode);
+  const next = Math.min(SWITCH_MODES.length - 1, Math.max(0, (i < 0 ? 1 : i) + dir));
+  return SWITCH_MODES[next];
+}
+
 const isMode = (v: unknown): v is ColorMode => v === 'light' || v === 'dark' || v === 'auto';
 
 /** Accept anything, keep only values this version understands. */
@@ -72,9 +83,11 @@ export function loadLocalSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return sanitize(JSON.parse(raw));
-    // First run after the update: carry over the old light/dark toggle.
+    // First run after the update: carry over the old light/dark toggle. A
+    // fresh install has neither key and starts in Auto.
     const legacy = localStorage.getItem(LEGACY_THEME_KEY);
-    return { ...DEFAULT_SETTINGS, mode: legacy === 'light' ? 'light' : 'dark' };
+    if (legacy === 'light' || legacy === 'dark') return { ...DEFAULT_SETTINGS, mode: legacy };
+    return DEFAULT_SETTINGS;
   } catch {
     return DEFAULT_SETTINGS;
   }

@@ -57,6 +57,13 @@ Format: **Decision** — why. *(where it lives, version)*
   app's backdrop art.** *(`lib/shareCard.ts`, 2.2.0)*
 
 ### Device behaviour
+- **Colour mode is a three-way Dark / Auto / Light switch (a rolling ball on
+  baize), and new installs start in Auto.** The app used to start in Dark and
+  every quick toggle saved a fixed mode, so it never followed the phone. The
+  switch lives in Settings and on the landing page; the New Match toggle was
+  removed. The scoring screen keeps its one-tap light/dark button for dark
+  clubs mid-match (that tap still leaves Auto). Existing saved modes are kept.
+  *(`ui/ThemeSwitch.tsx`, `lib/settings.ts`, 2.5.0)*
 - **Landscape on match start: lock it on Android; on iOS, show a rotate
   gate.** iOS has no orientation API. Every step fails silently; scoring
   never waits on orientation. *(`lib/orientation.ts`, 2.0.x)*
@@ -79,5 +86,5 @@ differently. Don't "finish" them without asking:
 - Event-sourced engine. The engine still uses a state reducer with an undo
   stack.
 - Every ball tappable at all times. Balls that aren't on are still disabled.
-- Removing the old CSS files and the manual light/dark toggle. Both are still
-  in use.
+- Removing the old CSS files and the scoring screen's quick light/dark button.
+  Both are still in use.

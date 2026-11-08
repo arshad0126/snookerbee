@@ -434,27 +434,10 @@ ul, ol {
    landscape and made every screen taller than the phone, so the whole app
    scrolled and bounced. */
 
-/* Floating Theme Toggle button */
-.theme-toggle-floating {
+/* Theme switch on the landing page, top right */
+.landing-theme {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background: var(--bg-card-solid);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
   z-index: 100;
-  transition: all var(--transition-fast);
-}
-
-.theme-toggle-floating:hover {
-  background: var(--bg-btn-secondary);
-  color: var(--text-primary);
-  border-color: var(--border-color);
 }

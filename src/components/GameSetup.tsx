@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GameSetupConfig, GameMode } from '../engine/types';
-import { useTheme } from '../hooks/useTheme';
 import { Icon, type IconName } from './ui';
 import { CENTURY_RED_VALUES, DEFAULT_RED_VALUE } from '../engine/century';
 import { requestLandscape } from '../lib/orientation';
@@ -35,7 +34,6 @@ function RedCluster({ count }: { count: 10 | 15 }) {
 
 export default function GameSetup() {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
 
   const [format, setFormat] = useState<Format>('snooker');
   const [centuryTarget, setCenturyTarget] = useState<number>(100);
@@ -190,10 +188,6 @@ export default function GameSetup() {
         <aside className="setup-config">
           <div className="setup-heading-row">
             <h1 className="setup-heading">New Match</h1>
-            {/* In the card, so it can never sit on top of the roster's Add button. */}
-            <button onClick={toggleTheme} className="setup-theme" aria-label="Toggle theme">
-              <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-            </button>
           </div>
 
           <fieldset className="setup-field">

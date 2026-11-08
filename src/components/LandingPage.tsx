@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../hooks/useTheme';
-import { Icon } from './ui';
+import { useSettings } from '../hooks/useSettings';
+import { Icon, ThemeSwitch } from './ui';
 
 export default function LandingPage() {
   const { user, isGuest, loading, signInWithGoogle, startGuestSession } = useAuth();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { settings, update } = useSettings();
 
   useEffect(() => {
     if (!loading && (user || isGuest)) {
@@ -33,9 +33,9 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
-      <button onClick={toggleTheme} className="theme-toggle-floating" aria-label="Toggle theme">
-        <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-      </button>
+      <div className="landing-theme">
+        <ThemeSwitch value={settings.mode} onChange={(mode) => update({ mode })} />
+      </div>
       <div className="landing-content">
         <div className="landing-logo">
           <div className="landing-logo-icon"><Icon name="bee" size={44} /></div>

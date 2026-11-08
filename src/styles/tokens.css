@@ -46,6 +46,14 @@
   --on-ball-blue:   #FFFFFF;
   --on-ball-pink:   #1A1A1A;
   --on-ball-black:  #FFFFFF;
+
+  /* --- Theme switch (a strip of baize with a wooden cushion) --- */
+  --switch-baize:   #2E7550;
+  --switch-cushion: #6B4A2B;
+  --switch-spot:    rgba(255, 255, 255, 0.55);
+  --switch-shade:   rgba(0, 0, 0, 0.35);   /* ball shadow, cushion depth */
+  --switch-shine:   rgba(255, 255, 255, 0.70);
+  --switch-lamp:    rgba(255, 190, 100, 0.45); /* light over the table, light mode only */
   --on-ball-white:  #1A1A1A;
 
   /* --- Typography --- */
@@ -202,6 +210,13 @@ body:not(.light-theme) {
     --ball-black:  #2A2A2A;
     --ball-white:  #FFFFFF;
     --on-ball-black:  #FFFFFF;
+
+    --switch-baize:   #24603F;
+    --switch-cushion: #4E3520;
+    --switch-spot:    rgba(255, 255, 255, 0.40);
+    --switch-shade:   rgba(0, 0, 0, 0.55);
+    --switch-shine:   rgba(255, 255, 255, 0.45);
+    --switch-lamp:    rgba(0, 0, 0, 0);
 
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.30);
     --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.40);

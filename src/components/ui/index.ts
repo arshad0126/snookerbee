@@ -13,3 +13,4 @@ export { Sheet, type SheetProps, type SheetDetent } from './Sheet';
 export { ToastProvider, useToast } from './Toast';
 export { Screen, NavBar, BackButton, type ScreenProps, type NavBarProps } from './Screen';
 export { LayoutDebug } from './LayoutDebug';
+export { ThemeSwitch, type ThemeSwitchProps } from './ThemeSwitch';
