@@ -2793,14 +2793,9 @@ body.light-theme .summary-page {
   .setup-cta { margin-top: var(--space-sm); }
 }
 
-/* New Match header: title + theme button inside the card */
+/* New Match header */
 .setup-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: var(--space-md); }
 .setup-heading-row .setup-heading { margin: 0; }
-.setup-theme {
-  width: 40px; height: 40px; flex: none; display: grid; place-items: center;
-  border-radius: 12px; border: 1px solid var(--border-color);
-  background: var(--fill-quaternary); color: var(--text-secondary); cursor: pointer;
-}
 
 /* Roster rows stand out from the card, not just the breaker's */
 .roster-row { background: var(--fill-quaternary); }
@@ -2821,7 +2816,6 @@ body.light-theme .summary-page {
   .setup-config { padding: 12px 18px; }
   .setup-heading-row { margin-bottom: 6px; }
   .setup-heading { font-size: 20px; }
-  .setup-theme { width: 36px; height: 36px; }
   .setup-field { margin-bottom: 8px; }
   .setup-legend { margin-bottom: 4px; }
   .tile { min-height: 40px; }

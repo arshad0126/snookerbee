@@ -586,3 +586,119 @@ button:disabled .sb-icon {
     transform: none;
   }
 }
+
+/* ============================================================================
+   Theme switch — a ball rolling along a strip of baize.
+   Dark = black ball, Auto = half black / half white, Light = cue ball.
+   Transforms and colour transitions only: no canvas, no loop, no blur.
+   ============================================================================ */
+.ui-tswitch {
+  --tswitch-w: 156px;
+  --tswitch-h: 50px;
+  --tswitch-edge: 3px;
+  --tswitch-ball: 38px;
+  --tswitch-pad: 4px;
+  --tswitch-step: calc((var(--tswitch-w) - 2 * var(--tswitch-edge) - 2 * var(--tswitch-pad) - var(--tswitch-ball)) / 2);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ui-tswitch-track {
+  position: relative;
+  display: flex;
+  width: var(--tswitch-w);
+  height: var(--tswitch-h);
+  border-radius: calc(var(--tswitch-h) / 2);
+  background: var(--switch-baize);
+  border: var(--tswitch-edge) solid var(--switch-cushion);
+  box-shadow: inset 0 2px 5px var(--switch-shade), 0 0 0 0 var(--switch-lamp);
+  transition: box-shadow var(--dur-slow) var(--ease-standard);
+}
+body.light-theme .ui-tswitch-track {
+  box-shadow: inset 0 2px 5px var(--switch-shade), 0 0 20px 3px var(--switch-lamp);
+}
+.ui-tswitch-spot {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--switch-spot);
+  pointer-events: none;
+}
+.ui-tswitch-spot:nth-child(1) { left: calc(var(--tswitch-pad) + var(--tswitch-ball) / 2); }
+.ui-tswitch-spot:nth-child(2) { left: calc(var(--tswitch-pad) + var(--tswitch-ball) / 2 + var(--tswitch-step)); }
+.ui-tswitch-spot:nth-child(3) { left: calc(var(--tswitch-pad) + var(--tswitch-ball) / 2 + 2 * var(--tswitch-step)); }
+
+.ui-tswitch-ball {
+  position: absolute;
+  top: calc((var(--tswitch-h) - 2 * var(--tswitch-edge) - var(--tswitch-ball)) / 2);
+  left: var(--tswitch-pad);
+  width: var(--tswitch-ball);
+  height: var(--tswitch-ball);
+  border-radius: 50%;
+  box-shadow: 0 3px 5px var(--switch-shade);
+  transform: translateX(calc(var(--tswitch-i, 1) * var(--tswitch-step)));
+  transition: transform var(--dur-slow) var(--ease-spring);
+  pointer-events: none;
+}
+/* Fixed highlight: the light doesn't roll with the ball. */
+.ui-tswitch-ball::after {
+  content: '';
+  position: absolute;
+  top: 16%;
+  left: 20%;
+  width: 30%;
+  height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--switch-shine), transparent 70%);
+}
+.ui-tswitch-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  /* Whole turns, so the split always rests upright. */
+  transform: rotate(calc(var(--tswitch-i, 1) * 360deg));
+  transition: transform var(--dur-slow) var(--ease-spring);
+}
+.ui-tswitch-face {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: var(--ball-black);
+  transition: background-color var(--dur-slow) var(--ease-standard);
+}
+.ui-tswitch-face--l { left: 0; }
+.ui-tswitch-face--r { right: 0; }
+.ui-tswitch[data-mode='auto'] .ui-tswitch-face--r,
+.ui-tswitch[data-mode='light'] .ui-tswitch-face { background: var(--ball-white); }
+
+.ui-tswitch-hit {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-tswitch-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+
+.ui-tswitch-labels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: var(--tswitch-w);
+  text-align: center;
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-lh);
+  color: var(--label-secondary);
+}
+.ui-tswitch-labels .is-on { color: var(--label-primary); font-weight: 600; }

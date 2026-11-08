@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.5.0',
+    date: '2026-11-08',
+    title: 'A new switch for light and dark',
+    added: [
+      'A new Dark / Auto / Light switch in Settings and on the sign-in screen. A ball rolls along the baize to your choice: the black ball for Dark, the cue ball for Light, and half of each for Auto.',
+    ],
+    improved: [
+      'Auto follows your phone, so the app turns dark when your phone does. New installs now start in Auto.',
+      'The light/dark button on the New Match screen has gone. Change the mode in Settings, or with the button on the scoring screen during a match.',
+    ],
+  },
+  {
     version: '2.4.5',
     date: '2026-10-30',
     title: 'Re-spotted black, done properly',

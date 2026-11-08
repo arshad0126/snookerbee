@@ -22,14 +22,15 @@ values: copies go stale, and the CSS is the real definition.
 - **No raw colour, size or font values in components.** Use a token. If none
   fits, add one to `tokens.css` (and `tokens.ts` if canvas needs it) and say
   so in the change.
-- Colour mode is light, dark or auto (`body.light-theme`); accent is set by
+- Colour mode is light, dark or auto (`body.light-theme`), picked with the
+  `ThemeSwitch` ball switch (Dark / Auto / Light); accent is set by
   `body[data-accent]`. Every screen must look right in **both modes and every
   accent**. Check at least light + Club Blue and dark + one other accent.
 - Accent text must stay readable. accents.css lists contrast targets; keep to
   them when adding a preset.
 - **Build from the UI kit first:** `src/components/ui/` (Button, Card, Sheet,
   GroupedList/ListRow, SegmentedControl, Stepper, StatTile, Avatar,
-  EmptyState, Screen/NavBar, Toast, Ball, Icon). Add to it rather than writing
+  EmptyState, Screen/NavBar, Toast, Ball, Icon, ThemeSwitch). Add to it rather than writing
   a one-off.
 - **Icons come only from `ui/Icon.tsx`** (inline SVG, `currentColor`). No
   emoji as UI icons. An icon-only button needs an `aria-label`.

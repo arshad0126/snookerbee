@@ -2,17 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
-import { ACCENTS, BACKDROPS, type ColorMode } from '../lib/settings';
+import { ACCENTS, BACKDROPS } from '../lib/settings';
 import { loadHistory, guessMyName, knownNames, type History } from '../lib/history';
 import { getFramesForMatches } from '../lib/database';
 import ThemeBackdrop, { BackdropArt } from './ThemeBackdrop';
-import { Icon } from './ui';
-
-const MODES: { id: ColorMode; label: string }[] = [
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'auto', label: 'Auto' },
-];
+import { Icon, ThemeSwitch } from './ui';
 
 async function exportHistory(history: History, isGuest: boolean): Promise<'shared' | 'downloaded' | 'failed'> {
   let frames: unknown = undefined;
@@ -116,20 +110,7 @@ export default function Settings() {
 
           <div className="st-field">
             <span className="st-label" id="st-mode-label">Mode</span>
-            <div className="st-seg" role="radiogroup" aria-labelledby="st-mode-label">
-              {MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={settings.mode === m.id}
-                  className={`st-seg-btn${settings.mode === m.id ? ' is-on' : ''}`}
-                  onClick={() => update({ mode: m.id })}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            <ThemeSwitch value={settings.mode} onChange={(mode) => update({ mode })} />
           </div>
 
           <div className="st-field st-field--stack">
