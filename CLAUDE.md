@@ -10,6 +10,7 @@ Postgres), hosted on Vercel. Works signed in or as a guest (localStorage).
 | `src/engine/**`, `src/lib/results.ts`, `src/lib/playerStats.ts`, anything that adds up scores | `docs/SCORING.md` |
 | anything that re-opens a settled choice (share flow, stats, orientation, audio, undo) | `docs/DECISIONS.md` |
 | any screen, CSS or colour | `docs/DESIGN.md` |
+| a flag, status, `useState` or anything that moves between states | `docs/STATE.md` |
 
 `docs/archive/v2-plan.md` is the original v2 plan, not a description of the code.
 Large parts of it were never built (event-sourced engine, free-tap balls,

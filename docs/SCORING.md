@@ -35,12 +35,54 @@ Balls that aren't "on" are disabled on the scoring screen (`isLegalPot`).
 |---|---|
 | `reds`, red expected | red |
 | `reds`, colour expected | any colour, **or another red** (two reds can drop in one shot) |
-| `finalColor` (just potted last red) | any colour |
+| `reds`, 0 reds left, colour expected (just potted the last red) | any colour |
+| `finalColor` | any colour — **never entered** (see below) |
 | `colorsInOrder` | only the next colour, yellow → black, not re-spotted |
 | `respottedBlack` | black only |
 | `finished` | nothing |
 
 Colours are re-spotted while reds remain.
+
+### Frame phases (how `phase` changes)
+The engine is a reducer over an explicit `phase` (`GamePhase` in
+`engine/types.ts`). Every transition, from `engine/reducer.ts`:
+
+```
+            pot red ⇄ pot colour (colours re-spotted)
+                 ┌──────┐
+ START_NEXT_FRAME│      │
+ RESET_FRAME ──▶ reds ──┘
+                 │  colour potted, missed or fouled with 0 reds left
+                 │  (or a foul that pots the last red)
+                 ▼
+          colorsInOrder ── pot the colour on → next colour (yellow → black)
+                 │  pot black
+                 ├── scores level at the top ──▶ respottedBlack
+                 │                                  │ RESPOT_TOSS sets who
+                 │                                  │ plays first (not teams)
+                 │                                  │ pot black, or a foul that
+                 │                                  │ leaves one leader
+                 ▼                                  ▼
+             finished ◀──────────────────────────────┘
+                 ▲
+ CONCEDE_FRAME, END_FRAME (from any phase)
+```
+
+- `UNDO`, `REDO` and `SET_STATE` (resume) restore a whole earlier state, so
+  they can move to any phase. Nothing else should set `phase`.
+- In `respottedBlack` with three or more tied, a foul drops the fouler and
+  the phase stays `respottedBlack` while two or more are still level.
+- Inside `reds`, `expectedBall` (`'red' | 'color'`) is the sub-state. It is
+  `null` outside `reds`; `currentColorTarget` is only meaningful in
+  `colorsInOrder` and `respottedBlack`.
+- **`finalColor` is declared and handled, but no transition enters it.** The
+  colour after the last red is `reds` with `redsRemaining === 0` and
+  `expectedBall === 'color'`. It's kept so the types and older code paths
+  stay as they are; don't build on it without asking.
+- A frame being `finished` is not the match ending. The match is over when
+  `isMatchOver()` is true (every frame of the best-of decided). `winner` is
+  set then **only if one side has the most frames**; a drawn match ends with
+  `winner === null`, so don't use `winner` to mean "match over".
 
 ### Free ball
 - When a free ball is awarded, every ball is legal for the next pot.

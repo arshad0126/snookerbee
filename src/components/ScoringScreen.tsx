@@ -32,21 +32,35 @@ interface FrameHistoryItem {
   scores: Record<string, number>;
 }
 
+/**
+ * The sheet open over the scoring screen. One value, not a boolean per sheet,
+ * so two can never be open at once and each carries only what it needs.
+ *
+ * The frame summary and the re-spotted black toss are not in here: they come
+ * from the engine (`phase`), so a resume or an undo shows them correctly.
+ */
+type Overlay =
+  | { kind: 'none' }
+  | { kind: 'foul'; inOff: boolean }
+  | { kind: 'menu' }
+  | { kind: 'log' }
+  | { kind: 'previousFrames' }
+  | { kind: 'nextFrameSetup'; order: Player[] };
+
+const NO_OVERLAY: Overlay = { kind: 'none' };
+
 export default function ScoringScreen() {
   const { state, dispatch, setupGame } = useGame();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  // Dialog / Drawer States
-  const [isFoulOpen, setIsFoulOpen] = useState(false);
-  const [isInOff, setIsInOff] = useState(false);
-  const [isLogOpen, setIsLogOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isNextFrameSetupOpen, setIsNextFrameSetupOpen] = useState(false);
-  const [isPreviousFramesOpen, setIsPreviousFramesOpen] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay>(NO_OVERLAY);
+  const closeOverlay = () => setOverlay(NO_OVERLAY);
+  // Pause locks every button that changes the score; viewing stays open.
   const [isPaused, setIsPaused] = useState(false);
-  const [nextFrameOrder, setNextFrameOrder] = useState<Player[]>([]);
+  // Whether the last write of the resume point to this phone worked.
+  const [deviceSave, setDeviceSave] = useState<'saved' | 'failed'>('saved');
   // Re-spotted black: keep the toss result on screen until Play is tapped.
   const [showTossResult, setShowTossResult] = useState(false);
 
@@ -82,7 +96,7 @@ export default function ScoringScreen() {
   // a re-render, and means the most that can ever be lost is the last action.
   useEffect(() => {
     if (state.players.length === 0 || state.winner !== null) return;
-    saveActiveMatch(state, frameHistory);
+    setDeviceSave(saveActiveMatch(state, frameHistory) ? 'saved' : 'failed');
   }, [state, frameHistory]);
 
   // Audio initialization on first click
@@ -166,9 +180,10 @@ export default function ScoringScreen() {
 
   // Foul Dialog Confirm
   const handleConfirmFoul = (ball: BallType, customPenalty: number, redPottedOnFoul: boolean) => {
-    setIsFoulOpen(false);
+    const inOff = overlay.kind === 'foul' && overlay.inOff;
+    closeOverlay();
     audio.playFoul();
-    if (isInOff) {
+    if (inOff) {
       dispatch({ type: 'IN_OFF', ballInvolved: ball, customPenalty, redPottedOnFoul });
     } else {
       dispatch({ type: 'FOUL', ballInvolved: ball, customPenalty, redPottedOnFoul });
@@ -190,8 +205,7 @@ export default function ScoringScreen() {
     // The player after this frame's breaker breaks next, by default.
     const thisBreaker = state.frameStartTurn ?? 0;
     const next = order.length ? (thisBreaker + 1) % order.length : 0;
-    setNextFrameOrder([...order.slice(next), ...order.slice(0, next)]);
-    setIsNextFrameSetupOpen(true);
+    setOverlay({ kind: 'nextFrameSetup', order: [...order.slice(next), ...order.slice(0, next)] });
   };
 
   const handleConfirmNextFrameSetup = (order: Player[]) => {
@@ -211,7 +225,7 @@ export default function ScoringScreen() {
       { frameNumber: state.frameNumber, scores: currentScores },
     ]);
 
-    setIsNextFrameSetupOpen(false);
+    closeOverlay();
     dispatch({
       type: 'START_NEXT_FRAME',
       payload: {
@@ -457,8 +471,17 @@ export default function ScoringScreen() {
           <span className="frame-pill">Frame {state.frameNumber}</span>
           <div className="session-name-wrapper">
             <span className="session-title">SnookerBee</span>
-            <span className="sync-status">
-              <span className="sync-dot"></span> Synced
+            {/* Honest about where the match lives: it is written to this phone
+                after every shot and only reaches the account when it's saved
+                at the end. This used to say "Synced" whatever happened. */}
+            <span
+              className="sync-status"
+              title={deviceSave === 'saved'
+                ? 'Saved on this phone after every shot'
+                : 'This phone is out of storage, so the match can’t be kept if the app closes'}
+            >
+              <span className={`sync-dot ${deviceSave === 'failed' ? 'sync-dot--failed' : ''}`}></span>
+              {deviceSave === 'saved' ? 'Saved' : 'Not saved'}
             </span>
           </div>
         </div>
@@ -504,7 +527,7 @@ export default function ScoringScreen() {
             )}
           </button>
           <button
-            onClick={() => setIsPreviousFramesOpen(true)}
+            onClick={() => setOverlay({ kind: 'previousFrames' })}
             className="btn-topbar-icon"
             title="Previous Frames"
             disabled={state.completedFrames.length === 0}
@@ -516,14 +539,14 @@ export default function ScoringScreen() {
               <rect x="14" y="14" width="7" height="7" rx="1"></rect>
             </svg>
           </button>
-          <button onClick={() => setIsMenuOpen(true)} className="btn-topbar-icon" title="Menu">
+          <button onClick={() => setOverlay({ kind: 'menu' })} className="btn-topbar-icon" title="Menu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
               <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
           </button>
-          <button onClick={() => setIsLogOpen(true)} className="btn-topbar-icon" title="Timeline" aria-label="Timeline">
+          <button onClick={() => setOverlay({ kind: 'log' })} className="btn-topbar-icon" title="Timeline" aria-label="Timeline">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
               <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -538,6 +561,7 @@ export default function ScoringScreen() {
                 dispatch({ type: 'CONCEDE_FRAME' });
               }
             }}
+            disabled={isPaused}
             className="btn-end-frame"
           >
             End Frame
@@ -627,8 +651,7 @@ export default function ScoringScreen() {
             <button
               onClick={() => {
                 if (isPaused) return;
-                setIsInOff(false);
-                setIsFoulOpen(true);
+                setOverlay({ kind: 'foul', inOff: false });
               }}
               disabled={isPaused}
               className="btn-action-premium btn-action-foul"
@@ -653,6 +676,7 @@ export default function ScoringScreen() {
                   dispatch({ type: 'RESET_FRAME' });
                 }
               }}
+              disabled={isPaused}
               className="btn-reset-frame"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '4px', verticalAlign: 'middle'}}>
@@ -666,26 +690,26 @@ export default function ScoringScreen() {
 
       {/* Foul entry Dialog */}
       <FoulDialog
-        isOpen={isFoulOpen}
-        isInOff={isInOff}
+        isOpen={overlay.kind === 'foul'}
+        isInOff={overlay.kind === 'foul' && overlay.inOff}
         gameState={state}
         onConfirm={handleConfirmFoul}
-        onCancel={() => setIsFoulOpen(false)}
+        onCancel={closeOverlay}
       />
 
       {/* Action Log Drawer */}
       {/* Previous Frames Modal */}
       <PreviousFramesModal
-        isOpen={isPreviousFramesOpen}
-        onClose={() => setIsPreviousFramesOpen(false)}
+        isOpen={overlay.kind === 'previousFrames'}
+        onClose={closeOverlay}
         completedFrames={state.completedFrames}
       />
 
       {undoBar}
 
       <ActionLogDrawer
-        isOpen={isLogOpen}
-        onClose={() => setIsLogOpen(false)}
+        isOpen={overlay.kind === 'log'}
+        onClose={closeOverlay}
         actionLog={state.actionLog}
         sides={logSides}
         currentPlayerName={state.phase === 'finished' ? null : activePlayer?.name ?? null}
@@ -694,16 +718,17 @@ export default function ScoringScreen() {
       />
 
       {/* Menu Overlay / Sidebar */}
-      {isMenuOpen && (
-        <div className="modal-backdrop modal-centered" onClick={() => setIsMenuOpen(false)}>
+      {overlay.kind === 'menu' && (
+        <div className="modal-backdrop modal-centered" onClick={closeOverlay}>
           <div className="menu-overlay-card card" role="dialog" aria-modal="true" aria-label="Match options" onClick={e => e.stopPropagation()}>
             <h3 className="menu-title">Match Options</h3>
             <div className="menu-options-list">
               <button
                 onClick={() => {
-                  setIsMenuOpen(false);
+                  closeOverlay();
                   dispatch({ type: 'FREE_BALL' });
                 }}
+                disabled={isPaused}
                 className={`btn btn-secondary ${state.isFreeBall ? 'active' : ''}`}
               >
                 {state.isFreeBall
@@ -712,9 +737,10 @@ export default function ScoringScreen() {
               </button>
               <button
                 onClick={() => {
-                  setIsMenuOpen(false);
+                  closeOverlay();
                   dispatch({ type: 'CONCEDE_FRAME' });
                 }}
+                disabled={isPaused}
                 className="btn btn-secondary"
               >
                 <Icon name="flag" size={16} /> Concede Frame
@@ -732,7 +758,7 @@ export default function ScoringScreen() {
               </button>
             </div>
             <button
-              onClick={() => setIsMenuOpen(false)}
+              onClick={closeOverlay}
               className="btn btn-ghost"
               style={{ marginTop: 'var(--space-md)' }}
             >
@@ -769,13 +795,13 @@ export default function ScoringScreen() {
       )}
 
       {/* Next frame setup — cancelable; nothing changes until Start */}
-      {isNextFrameSetupOpen && (
+      {overlay.kind === 'nextFrameSetup' && (
         <NextFrameSetup
           frameNumber={state.frameNumber + 1}
-          initialOrder={nextFrameOrder}
-          canReorder={state.mode === 'freeForAll' && nextFrameOrder.length > 2}
+          initialOrder={overlay.order}
+          canReorder={state.mode === 'freeForAll' && overlay.order.length > 2}
           onStart={handleConfirmNextFrameSetup}
-          onCancel={() => setIsNextFrameSetupOpen(false)}
+          onCancel={closeOverlay}
         />
       )}
     </div>
