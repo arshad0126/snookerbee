@@ -56,6 +56,16 @@ Format: **Decision** — why. *(where it lives, version)*
 - **Share cards follow light/dark, with a tall Story shape option and the
   app's backdrop art.** *(`lib/shareCard.ts`, 2.2.0)*
 
+### Scoring screen
+- **Only one sheet is open at a time, held as one `Overlay` value.** Separate
+  booleans per sheet could disagree and stack. *(`ScoringScreen.tsx`, 2.5.1)*
+- **Pause locks everything that changes the score; viewing stays open.**
+  Reset Frame and End Frame used to work while paused. The match clock still
+  runs while paused. *(2.5.1)*
+- **The save indicator tells the truth: "Saved" on this phone, or "Not saved"
+  when storage is full.** It said "Synced" even offline or as a guest; the
+  match only reaches the account when it's saved at the end. *(2.5.1)*
+
 ### Device behaviour
 - **Colour mode is a three-way Dark / Auto / Light switch (a rolling ball on
   baize), and new installs start in Auto.** The app used to start in Dark and

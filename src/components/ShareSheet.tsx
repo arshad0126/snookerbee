@@ -44,6 +44,10 @@ export default function ShareSheet() {
   useEffect(() => {
     if (!req) return;
     let live = true;
+    // The old file no longer matches the options on screen. Drop it so Share
+    // waits for the new one instead of sending the previous look or shape.
+    // The preview keeps the old picture until the new one is ready.
+    setFile(null);
     const canvas = canvasRef.current ?? (canvasRef.current = document.createElement('canvas'));
     drawCard(canvas, req.spec, { theme, shape, stats, accent: currentCardLook().accent });
     canvas.toBlob((blob) => {

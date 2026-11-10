@@ -85,10 +85,13 @@ function remove(key: string): void {
  * Persist an in-progress match. `undoStack` is dropped: it holds a full state
  * snapshot per action, which would multiply the payload for something nobody
  * expects to survive a reload.
+ *
+ * Returns false when the phone wouldn't store it (usually out of space), so
+ * the scoring screen can say so instead of claiming the match is safe.
  */
-export function saveActiveMatch(state: GameState, frameHistory: FrameHistoryItem[]): void {
-  if (state.players.length === 0) return;
-  write(ACTIVE_KEY, {
+export function saveActiveMatch(state: GameState, frameHistory: FrameHistoryItem[]): boolean {
+  if (state.players.length === 0) return false;
+  return write(ACTIVE_KEY, {
     savedAt: new Date().toISOString(),
     state: { ...state, undoStack: [] },
     frameHistory,

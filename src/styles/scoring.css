@@ -98,6 +98,13 @@
   display: inline-block;
 }
 
+/* Resume point couldn't be written (phone storage full). */
+.sync-dot.sync-dot--failed,
+body.light-theme .sync-dot.sync-dot--failed {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+
 .scoring-topbar-center {
   display: flex;
   align-items: center;
@@ -146,6 +153,13 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.btn-end-frame:disabled,
+.btn-reset-frame:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
 }
 
 .btn-end-frame:hover {

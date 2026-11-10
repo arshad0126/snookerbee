@@ -22,6 +22,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.5.1',
+    date: '2026-11-10',
+    title: 'Pause means pause',
+    improved: [
+      'Pause now locks every button that changes the score, including End Frame, Reset Frame, Free Ball and Concede. The timeline, previous frames and Abort still work.',
+      'The scoring screen now shows "Saved" when the match is safely stored on your phone, and "Not saved" in red if your phone is out of space. It used to say "Synced" whatever happened.',
+    ],
+    fixed: [
+      'Changing Light / Dark, Wide / Story or stats on the share screen could send the previous image if you tapped Share straight away. Share now waits for the new one.',
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-11-08',
     title: 'A new switch for light and dark',
